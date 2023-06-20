@@ -1,0 +1,27 @@
+# permissions for end users to view sysbenches.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: sysbench-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubebench
+    app.kubernetes.io/part-of: kubebench
+    app.kubernetes.io/managed-by: kustomize
+  name: sysbench-viewer-role
+rules:
+- apiGroups:
+  - benchmark.kubebench.io
+  resources:
+  - sysbenches
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - benchmark.kubebench.io
+  resources:
+  - sysbenches/status
+  verbs:
+  - get

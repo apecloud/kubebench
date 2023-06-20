@@ -1,0 +1,12 @@
+apiVersion: benchmark.kubebench.io/v1alpha1
+kind: Sysbench
+metadata:
+  labels:
+    app.kubernetes.io/name: sysbench
+    app.kubernetes.io/instance: sysbench-sample
+    app.kubernetes.io/part-of: kubebench
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubebench
+  name: sysbench-sample
+spec:
+  # TODO(user): Add fields here

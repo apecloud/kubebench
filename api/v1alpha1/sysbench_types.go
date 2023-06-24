@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,17 +26,14 @@ import (
 
 // SysbenchSpec defines the desired state of Sysbench
 type SysbenchSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Sysbench. Edit sysbench_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// JobTemplate defines the job that will run the benchmark.
+	JobTemplate batchv1.JobTemplateSpec `json:"jobTemplate"`
 }
 
 // SysbenchStatus defines the observed state of Sysbench
 type SysbenchStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Phase is the current state of the test.
+	Phase BenchmarkPhase `json:"phase,omitempty"`
 }
 
 //+kubebuilder:object:root=true

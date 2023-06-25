@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- benchmark_v1alpha1_sysbench.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples

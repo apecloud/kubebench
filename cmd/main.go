@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
-	"github.com/apecloud/kubebench/controllers"
+	"github.com/apecloud/kubebench/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -89,7 +89,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.SysbenchReconciler{
+	if err = (&controller.SysbenchReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

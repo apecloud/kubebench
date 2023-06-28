@@ -17,27 +17,33 @@ limitations under the License.
 package v1alpha1
 
 import (
-	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // SysbenchSpec defines the desired state of Sysbench
 type SysbenchSpec struct {
-	// JobTemplate defines the job that will run the benchmark.
-	JobTemplate batchv1.JobTemplateSpec `json:"jobTemplate"`
+	// Image defines the image to use for the benchmark.
+	Image ImageSpec `json:"image,omitempty"`
+
+	// Pod Contains the pod specification for the benchmark.
+	PodConfig PodConfigSpec `json:"podConfig,omitempty"`
 }
 
 // SysbenchStatus defines the observed state of Sysbench
 type SysbenchStatus struct {
-	// Phase is the current state of the test.
+	// Phase is the current state of the test. Valid values are Disabled, Enabled, Failed, Enabling, Disabling.
+	// +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
 	Phase BenchmarkPhase `json:"phase,omitempty"`
+
+	// Describes the current state of add-on API installation conditions.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.phase",description="status phase"
+// +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Sysbench is the Schema for the sysbenches API
 type Sysbench struct {

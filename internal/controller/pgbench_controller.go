@@ -32,71 +32,67 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
-// SysbenchReconciler reconciles a Sysbench object
-type SysbenchReconciler struct {
+// PgbenchReconciler reconciles a Pgbench object
+type PgbenchReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=sysbenches,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=sysbenches/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=sysbenches/finalizers,verbs=update
-
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete;deletecollection
-// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;delete;deletecollection
-// +kubebuilder:rbac:groups=core,resources=pods/log,verbs=get;list
+//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Sysbench object against the actual cluster state, and then
+// the Pgbench object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var sysbench benchmarkv1alpha1.Sysbench
-	if err := r.Get(ctx, req.NamespacedName, &sysbench); err != nil {
+	var pgbench benchmarkv1alpha1.Pgbench
+	if err := r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// Run to one completion
-	if sysbench.Status.Phase == benchmarkv1alpha1.Complete || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
+	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return ctrl.Result{}, nil
 	}
 
-	sysbench.Status.Phase = benchmarkv1alpha1.Running
-	if err := r.Status().Update(ctx, &sysbench); err != nil {
-		l.Error(err, "unable to update Sysbench status")
+	pgbench.Status.Phase = benchmarkv1alpha1.Running
+	if err := r.Status().Update(ctx, &pgbench); err != nil {
+		l.Error(err, "unable to update pgbench status")
 		return ctrl.Result{}, err
 	}
 
 	// check if the job already exists
-	existed, err := utils.IsJobExisted(r.Client, ctx, sysbench.Name, sysbench.Namespace)
+	existed, err := utils.IsJobExisted(r.Client, ctx, pgbench.Name, pgbench.Namespace)
 	if err != nil {
 		l.Error(err, "unable to check if the Job already exists")
 		return ctrl.Result{}, err
 	}
 	if !existed {
 		// construct the job from the template
-		job := utils.NewJob(sysbench.Name, sysbench.Namespace, sysbench.Spec.Image, sysbench.Spec.PodConfig)
+		job := utils.NewJob(pgbench.Name, pgbench.Namespace, pgbench.Spec.Image, pgbench.Spec.PodConfig)
 
 		// actually create the job on the cluster
 		if err := r.Create(ctx, job); err != nil {
-			l.Error(err, "unable to create Job for Sysbench")
+			l.Error(err, "unable to create Job for pgbench")
 			return ctrl.Result{}, err
 		}
-		l.V(1).Info("Job created", "job", sysbench.Name)
+		l.V(1).Info("Job created", "job", pgbench.Name)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// get the job status
 	var phase benchmarkv1alpha1.BenchmarkPhase
-	status, err := utils.GetJobStatus(r.Client, ctx, sysbench.Name, sysbench.Namespace)
+	status, err := utils.GetJobStatus(r.Client, ctx, pgbench.Name, pgbench.Namespace)
 	if err != nil {
 		l.Error(err, "unable to get Job status")
 		return ctrl.Result{}, err
@@ -104,10 +100,10 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	switch {
 	case status.Succeeded > 0:
-		l.V(1).Info("Job succeeded", "job", sysbench.Name)
+		l.V(1).Info("Job succeeded", "job", pgbench.Name)
 		phase = benchmarkv1alpha1.Complete
 	case status.Failed > 0:
-		l.V(1).Info("Job failed", "job", sysbench.Name)
+		l.V(1).Info("Job failed", "job", pgbench.Name)
 		phase = benchmarkv1alpha1.Failed
 	case status.Active > 0:
 		return ctrl.Result{Requeue: true}, nil
@@ -115,13 +111,13 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return ctrl.Result{}, nil
 	}
 
-	// The sysbench could have been modified since the last time we got it
-	if err := r.Get(ctx, req.NamespacedName, &sysbench); err != nil {
-		l.Error(err, "unable to fetch Sysbench")
+	// The pgbench could have been modified since the last time we got it
+	if err := r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
+		l.Error(err, "unable to fetch pgbench")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	podList, err := utils.GetPodListFromJob(r.Client, ctx, sysbench.Name, sysbench.Namespace)
+	podList, err := utils.GetPodListFromJob(r.Client, ctx, pgbench.Name, pgbench.Namespace)
 	if err != nil {
 		l.Error(err, "unable to get pods from Job")
 		return ctrl.Result{}, err
@@ -135,10 +131,10 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 
 		// save the result to the status
-		meta.SetStatusCondition(&sysbench.Status.Conditions, metav1.Condition{
+		meta.SetStatusCondition(&pgbench.Status.Conditions, metav1.Condition{
 			Type:               "Complete",
 			Status:             metav1.ConditionTrue,
-			ObservedGeneration: sysbench.Generation,
+			ObservedGeneration: pgbench.Generation,
 			Reason:             "JobFinished",
 			Message:            msg,
 			LastTransitionTime: metav1.Now(),
@@ -146,26 +142,26 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// delete the job
-	if err := utils.DelteJob(r.Client, ctx, sysbench.Name, sysbench.Namespace); err != nil {
+	if err := utils.DelteJob(r.Client, ctx, pgbench.Name, pgbench.Namespace); err != nil {
 		l.Error(err, "unable to delete Job")
 		return ctrl.Result{}, err
 	}
 
-	// update sysbench status
-	sysbench.Status.Phase = phase
-	if err := r.Status().Update(ctx, &sysbench); err != nil {
-		l.Error(err, "unable to update Sysbench status")
+	// update pgbench status
+	pgbench.Status.Phase = phase
+	if err := r.Status().Update(ctx, &pgbench); err != nil {
+		l.Error(err, "unable to update pgbench status")
 		return ctrl.Result{}, err
 	}
-	l.Info("Sysbench benchmark completed", "sysbench", sysbench.Name)
+	l.Info("pgbench benchmark completed", "pgbench", pgbench.Name)
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SysbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PgbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Sysbench{}).
+		For(&benchmarkv1alpha1.Pgbench{}).
 		Owns(&batchv1.Job{}).
 		Complete(r)
 }

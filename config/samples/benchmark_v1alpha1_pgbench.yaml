@@ -1,0 +1,12 @@
+apiVersion: benchmark.kubebench.io/v1alpha1
+kind: Pgbench
+metadata:
+  labels:
+    app.kubernetes.io/name: pgbench
+    app.kubernetes.io/instance: pgbench-sample
+    app.kubernetes.io/part-of: kubebench
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubebench
+  name: pgbench-sample
+spec:
+  # TODO(user): Add fields here

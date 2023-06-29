@@ -20,6 +20,32 @@ rules:
 - apiGroups:
   - benchmark.kubebench.io
   resources:
+  - pgbenches
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.kubebench.io
+  resources:
+  - pgbenches/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - benchmark.kubebench.io
+  resources:
+  - pgbenches/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - benchmark.kubebench.io
+  resources:
   - sysbenches
   verbs:
   - create

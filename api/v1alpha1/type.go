@@ -27,16 +27,15 @@ type EnvVar struct {
 }
 
 type ImageSpec struct {
-	// Name is the Docker Image location including tag
-	// +kubebuilder:validation:Required
+	// Name of the container specified as a DNS_LABEL
 	Name string `json:"name"`
+
+	// Image is the Docker Image location including tag
+	// +kubebuilder:validation:Required
+	Image string `json:"image"`
 
 	// +optional
 	PullPolicy corev1.PullPolicy `json:"pullPolicy,omitempty"`
-
-	// PullSecret is the secret to use to pull the image
-	// +optional
-	PullSecret string `json:"pullSecret,omitempty"`
 
 	// Cmds is the commands to run in the container
 	// +optional

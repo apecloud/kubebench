@@ -21,7 +21,7 @@ import (
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	ctrl "sigs.k8s.io/controller-runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/apecloud/kubebench/api/v1alpha1"
@@ -95,34 +95,24 @@ func DelteJob(cli client.Client, reqCtx context.Context, jobName string, namespa
 	return nil
 }
 
-func NewJob(jogName string, namespace string, image v1alpha1.ImageSpec, podConfig v1alpha1.PodConfigSpec) *batchv1.Job {
+func NewJob(jobName string, namespace string, objectMeta metav1.ObjectMeta, image v1alpha1.ImageSpec) *batchv1.Job {
 	backoffLimit := int32(0) // no retry
 
 	job := &batchv1.Job{
-		ObjectMeta: ctrl.ObjectMeta{
-			Name:      jogName,
-			Namespace: namespace,
-		},
+		ObjectMeta: objectMeta,
 		Spec: batchv1.JobSpec{
 			BackoffLimit: &backoffLimit,
 			Template: corev1.PodTemplateSpec{
-				ObjectMeta: ctrl.ObjectMeta{
-					Annotations: podConfig.Annotations,
-					Labels:      podConfig.Labels,
-				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:            jogName,
-							Image:           image.Name,
-							ImagePullPolicy: image.PullPolicy,
+							Name:            jobName,
+							Image:           image.Image,
+							ImagePullPolicy: corev1.PullIfNotPresent,
 							Command:         image.Cmds,
 							Args:            image.Args,
 							Env:             image.Env,
 						},
-					},
-					ImagePullSecrets: []corev1.LocalObjectReference{
-						{Name: image.PullSecret},
 					},
 					RestartPolicy: corev1.RestartPolicyNever,
 				},

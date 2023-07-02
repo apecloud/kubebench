@@ -20,20 +20,19 @@ import (
 	"flag"
 	"os"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
-	"github.com/apecloud/kubebench/internal/controller"
-	//+kubebuilder:scaffold:imports
+	"github.com/apecloud/kubebench/internal/controller/pgbench"
+	"github.com/apecloud/kubebench/internal/controller/sysbench"
 )
 
 var (
@@ -89,7 +88,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controller.SysbenchReconciler{
+	if err = (&sysbench.SysbenchReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),
@@ -97,7 +96,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Sysbench")
 		os.Exit(1)
 	}
-	if err = (&controller.PgbenchReconciler{
+	if err = (&pgbench.PgbenchReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),

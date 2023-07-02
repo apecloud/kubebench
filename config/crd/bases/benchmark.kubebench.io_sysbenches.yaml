@@ -19,6 +19,10 @@ spec:
       jsonPath: .status.phase
       name: STATUS
       type: string
+    - description: completions
+      jsonPath: .status.completions
+      name: COMPLETIONS
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: AGE
       type: date
@@ -34,103 +38,56 @@ spec:
             type: object
           spec:
             properties:
-              image:
+              initArgs:
                 properties:
-                  args:
+                  otherFlags:
+                    type: string
+                  size:
+                    type: integer
+                  tables:
+                    type: integer
+                type: object
+              runArgs:
+                properties:
+                  others:
+                    type: string
+                  threads:
+                    items:
+                      type: integer
+                    minItems: 1
+                    type: array
+                  times:
+                    type: integer
+                  types:
                     items:
                       type: string
+                    minItems: 1
                     type: array
-                  cmds:
-                    items:
-                      type: string
-                    type: array
-                  env:
-                    items:
-                      properties:
-                        name:
-                          type: string
-                        value:
-                          type: string
-                        valueFrom:
-                          properties:
-                            configMapKeyRef:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
-                              x-kubernetes-map-type: atomic
-                            fieldRef:
-                              properties:
-                                apiVersion:
-                                  type: string
-                                fieldPath:
-                                  type: string
-                              required:
-                              - fieldPath
-                              type: object
-                              x-kubernetes-map-type: atomic
-                            resourceFieldRef:
-                              properties:
-                                containerName:
-                                  type: string
-                                divisor:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
-                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                                  x-kubernetes-int-or-string: true
-                                resource:
-                                  type: string
-                              required:
-                              - resource
-                              type: object
-                              x-kubernetes-map-type: atomic
-                            secretKeyRef:
-                              properties:
-                                key:
-                                  type: string
-                                name:
-                                  type: string
-                                optional:
-                                  type: boolean
-                              required:
-                              - key
-                              type: object
-                              x-kubernetes-map-type: atomic
-                          type: object
-                      required:
-                      - name
-                      type: object
-                    type: array
+                required:
+                - types
+                type: object
+              target:
+                properties:
+                  database:
+                    type: string
+                  driver:
+                    type: string
+                  host:
+                    type: string
                   name:
                     type: string
-                  pullPolicy:
+                  password:
                     type: string
-                  pullSecret:
+                  port:
+                    type: integer
+                  user:
                     type: string
-                required:
-                - name
-                type: object
-              podConfig:
-                properties:
-                  annotations:
-                    additionalProperties:
-                      type: string
-                    type: object
-                  labels:
-                    additionalProperties:
-                      type: string
-                    type: object
                 type: object
             type: object
           status:
             properties:
+              completions:
+                type: string
               conditions:
                 items:
                   properties:
@@ -180,6 +137,10 @@ spec:
                   - Complete
                   - Failed
                 type: string
+              succeeded:
+                type: integer
+              total:
+                type: integer
             type: object
         type: object
     served: true

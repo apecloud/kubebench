@@ -34,7 +34,7 @@ func NewJob(cr *v1alpha1.Sysbench) *batchv1.Job {
 	}
 	value = fmt.Sprintf("%s,threads:%s", value, strings.Join(threads, " "))
 	value = fmt.Sprintf("%s,type:%s", value, strings.Join(cr.Spec.RunArgs.Types, " "))
-	value = fmt.Sprintf("%s,other:%s", value, cr.Spec.RunArgs.OtherFlags)
+	value = fmt.Sprintf("%s,others:%s", value, cr.Spec.RunArgs.OtherFlags)
 
 	jobName := fmt.Sprintf("%s-%d", cr.Name, cr.Status.Succeeded)
 

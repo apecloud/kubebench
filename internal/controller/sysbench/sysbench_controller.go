@@ -125,7 +125,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
 
 			// record the result
-			podList, err := utils.GetPodListFromJob(r.Client, ctx, sysbench.Name, sysbench.Namespace)
+			podList, err := utils.GetPodListFromJob(r.Client, ctx, jobName, sysbench.Namespace)
 			if err != nil {
 				l.Error(err, "unable to get pod list from job")
 				return ctrl.Result{}, err

@@ -22,11 +22,63 @@ import (
 
 // SysbenchSpec defines the desired state of Sysbench
 type SysbenchSpec struct {
-	// Image defines the image to use for the benchmark.
-	Image ImageSpec `json:"image,omitempty"`
+	// the parameters for the sysbench init command
+	InitArgs SysbenchInitArgs `json:"initArgs,omitempty"`
 
-	// Pod Contains the pod specification for the benchmark.
-	PodConfig PodConfigSpec `json:"podConfig,omitempty"`
+	// the parameters for the sysbench run command
+	RunArgs SysbenchRunArgs `json:"runArgs,omitempty"`
+
+	// the target for the sysbench run command
+	Target SysbenchTarget `json:"target,omitempty"`
+}
+
+type SysbenchInitArgs struct {
+	// the number of tables to use for sysbench
+	Tables int `json:"tables,omitempty"`
+
+	// the data volume of tables to use for sysbench
+	Size int `json:"size,omitempty"`
+}
+
+type SysbenchRunArgs struct {
+	// the number of threads to use for sysbench
+	// +kubebuilder:validation:MinItems=1
+	Threads []int `json:"threads,omitempty"`
+
+	// the sysbench test types to run
+	// +kubebuilder:validation:MinItems=1
+	Types []string `json:"types"`
+
+	// the time to run the sysbench test
+	// +optional
+	Time int `json:"time,omitempty"`
+
+	// the other sysbench run command flags to use for sysbench
+	// +optional
+	OtherArgs []string `json:"others,omitempty"`
+}
+
+type SysbenchTarget struct {
+	// the name of the sysbench target
+	Name string `json:"name,omitempty"`
+
+	// the driver of the sysbench target
+	Driver string `json:"driver,omitempty"`
+
+	// the host of the sysbench target
+	Host string `json:"host,omitempty"`
+
+	// the port of the sysbench target
+	Port int `json:"port,omitempty"`
+
+	// the user of the sysbench target
+	User string `json:"user,omitempty"`
+
+	// the password of the sysbench target
+	Password string `json:"password,omitempty"`
+
+	// the database of the sysbench target
+	Database string `json:"database,omitempty"`
 }
 
 // SysbenchStatus defines the observed state of Sysbench
@@ -34,6 +86,15 @@ type SysbenchStatus struct {
 	// Phase is the current state of the test. Valid values are Disabled, Enabled, Failed, Enabling, Disabling.
 	// +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
 	Phase BenchmarkPhase `json:"phase,omitempty"`
+
+	// completions is the completed/total number of sysbench runs
+	Completions string `json:"completions,omitempty"`
+
+	// succeeded is the number of successful sysbench runs
+	Succeeded int `json:"succeeded,omitempty"`
+
+	// failed is the number of failed sysbench runs
+	Total int `json:"total,omitempty"`
 
 	// Describes the current state of add-on API installation conditions.
 	// +optional
@@ -43,6 +104,7 @@ type SysbenchStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.phase",description="status phase"
+// +kubebuilder:printcolumn:name="COMPLETIONS",type="string",JSONPath=".status.completions",description="completions"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Sysbench is the Schema for the sysbenches API

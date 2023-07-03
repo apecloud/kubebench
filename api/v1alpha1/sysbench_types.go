@@ -38,10 +38,6 @@ type SysbenchInitArgs struct {
 
 	// the data volume of tables to use for sysbench
 	Size int `json:"size,omitempty"`
-
-	// the other sysbench init command flags to use for sysbench
-	// +optional
-	OtherFlags string `json:"otherFlags"`
 }
 
 type SysbenchRunArgs struct {
@@ -55,11 +51,11 @@ type SysbenchRunArgs struct {
 
 	// the time to run the sysbench test
 	// +optional
-	Times int `json:"times,omitempty"`
+	Time int `json:"time,omitempty"`
 
 	// the other sysbench run command flags to use for sysbench
 	// +optional
-	OtherFlags string `json:"others,omitempty"`
+	OtherArgs []string `json:"others,omitempty"`
 }
 
 type SysbenchTarget struct {

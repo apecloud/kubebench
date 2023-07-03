@@ -2,6 +2,7 @@ package pgbench
 
 import (
 	"fmt"
+	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,7 +17,7 @@ const (
 	PgbenchImage = "postgres:latest"
 )
 
-func NewJob(cr *v1alpha1.Pgbench) *batchv1.Job {
+func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 	var cmds []string
 	if cr.Status.Ready {
 		cmds = []string{"pgbench", "-c", fmt.Sprintf("%d", cr.Spec.RunArgs.Clients[cr.Status.Succeeded])}
@@ -37,12 +38,10 @@ func NewJob(cr *v1alpha1.Pgbench) *batchv1.Job {
 			cmds = append(cmds, "-S")
 		}
 
-		cmds = append(cmds, cr.Spec.RunArgs.OtherFlags)
+		cmds = append(cmds, strings.Join(cr.Spec.RunArgs.OtherArgs, " "))
 	} else {
-		cmds = []string{"pgbench", "-i", fmt.Sprintf("-s%d", cr.Spec.InitArgs.Scale), cr.Spec.InitArgs.OtherFlags}
+		cmds = []string{"pgbench", "-i", fmt.Sprintf("-s%d", cr.Spec.InitArgs.Scale), strings.Join(cr.Spec.InitArgs.OtherArgs, " ")}
 	}
-
-	jobName := fmt.Sprintf("%s-%d", cr.Name, cr.Status.Succeeded)
 
 	objectMeta := metav1.ObjectMeta{
 		Name:      jobName,

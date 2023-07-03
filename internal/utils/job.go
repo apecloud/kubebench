@@ -18,11 +18,15 @@ package utils
 
 import (
 	"context"
+	"fmt"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/apecloud/kubebench/api/v1alpha1"
 )
@@ -121,4 +125,39 @@ func NewJob(jobName string, namespace string, objectMeta metav1.ObjectMeta, imag
 	}
 
 	return job
+}
+
+// LogJobPodToCond record the log of job's pods to the conditions
+func LogJobPodToCond(cli client.Client, restConfig *rest.Config, reqCtx context.Context, jobName string, namespace string, conditions *[]metav1.Condition, call func(string) string) error {
+	l := log.FromContext(reqCtx)
+
+	podList, err := GetPodListFromJob(cli, reqCtx, jobName, namespace)
+	if err != nil {
+		l.Error(err, "failed to get pod list from job", "job", jobName, "namespace", namespace)
+		return err
+	}
+
+	for _, pod := range podList.Items {
+		// get the log of the pod
+		msg, err := GetLogFromPod(restConfig, reqCtx, pod.Name, namespace)
+		if err != nil {
+			l.Error(err, "failed to get log from pod", "pod", pod.Name, "namespace", namespace)
+		}
+
+		if call != nil {
+			msg = call(msg)
+		}
+
+		// record the log to the conditions
+		meta.SetStatusCondition(conditions, metav1.Condition{
+			Type:               fmt.Sprintf("%s-%s", pod.Name, pod.Status.Phase),
+			Status:             metav1.ConditionTrue,
+			ObservedGeneration: pod.Generation,
+			Reason:             "RecordLog",
+			Message:            msg,
+			LastTransitionTime: metav1.Now(),
+		})
+	}
+
+	return nil
 }

@@ -40,8 +40,6 @@ spec:
             properties:
               initArgs:
                 properties:
-                  otherFlags:
-                    type: string
                   size:
                     type: integer
                   tables:
@@ -50,13 +48,15 @@ spec:
               runArgs:
                 properties:
                   others:
-                    type: string
+                    items:
+                      type: string
+                    type: array
                   threads:
                     items:
                       type: integer
                     minItems: 1
                     type: array
-                  times:
+                  time:
                     type: integer
                   types:
                     items:

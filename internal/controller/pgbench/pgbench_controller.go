@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -75,8 +73,14 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
+	var jobName string
+	if pgbench.Status.Ready {
+		jobName = fmt.Sprintf("%s-%d", pgbench.Name, pgbench.Status.Succeeded)
+	} else {
+		jobName = fmt.Sprintf("%s-init", pgbench.Name)
+	}
+
 	// check if the job already exists
-	jobName := fmt.Sprintf("%s-%d", pgbench.Name, pgbench.Status.Succeeded)
 	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, pgbench.Namespace)
 	if err != nil {
 		l.Error(err, "unable to check if the Job already exists")
@@ -101,10 +105,33 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// job is failed
 		if status.Failed > 0 {
 			l.Info("Job is failed", "jobName", jobName)
-			if err := updatePgbenchStatus(r, ctx, &pgbench, benchmarkv1alpha1.Failed); err != nil {
+			if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, &pgbench); err != nil {
 				l.Error(err, "unable to update pgbench status")
 				return ctrl.Result{}, err
 			}
+
+			// update the status
+			pgbench.Status.Phase = benchmarkv1alpha1.Failed
+
+			// record the fail log
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, nil); err != nil {
+				l.Error(err, "unable to record the fail log")
+				return ctrl.Result{}, err
+			}
+
+			// delete the job
+			l.V(1).Info("delete the Job", "jobName", jobName)
+			if err := utils.DelteJob(r.Client, ctx, jobName, pgbench.Namespace); err != nil {
+				l.Error(err, "unable to delete Job")
+				return ctrl.Result{}, err
+			}
+
+			// update the pgbench status
+			if err := r.Status().Update(ctx, &pgbench); err != nil {
+				l.Error(err, "unable to update pgbench status")
+				return ctrl.Result{}, err
+			}
+
 			return ctrl.Result{}, nil
 		}
 
@@ -122,31 +149,11 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 			pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 
+			// TODO add func to process log
 			// record the result
-			podList, err := utils.GetPodListFromJob(r.Client, ctx, jobName, pgbench.Namespace)
-			if err != nil {
-				l.Error(err, "unable to get pods from Job")
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, nil); err != nil {
+				l.Error(err, "unable to record the fail log")
 				return ctrl.Result{}, err
-			}
-			for _, pod := range podList.Items {
-				// get the logs from the pod
-				msg, err := utils.GetLogFromPod(r.RestConfig, ctx, pod.Name, pod.Namespace)
-				if err != nil {
-					l.Error(err, "unable to get logs from pod")
-					return ctrl.Result{}, err
-				}
-
-				// TODO add func to process the logs
-
-				// save the result to the status
-				meta.SetStatusCondition(&pgbench.Status.Conditions, metav1.Condition{
-					Type:               "Complete",
-					Status:             metav1.ConditionTrue,
-					ObservedGeneration: pgbench.Generation,
-					Reason:             "JobFinished",
-					Message:            msg,
-					LastTransitionTime: metav1.Now(),
-				})
 			}
 
 			// delete the job
@@ -180,7 +187,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		// don't have job, and the pgbench is not complete
 		// create a new job
-		job := NewJob(&pgbench)
+		job := NewJob(&pgbench, jobName)
 		l.Info("create a new Job", "jobName", job.Name)
 		if err := r.Create(ctx, job); err != nil {
 			l.Error(err, "unable to create Job")

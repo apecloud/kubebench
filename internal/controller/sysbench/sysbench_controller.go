@@ -20,8 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -106,10 +104,29 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		// job is failed
 		if status.Failed > 0 {
 			l.Info("job is failed", "job", jobName)
-			if err := updateSysbenchStatus(r, ctx, &sysbench, benchmarkv1alpha1.Failed); err != nil {
+			if err := r.Get(ctx, types.NamespacedName{Name: sysbench.Name, Namespace: sysbench.Namespace}, &sysbench); err != nil {
+				l.Error(err, "unable to get sysbench")
+				return ctrl.Result{}, err
+			}
+
+			// record the fail log
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, sysbench.Namespace, &sysbench.Status.Conditions, nil); err != nil {
+				l.Error(err, "unable to record the fail log")
+				return ctrl.Result{}, err
+			}
+
+			// delete the job
+			if err := utils.DelteJob(r.Client, ctx, jobName, sysbench.Namespace); err != nil {
+				l.Error(err, "unable to delete Job")
+				return ctrl.Result{}, err
+			}
+
+			// update the sysbench status
+			if err := r.Status().Update(ctx, &sysbench); err != nil {
 				l.Error(err, "unable to update sysbench status")
 				return ctrl.Result{}, err
 			}
+
 			return ctrl.Result{}, nil
 		}
 
@@ -124,30 +141,11 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			sysbench.Status.Succeeded += 1
 			sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
 
+			// TODO add func to process log
 			// record the result
-			podList, err := utils.GetPodListFromJob(r.Client, ctx, jobName, sysbench.Namespace)
-			if err != nil {
-				l.Error(err, "unable to get pod list from job")
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, sysbench.Namespace, &sysbench.Status.Conditions, nil); err != nil {
+				l.Error(err, "unable to record the fail log")
 				return ctrl.Result{}, err
-			}
-			for _, pod := range podList.Items {
-				msg, err := utils.GetLogFromPod(r.RestConfig, ctx, pod.Name, pod.Namespace)
-				if err != nil {
-					l.Error(err, "unable to get logs from pod")
-					return ctrl.Result{}, err
-				}
-
-				// TODO add func to process the logs
-
-				// save the result to the status
-				meta.SetStatusCondition(&sysbench.Status.Conditions, metav1.Condition{
-					Type:               "Complete",
-					Status:             metav1.ConditionTrue,
-					ObservedGeneration: sysbench.Generation,
-					Reason:             "JobFinished",
-					Message:            msg,
-					LastTransitionTime: metav1.Now(),
-				})
 			}
 
 			// delete the job
@@ -179,7 +177,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		l.Info("Job isn't existed", "jobName", jobName)
 
 		// create the job
-		job := NewJob(&sysbench)
+		job := NewJob(&sysbench, jobName)
 		l.Info("creating job", "job", job.Name)
 		if err := r.Create(ctx, job); err != nil {
 			l.Error(err, "unable to create job")

@@ -41,7 +41,9 @@ spec:
               initArgs:
                 properties:
                   others:
-                    type: string
+                    items:
+                      type: string
+                    type: array
                   scale:
                     minimum: 1
                     type: integer
@@ -56,7 +58,9 @@ spec:
                   connect:
                     type: boolean
                   others:
-                    type: string
+                    items:
+                      type: string
+                    type: array
                   selectOnly:
                     type: boolean
                   threads:

@@ -40,7 +40,7 @@ type PgbenchInitArgs struct {
 
 	// the other pgbench init command flags to use for pgbench
 	// +optional
-	OtherFlags string `json:"others,omitempty"`
+	OtherArgs []string `json:"others,omitempty"`
 }
 
 // PgbenchRunArgs defines the parameters for the pgbench run command
@@ -75,7 +75,7 @@ type PgbenchRunArgs struct {
 
 	// the other pgbench run command flags to use for pgbench
 	// +optional
-	OtherFlags string `json:"others,omitempty"`
+	OtherArgs []string `json:"others,omitempty"`
 }
 
 // PgbenchTargets defines the parameters for the pgbench target

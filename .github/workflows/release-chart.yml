@@ -1,0 +1,41 @@
+name: RELEASE-CHART
+
+on:
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: 'The version of helm chart'
+        required: true
+        default: ''
+  release:
+    types:
+      - published
+
+env:
+  RELEASE_VERSION: ${{ github.ref_name }}
+
+
+jobs:
+  chart-version:
+    runs-on: ubuntu-latest
+    outputs:
+      chart-version: ${{ steps.get_version.outputs.chart_version }}
+    steps:
+      - name: Get Chart Version
+        id: get_version
+        run: |
+          VERSION=${{ inputs.chart_version }}
+          if [ -z "$VERSION" ]; then
+              VERSION=${{ env.RELEASE_VERSION }}
+          fi
+          echo chart_version=$VERSION >> $GITHUB_OUTPUT
+
+  release-chart:
+    needs: chart-version
+    uses: apecloud/apecd/.github/workflows/release-charts.yml@v0.5.3
+    with:
+      VERSION: "${{ needs.chart-version.outputs.chart-version }}"
+      CHART_NAME: "kubebench"
+      CHART_DIR: "deploy/helm"
+      CHECK_ENABLE: false
+    secrets: inherit

@@ -65,7 +65,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if pgbench.Status.Phase == "" {
 		pgbench.Status.Phase = benchmarkv1alpha1.Running
-		pgbench.Status.Total = len(pgbench.Spec.RunArgs.Clients)
+		pgbench.Status.Total = len(pgbench.Spec.Clients)
 		pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 		if err := r.Status().Update(ctx, &pgbench); err != nil {
 			l.Error(err, "unable to update pgbench status")

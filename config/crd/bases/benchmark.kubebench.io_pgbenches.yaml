@@ -38,41 +38,25 @@ spec:
             type: object
           spec:
             properties:
-              initArgs:
-                properties:
-                  others:
-                    items:
-                      type: string
-                    type: array
-                  scale:
-                    minimum: 1
-                    type: integer
-                type: object
-              runArgs:
-                properties:
-                  clients:
-                    items:
-                      type: integer
-                    minItems: 1
-                    type: array
-                  connect:
-                    type: boolean
-                  others:
-                    items:
-                      type: string
-                    type: array
-                  selectOnly:
-                    type: boolean
-                  threads:
-                    minimum: 1
-                    type: integer
-                  time:
-                    minimum: 1
-                    type: integer
-                  transactions:
-                    minimum: 1
-                    type: integer
-                type: object
+              clients:
+                items:
+                  type: integer
+                minItems: 1
+                type: array
+              connect:
+                type: boolean
+              duration:
+                minimum: 1
+                type: integer
+              extraArgs:
+                items:
+                  type: string
+                type: array
+              scale:
+                minimum: 1
+                type: integer
+              selectOnly:
+                type: boolean
               target:
                 properties:
                   database:
@@ -88,6 +72,12 @@ spec:
                   user:
                     type: string
                 type: object
+              threads:
+                minimum: 1
+                type: integer
+              transactions:
+                minimum: 1
+                type: integer
             type: object
           status:
             properties:

@@ -20,27 +20,29 @@ const (
 func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 	var cmds []string
 	if cr.Status.Ready {
-		cmds = []string{"pgbench", "-c", fmt.Sprintf("%d", cr.Spec.RunArgs.Clients[cr.Status.Succeeded])}
+		cmds = []string{"pgbench", "-c", fmt.Sprintf("%d", cr.Spec.Clients[cr.Status.Succeeded])}
 
 		// priority: transactions > time
-		if cr.Spec.RunArgs.Transactions > 0 {
-			cmds = append(cmds, "-t", fmt.Sprintf("%d", cr.Spec.RunArgs.Transactions))
-		} else {
-			cmds = append(cmds, "-T", fmt.Sprintf("%d", cr.Spec.RunArgs.Time))
+		switch {
+		case cr.Spec.Transactions > 0:
+			cmds = append(cmds, "-t", fmt.Sprintf("%d", cr.Spec.Transactions))
+		case cr.Spec.Duration > 0:
+			cmds = append(cmds, "-T", fmt.Sprintf("%d", cr.Spec.Duration))
 		}
-		fmt.Printf("cmd: %s", cmds)
 
-		if cr.Spec.RunArgs.Connect {
+		if cr.Spec.Connect {
 			cmds = append(cmds, "-C")
 		}
 
-		if cr.Spec.RunArgs.SelectOnly {
+		if cr.Spec.SelectOnly {
 			cmds = append(cmds, "-S")
 		}
 
-		cmds = append(cmds, strings.Join(cr.Spec.RunArgs.OtherArgs, " "))
+		// TODO add func to parse extra args
+		cmds = append(cmds, strings.Join(cr.Spec.ExtraArgs, " "))
 	} else {
-		cmds = []string{"pgbench", "-i", fmt.Sprintf("-s%d", cr.Spec.InitArgs.Scale), strings.Join(cr.Spec.InitArgs.OtherArgs, " ")}
+		// TODO add func to parse extra args
+		cmds = []string{"pgbench", "-i", fmt.Sprintf("-s%d", cr.Spec.Scale), strings.Join(cr.Spec.ExtraArgs, " ")}
 	}
 
 	objectMeta := metav1.ObjectMeta{

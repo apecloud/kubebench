@@ -38,34 +38,17 @@ spec:
             type: object
           spec:
             properties:
-              initArgs:
-                properties:
-                  size:
-                    type: integer
-                  tables:
-                    type: integer
-                type: object
-              runArgs:
-                properties:
-                  others:
-                    items:
-                      type: string
-                    type: array
-                  threads:
-                    items:
-                      type: integer
-                    minItems: 1
-                    type: array
-                  time:
-                    type: integer
-                  types:
-                    items:
-                      type: string
-                    minItems: 1
-                    type: array
-                required:
-                - types
-                type: object
+              duration:
+                minimum: 1
+                type: integer
+              extraArgs:
+                items:
+                  type: string
+                type: array
+              size:
+                type: integer
+              tables:
+                type: integer
               target:
                 properties:
                   database:
@@ -83,6 +66,18 @@ spec:
                   user:
                     type: string
                 type: object
+              threads:
+                items:
+                  type: integer
+                minItems: 1
+                type: array
+              types:
+                items:
+                  type: string
+                minItems: 1
+                type: array
+            required:
+            - types
             type: object
           status:
             properties:

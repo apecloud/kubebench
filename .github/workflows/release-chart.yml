@@ -29,6 +29,8 @@ jobs:
               VERSION=${{ env.RELEASE_VERSION }}
           fi
           echo chart_version=$VERSION >> $GITHUB_OUTPUT
+          sed -i "s/^version:.*/version: $(VERSION)/" deploy/helm/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: $(VERSION)/" deploy/helm/Chart.yaml
 
   release-chart:
     needs: chart-version

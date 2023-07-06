@@ -22,29 +22,10 @@ import (
 
 // PgbenchSpec defines the desired state of Pgbench
 type PgbenchSpec struct {
-	// the parameters for the pgbench init command
-	InitArgs PgbenchInitArgs `json:"initArgs,omitempty"`
-
-	// the parameters for the pgbench run command
-	RunArgs PgbenchRunArgs `json:"runArgs,omitempty"`
-
-	// the target for the pgbench run command
-	Target PgbenchTargets `json:"target,omitempty"`
-}
-
-// PgbenchInitArgs defines the parameters for the pgbench init command
-type PgbenchInitArgs struct {
 	// the scale factor to use for pgbench
 	// +kubebuilder:validation:Minimum=1
 	Scale int `json:"scale,omitempty"`
 
-	// the other pgbench init command flags to use for pgbench
-	// +optional
-	OtherArgs []string `json:"others,omitempty"`
-}
-
-// PgbenchRunArgs defines the parameters for the pgbench run command
-type PgbenchRunArgs struct {
 	// clients are provided as a list of client counts to run pgbench with multiple times
 	// +kubebuilder:validation:MinItems=1
 	Clients []int `json:"clients,omitempty"`
@@ -71,8 +52,18 @@ type PgbenchRunArgs struct {
 	// the number of seconds to run pgbench
 	// +kubebuilder:validation:Minimum=1
 	// +optional
-	Time int `json:"time,omitempty"`
+	Duration int `json:"duration,omitempty"`
 
+	// the other pgbench run command flags to use for pgbench
+	// +optional
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// the target for the pgbench run command
+	Target PgbenchTargets `json:"target,omitempty"`
+}
+
+// PgbenchRunArgs defines the parameters for the pgbench run command
+type PgbenchRunArgs struct {
 	// the other pgbench run command flags to use for pgbench
 	// +optional
 	OtherArgs []string `json:"others,omitempty"`

@@ -22,25 +22,12 @@ import (
 
 // SysbenchSpec defines the desired state of Sysbench
 type SysbenchSpec struct {
-	// the parameters for the sysbench init command
-	InitArgs SysbenchInitArgs `json:"initArgs,omitempty"`
-
-	// the parameters for the sysbench run command
-	RunArgs SysbenchRunArgs `json:"runArgs,omitempty"`
-
-	// the target for the sysbench run command
-	Target SysbenchTarget `json:"target,omitempty"`
-}
-
-type SysbenchInitArgs struct {
 	// the number of tables to use for sysbench
 	Tables int `json:"tables,omitempty"`
 
 	// the data volume of tables to use for sysbench
 	Size int `json:"size,omitempty"`
-}
 
-type SysbenchRunArgs struct {
 	// the number of threads to use for sysbench
 	// +kubebuilder:validation:MinItems=1
 	Threads []int `json:"threads,omitempty"`
@@ -49,13 +36,17 @@ type SysbenchRunArgs struct {
 	// +kubebuilder:validation:MinItems=1
 	Types []string `json:"types"`
 
-	// the time to run the sysbench test
+	// the number of seconds to run sysbench
+	// +kubebuilder:validation:Minimum=1
 	// +optional
-	Time int `json:"time,omitempty"`
+	Duration int `json:"duration,omitempty"`
 
 	// the other sysbench run command flags to use for sysbench
 	// +optional
-	OtherArgs []string `json:"others,omitempty"`
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// the target for the sysbench run command
+	Target SysbenchTarget `json:"target,omitempty"`
 }
 
 type SysbenchTarget struct {

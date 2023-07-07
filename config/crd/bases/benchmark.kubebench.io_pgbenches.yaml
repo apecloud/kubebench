@@ -39,6 +39,8 @@ spec:
           spec:
             properties:
               clients:
+                default:
+                - 1
                 items:
                   type: integer
                 minItems: 1
@@ -46,13 +48,15 @@ spec:
               connect:
                 type: boolean
               duration:
-                minimum: 1
+                default: 60
+                minimum: 0
                 type: integer
               extraArgs:
                 items:
                   type: string
                 type: array
               scale:
+                default: 1
                 minimum: 1
                 type: integer
               selectOnly:
@@ -60,24 +64,35 @@ spec:
               target:
                 properties:
                   database:
+                    default: postgres
                     type: string
                   host:
-                    type: string
-                  name:
+                    default: localhost
                     type: string
                   password:
                     type: string
                   port:
+                    default: 5432
                     type: integer
                   user:
+                    default: postgres
                     type: string
+                required:
+                - database
+                - host
+                - port
+                - user
                 type: object
               threads:
+                default: 1
                 minimum: 1
                 type: integer
               transactions:
-                minimum: 1
+                default: 0
+                minimum: 0
                 type: integer
+            required:
+            - target
             type: object
           status:
             properties:

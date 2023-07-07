@@ -50,25 +50,29 @@ type SysbenchSpec struct {
 }
 
 type SysbenchTarget struct {
-	// the name of the sysbench target
-	Name string `json:"name,omitempty"`
-
 	// the driver of the sysbench target
+	// +required
 	Driver string `json:"driver,omitempty"`
 
-	// the host of the sysbench target
+	// The database server's host name
+	// +kubebuilder:default=localhost
+	// +required
 	Host string `json:"host,omitempty"`
 
-	// the port of the sysbench target
+	// The database server's port number
+	// +required
 	Port int `json:"port,omitempty"`
 
 	// the user of the sysbench target
+	// +required
 	User string `json:"user,omitempty"`
 
-	// the password of the sysbench target
+	// The database server's password
+	// +optional
 	Password string `json:"password,omitempty"`
 
 	// the database of the sysbench target
+	// +required
 	Database string `json:"database,omitempty"`
 }
 

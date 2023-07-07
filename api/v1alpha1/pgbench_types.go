@@ -88,9 +88,6 @@ type PgbenchSpec struct {
 
 // PgbenchTarget defines the parameters for the pgbench target database
 type PgbenchTarget struct {
-	// the name of the pgbench target
-	Name string `json:"name,omitempty"`
-
 	// The database server's host name
 	// +kubebuilder:default=localhost
 	// +required

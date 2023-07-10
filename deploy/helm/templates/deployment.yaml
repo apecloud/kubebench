@@ -1,10 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "kubebench.fullname" . }}-controller-manager
+  name: {{ include "kubebench.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    control-plane: controller-manager
     {{- include "kubebench.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
@@ -12,7 +11,7 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      control-plane: controller-manager
+      {{- include "kubebench.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -20,14 +19,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        control-plane: controller-manager
         {{- include "kubebench.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "kubebench.serviceAccountName" . }}-controller-manager
+      serviceAccountName: {{ include "kubebench.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pgbench
+package redisbenchmark
 
 import (
 	"context"
@@ -31,57 +31,52 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
-// PgbenchReconciler reconciles a Pgbench object
-type PgbenchReconciler struct {
+// RedisReconciler reconciles a Redis object
+type RedisReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches/finalizers,verbs=update
+//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=redis,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=redis/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=redis/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Pgbench object against the actual cluster state, and then
+// the Redis object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *RedisReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var pgbench benchmarkv1alpha1.Pgbench
-	if err := r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
+	var bench benchmarkv1alpha1.Redis
+	if err := r.Get(ctx, req.NamespacedName, &bench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
+	if bench.Status.Phase == benchmarkv1alpha1.Complete || bench.Status.Phase == benchmarkv1alpha1.Failed {
 		return ctrl.Result{}, nil
 	}
 
-	if pgbench.Status.Phase == "" {
-		pgbench.Status.Phase = benchmarkv1alpha1.Running
-		pgbench.Status.Total = len(pgbench.Spec.Clients)
-		pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
-		if err := r.Status().Update(ctx, &pgbench); err != nil {
-			l.Error(err, "unable to update pgbench status")
+	if bench.Status.Phase == "" {
+		bench.Status.Phase = benchmarkv1alpha1.Running
+		bench.Status.Total = len(bench.Spec.Clients)
+		bench.Status.Completions = fmt.Sprintf("%d/%d", bench.Status.Succeeded, bench.Status.Total)
+		if err := r.Status().Update(ctx, &bench); err != nil {
+			l.Error(err, "unable to update bench status")
 			return ctrl.Result{}, err
 		}
 	}
 
-	var jobName string
-	if pgbench.Status.Ready {
-		jobName = fmt.Sprintf("pgbench-%s-%d", pgbench.Name, pgbench.Status.Succeeded)
-	} else {
-		jobName = fmt.Sprintf("pgbench-%s-init", pgbench.Name)
-	}
+	jobName := fmt.Sprintf("redis-%s-%d", bench.Name, bench.Status.Succeeded)
 
 	// check if the job already exists
-	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, pgbench.Namespace)
+	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, bench.Namespace)
 	if err != nil {
 		l.Error(err, "unable to check if the Job already exists")
 		return ctrl.Result{}, err
@@ -89,7 +84,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if existed {
 		l.Info("Job already exists", "jobName", jobName)
 		// get the job status
-		status, err := utils.GetJobStatus(r.Client, ctx, jobName, pgbench.Namespace)
+		status, err := utils.GetJobStatus(r.Client, ctx, jobName, bench.Namespace)
 		if err != nil {
 			l.Error(err, "unable to get Job status")
 			return ctrl.Result{}, err
@@ -105,30 +100,30 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// job is failed
 		if status.Failed > 0 {
 			l.Info("Job is failed", "jobName", jobName)
-			if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
+			if err := r.Get(ctx, types.NamespacedName{Name: bench.Name, Namespace: bench.Namespace}, &bench); err != nil {
+				l.Error(err, "unable to update bench status")
 				return ctrl.Result{}, err
 			}
 
 			// update the status
-			pgbench.Status.Phase = benchmarkv1alpha1.Failed
+			bench.Status.Phase = benchmarkv1alpha1.Failed
 
 			// record the fail log
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, nil); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, bench.Namespace, &bench.Status.Conditions, nil); err != nil {
 				l.Error(err, "unable to record the fail log")
 				return ctrl.Result{}, err
 			}
 
 			// delete the job
 			l.V(1).Info("delete the Job", "jobName", jobName)
-			if err := utils.DelteJob(r.Client, ctx, jobName, pgbench.Namespace); err != nil {
+			if err := utils.DelteJob(r.Client, ctx, jobName, bench.Namespace); err != nil {
 				l.Error(err, "unable to delete Job")
 				return ctrl.Result{}, err
 			}
 
-			// update the pgbench status
-			if err := r.Status().Update(ctx, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
+			// update the bench status
+			if err := r.Status().Update(ctx, &bench); err != nil {
+				l.Error(err, "unable to update bench status")
 				return ctrl.Result{}, err
 			}
 
@@ -137,35 +132,31 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		if status.Succeeded > 0 {
 			l.Info("Job is succeeded", "jobName", jobName)
-			if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
+			if err := r.Get(ctx, types.NamespacedName{Name: bench.Name, Namespace: bench.Namespace}, &bench); err != nil {
+				l.Error(err, "unable to update bench status")
 				return ctrl.Result{}, err
 			}
 
-			if !pgbench.Status.Ready {
-				pgbench.Status.Ready = true
-			} else {
-				pgbench.Status.Succeeded += 1
-			}
-			pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
+			bench.Status.Succeeded += 1
+			bench.Status.Completions = fmt.Sprintf("%d/%d", bench.Status.Succeeded, bench.Status.Total)
 
 			// TODO add func to process log
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, nil); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, bench.Namespace, &bench.Status.Conditions, nil); err != nil {
 				l.Error(err, "unable to record the fail log")
 				return ctrl.Result{}, err
 			}
 
 			// delete the job
 			l.V(1).Info("delete the Job", "jobName", jobName)
-			if err := utils.DelteJob(r.Client, ctx, jobName, pgbench.Namespace); err != nil {
+			if err := utils.DelteJob(r.Client, ctx, jobName, bench.Namespace); err != nil {
 				l.Error(err, "unable to delete Job")
 				return ctrl.Result{}, err
 			}
 
-			// update the pgbench status
-			if err := r.Status().Update(ctx, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
+			// update the bench status
+			if err := r.Status().Update(ctx, &bench); err != nil {
+				l.Error(err, "unable to update bench status")
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{Requeue: true}, nil
@@ -175,9 +166,9 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: true}, nil
 	} else {
 		// check the success number
-		if pgbench.Status.Succeeded >= pgbench.Status.Total {
-			if err := updatePgbenchStatus(r, ctx, &pgbench, benchmarkv1alpha1.Complete); err != nil {
-				l.Error(err, "unable to update pgbench status")
+		if bench.Status.Succeeded >= bench.Status.Total {
+			if err := updatebenchStatus(r, ctx, &bench, benchmarkv1alpha1.Complete); err != nil {
+				l.Error(err, "unable to update bench status")
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{}, nil
@@ -185,9 +176,9 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		l.Info("Job isn't existed", "jobName", jobName)
 
-		// don't have job, and the pgbench is not complete
+		// don't have job, and the bench is not complete
 		// create a new job
-		job := NewJob(&pgbench, jobName)
+		job := NewJob(&bench, jobName)
 		l.Info("create a new Job", "jobName", job.Name)
 		if err := r.Create(ctx, job); err != nil {
 			l.Error(err, "unable to create Job")
@@ -197,21 +188,21 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 }
 
-func updatePgbenchStatus(r *PgbenchReconciler, ctx context.Context, pgbench *benchmarkv1alpha1.Pgbench, status benchmarkv1alpha1.BenchmarkPhase) error {
-	// The pgbench could have been modified since the last time we got it
-	if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, pgbench); err != nil {
+func updatebenchStatus(r *RedisReconciler, ctx context.Context, bench *benchmarkv1alpha1.Redis, status benchmarkv1alpha1.BenchmarkPhase) error {
+	// The bench could have been modified since the last time we got it
+	if err := r.Get(ctx, types.NamespacedName{Name: bench.Name, Namespace: bench.Namespace}, bench); err != nil {
 		return err
 	}
-	pgbench.Status.Phase = status
-	if err := r.Status().Update(ctx, pgbench); err != nil {
+	bench.Status.Phase = status
+	if err := r.Status().Update(ctx, bench); err != nil {
 		return err
 	}
 	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PgbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *RedisReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Pgbench{}).
+		For(&benchmarkv1alpha1.Redis{}).
 		Complete(r)
 }

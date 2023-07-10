@@ -80,19 +80,11 @@ func DelteJob(cli client.Client, reqCtx context.Context, jobName string, namespa
 		return err
 	}
 
-	// delete the pods created by the job
-	podList, err := GetPodListFromJob(cli, reqCtx, jobName, namespace)
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		if err := cli.Delete(reqCtx, &pod); err != nil {
-			return err
-		}
-	}
-
 	// delete the job
-	if err := cli.Delete(reqCtx, &job); err != nil {
+	deletetions := []client.DeleteOption{
+		client.PropagationPolicy(metav1.DeletePropagationBackground),
+	}
+	if err := cli.Delete(reqCtx, &job, deletetions...); err != nil {
 		return err
 	}
 

@@ -2,4 +2,5 @@
 resources:
 - benchmark_v1alpha1_sysbench.yaml
 - benchmark_v1alpha1_pgbench.yaml
+- benchmark_v1alpha1_redis.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

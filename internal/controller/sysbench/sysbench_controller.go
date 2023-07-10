@@ -79,7 +79,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// check if the job already exists
-	jobName := fmt.Sprintf("%s-%d", sysbench.Name, sysbench.Status.Succeeded)
+	jobName := fmt.Sprintf("sysbench-%s-%d", sysbench.Name, sysbench.Status.Succeeded)
 	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, sysbench.Namespace)
 	if err != nil {
 		l.Error(err, "unable to check if job exists")

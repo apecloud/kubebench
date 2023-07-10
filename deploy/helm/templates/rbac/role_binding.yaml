@@ -10,5 +10,5 @@ roleRef:
   name: {{ include "kubebench.fullname" .}}-manager-role
 subjects:
 - kind: ServiceAccount
-  name: {{ include "kubebench.fullname" . }}-controller-manager
+  name: {{ include "kubebench.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}

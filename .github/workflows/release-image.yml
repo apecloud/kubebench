@@ -32,7 +32,7 @@ jobs:
 
   release-image:
     needs: image-tag
-    uses: apecloud/apecd/.github/workflows/release-image.yml@v0.5.3
+    uses: apecloud/apecloud-cd/.github/workflows/release-image.yml@v0.1.0
     with:
       MAKE_OPS: "docker-buildx"
       IMG: "apecloud/kubebench"

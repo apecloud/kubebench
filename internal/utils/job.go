@@ -92,7 +92,10 @@ func DelteJob(cli client.Client, reqCtx context.Context, jobName string, namespa
 	}
 
 	// delete the job
-	if err := cli.Delete(reqCtx, &job); err != nil {
+	deletetions := []client.DeleteOption{
+		client.PropagationPolicy(metav1.DeletePropagationBackground),
+	}
+	if err := cli.Delete(reqCtx, &job, deletetions...); err != nil {
 		return err
 	}
 

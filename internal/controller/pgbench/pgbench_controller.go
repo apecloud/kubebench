@@ -75,9 +75,9 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	var jobName string
 	if pgbench.Status.Ready {
-		jobName = fmt.Sprintf("%s-%d", pgbench.Name, pgbench.Status.Succeeded)
+		jobName = fmt.Sprintf("pgbench-%s-%d", pgbench.Name, pgbench.Status.Succeeded)
 	} else {
-		jobName = fmt.Sprintf("%s-init", pgbench.Name)
+		jobName = fmt.Sprintf("pgbench-%s-init", pgbench.Name)
 	}
 
 	// check if the job already exists

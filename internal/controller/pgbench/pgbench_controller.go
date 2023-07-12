@@ -151,7 +151,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 			// TODO add func to process log
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, nil); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
 				l.Error(err, "unable to record the fail log")
 				return ctrl.Result{}, err
 			}

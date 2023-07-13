@@ -28,12 +28,9 @@ func NewJob(cr *v1alpha1.Sysbench, jobName string) *batchv1.Job {
 	value = fmt.Sprintf("%s,tables:%d", value, cr.Spec.Tables)
 	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
 	value = fmt.Sprintf("%s,times:%d", value, cr.Spec.Duration)
-	threads := make([]string, 0)
-	for _, thread := range cr.Spec.Threads {
-		threads = append(threads, fmt.Sprintf("%d", thread))
-	}
-	value = fmt.Sprintf("%s,threads:%s", value, strings.Join(threads, " "))
-	value = fmt.Sprintf("%s,type:%s", value, strings.Join(cr.Spec.Types, " "))
+	value = fmt.Sprintf("%s,threads:%d", value, cr.Spec.Threads[cr.Status.Succeeded/len(cr.Spec.Threads)])
+	value = fmt.Sprintf("%s,type:%s", value, cr.Spec.Types[cr.Status.Succeeded%len(cr.Spec.Types)])
+
 	// TODO add func to parse extra args
 	value = fmt.Sprintf("%s,others:%s", value, strings.Join(cr.Spec.ExtraArgs, " "))
 

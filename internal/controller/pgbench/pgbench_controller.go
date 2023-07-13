@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
+	"github.com/apecloud/kubebench/internal/controllerutil"
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
@@ -60,7 +61,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
-		return ctrl.Result{}, nil
+		return controllerutil.Reconciled()
 	}
 
 	if pgbench.Status.Phase == "" {
@@ -68,8 +69,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		pgbench.Status.Total = len(pgbench.Spec.Clients)
 		pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 		if err := r.Status().Update(ctx, &pgbench); err != nil {
-			l.Error(err, "unable to update pgbench status")
-			return ctrl.Result{}, err
+			return controllerutil.RequeueWithError(err, l, "update to update pgbench status")
 		}
 	}
 
@@ -83,31 +83,28 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// check if the job already exists
 	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, pgbench.Namespace)
 	if err != nil {
-		l.Error(err, "unable to check if the Job already exists")
-		return ctrl.Result{}, err
+		return controllerutil.RequeueWithError(err, l, "unable to check if the Job already exists")
 	}
 	if existed {
 		l.Info("Job already exists", "jobName", jobName)
 		// get the job status
 		status, err := utils.GetJobStatus(r.Client, ctx, jobName, pgbench.Namespace)
 		if err != nil {
-			l.Error(err, "unable to get Job status")
-			return ctrl.Result{}, err
+			return controllerutil.RequeueWithError(err, l, "unable to get Job status")
 		}
 		l.Info("Job status", "jobName", jobName, "status", status)
 
 		// job is still running
 		if status.Active > 0 {
 			l.Info("Job is still running", "jobName", jobName)
-			return ctrl.Result{Requeue: true}, nil
+			return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
 		}
 
 		// job is failed
 		if status.Failed > 0 {
 			l.Info("Job is failed", "jobName", jobName)
 			if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to update pgbench status")
 			}
 
 			// update the status
@@ -115,21 +112,18 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 			// record the fail log
 			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, nil); err != nil {
-				l.Error(err, "unable to record the fail log")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to record the fail log")
 			}
 
 			// delete the job
 			l.V(1).Info("delete the Job", "jobName", jobName)
 			if err := utils.DelteJob(r.Client, ctx, jobName, pgbench.Namespace); err != nil {
-				l.Error(err, "unable to delete Job")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to delete Job")
 			}
 
 			// update the pgbench status
 			if err := r.Status().Update(ctx, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to update pgbench status")
 			}
 
 			return ctrl.Result{}, nil
@@ -138,8 +132,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if status.Succeeded > 0 {
 			l.Info("Job is succeeded", "jobName", jobName)
 			if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to update pgbench status")
 			}
 
 			if !pgbench.Status.Ready {
@@ -152,35 +145,31 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			// TODO add func to process log
 			// record the result
 			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
-				l.Error(err, "unable to record the fail log")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to record the fail log")
 			}
 
 			// delete the job
 			l.V(1).Info("delete the Job", "jobName", jobName)
 			if err := utils.DelteJob(r.Client, ctx, jobName, pgbench.Namespace); err != nil {
-				l.Error(err, "unable to delete Job")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to delete Job")
 			}
 
 			// update the pgbench status
 			if err := r.Status().Update(ctx, &pgbench); err != nil {
-				l.Error(err, "unable to update pgbench status")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to update pgbench status")
 			}
-			return ctrl.Result{Requeue: true}, nil
+			return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
 		}
 
 		// status is empty, job is creating
-		return ctrl.Result{Requeue: true}, nil
+		return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
 	} else {
 		// check the success number
 		if pgbench.Status.Succeeded >= pgbench.Status.Total {
 			if err := updatePgbenchStatus(r, ctx, &pgbench, benchmarkv1alpha1.Complete); err != nil {
-				l.Error(err, "unable to update pgbench status")
-				return ctrl.Result{}, err
+				return controllerutil.RequeueWithError(err, l, "unable to update pgbench status")
 			}
-			return ctrl.Result{}, nil
+			return controllerutil.Reconciled()
 		}
 
 		l.Info("Job isn't existed", "jobName", jobName)
@@ -190,10 +179,9 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		job := NewJob(&pgbench, jobName)
 		l.Info("create a new Job", "jobName", job.Name)
 		if err := r.Create(ctx, job); err != nil {
-			l.Error(err, "unable to create Job")
-			return ctrl.Result{}, err
+			return controllerutil.RequeueWithError(err, l, "unable to create Job")
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
 	}
 }
 

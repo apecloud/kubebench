@@ -10,40 +10,40 @@ import (
 )
 
 var (
-	// match scaling factor: 10
+	// match "scaling factor: 10"
 	scaleRegex = regexp.MustCompile(`scaling factor: (\d+)`)
 
-	// match query mode: simple
+	// match "query mode: simple"
 	queryModeRegex = regexp.MustCompile(`query mode: (\w+)`)
 
-	// match number of clients: 10
+	// match "number of clients: 10"
 	clientsRegex = regexp.MustCompile(`number of clients: (\d+)`)
 
-	// match number of threads: 10
+	// match "number of threads: 10"
 	threadsRegex = regexp.MustCompile(`number of threads: (\d+)`)
 
-	// match maximum number of tries: 0
+	// match "maximum number of tries: 0"
 	maximumTryRegex = regexp.MustCompile(`maximum number of tries: (\d+)`)
 
-	// match number of transactions per client: 100
+	// match "number of transactions per client: 100"
 	transactionsPerClientRegex = regexp.MustCompile(`number of transactions per client: (\d+)`)
 
-	// match number of transactions actually processed: 1000/1000
+	// match "number of transactions actually processed: 1000/1000"
 	transactionsProcessedRegex = regexp.MustCompile(`number of transactions actually processed: (\d+)/(\d+)`)
 
-	// match number of failed transactions: 0 (0.000%)
+	// match "number of failed transactions: 0 (0.000%)"
 	transactionsFailedRegex = regexp.MustCompile(`number of failed transactions: (\d+) \((\d+\.\d+)%\)`)
 
-	// match latency average = 0.000 ms
+	// match "latency average = 0.000 ms"
 	avgLatencyRegex = regexp.MustCompile(`latency average = (\d+\.\d+) ms`)
 
-	// match latency stddev = 0.000 ms
+	// match "latency stddev = 0.000 ms"
 	stdLatencyRegex = regexp.MustCompile(`latency stddev = (\d+\.\d+) ms`)
 
-	// match initial connection time = 0.000 ms
+	// match "initial connection time = 0.000 ms"
 	initialConnectionsTimeRegex = regexp.MustCompile(`initial connection time = (\d+\.\d+) ms`)
 
-	// match tps = 0.000000 (without initial connection time)
+	// match "tps = 0.000000 (without initial connection time)"
 	tpsRegex = regexp.MustCompile(`tps = (\d+\.\d+) \(without initial connection time\)`)
 )
 

@@ -134,9 +134,8 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			sysbench.Status.Succeeded += 1
 			sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
 
-			// TODO add func to process log
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, sysbench.Namespace, &sysbench.Status.Conditions, nil); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
 				return controllerutil.RequeueWithError(err, l, "unable to record the fail log")
 			}
 

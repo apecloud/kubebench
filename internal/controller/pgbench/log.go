@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 var (
@@ -116,26 +114,25 @@ func ParsePgbenchResult(msg string) *PgbenchResult {
 }
 
 func ParsePgbench(msg string) string {
-	result := ParsePgbenchResult(msg)
+	result := ""
+	lines := strings.Split(msg, "\n")
+	index := len(lines)
 
-	// if scale is 0, it means we don't parse the result,
-	// so we return empty string
-	if result.Scale == 0 {
-		return ""
+	for i, l := range lines {
+		if strings.Contains(l, "transaction type") {
+			index = i
+			result += fmt.Sprintf("%s\n", l)
+			break
+		}
 	}
 
-	// return the result like table
-	t := table.NewWriter()
-	t.AppendHeader(table.Row{"Scale", "Query Mode", "Clients",
-		"Threads", "Maximum Try", "Transactions Per Client",
-		"Transactions Processed", "Transactions Failed", "Avg Latency(ms)",
-		"Std Latency(ms)", "Initial Connections Time(ms)", "TPS"})
-	t.AppendRow(table.Row{result.Scale, result.QueryMode, result.Clients,
-		result.Threads, result.MaximumTry, result.TransactionsPerClient,
-		result.TransactionsProcessed, result.TransactionsFailed, result.AvgLatency,
-		result.StdLatency, result.InitialConnectionsTime, result.Tps,
-	})
-	t.SetStyle(table.StyleLight)
+	for i := index + 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			// align the output
+			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
+		}
+	}
 
-	return fmt.Sprintf("\n%s", t.Render())
+	// delete the last \n
+	return strings.TrimSpace(result)
 }

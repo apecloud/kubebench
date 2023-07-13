@@ -5,9 +5,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/jedib0t/go-pretty/v6/table"
-	"github.com/jedib0t/go-pretty/v6/text"
 )
 
 var (
@@ -176,45 +173,25 @@ func ParseSysBenchResult(msg string) SysbenchResult {
 }
 
 func ParseSysBench(msg string) string {
-	result := ParseSysBenchResult(msg)
+	result := ""
+	lines := strings.Split(msg, "\n")
+	index := len(lines)
 
-	// if result.SQL.Total is 0, it means the parse failed
-	if result.SQL.Total == 0 {
-		return ""
+	for i, l := range lines {
+		if strings.Contains(l, "SQL statistics") {
+			index = i
+			result += fmt.Sprintf("%s\n", l)
+			break
+		}
 	}
 
-	t := table.NewWriter()
-	t.SetTitle("SQL Statistics")
-	t.AppendHeader(table.Row{"Read", "Write", "Other", "Total", "Transactions", "Queries", "IgnoreErrors", "Reconnects"})
-	t.AppendRow(table.Row{
-		result.SQL.Read, result.SQL.Write, result.SQL.Other, result.SQL.Total,
-		fmt.Sprintf("%d (%.2f per sec.)", result.SQL.Transactions, float64(result.SQL.Transactions)/result.General.TotalTime),
-		fmt.Sprintf("%d (%.2f per sec.)", result.SQL.Queries, float64(result.SQL.Queries)/result.General.TotalTime),
-		fmt.Sprintf("%d (%.2f per sec.)", result.SQL.IgnoreErrors, float64(result.SQL.IgnoreErrors)/result.General.TotalTime),
-		fmt.Sprintf("%d (%.2f per sec.)", result.SQL.Reconnects, float64(result.SQL.Reconnects)/result.General.TotalTime)})
-	t.Style().Title.Align = text.AlignCenter
-	sqlAnalysis := t.Render()
+	for i := index + 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			// align the output
+			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
+		}
+	}
 
-	t = table.NewWriter()
-	t.SetTitle("General Statistics")
-	t.AppendHeader(table.Row{"TotalTime", "TotalEvents"})
-	t.AppendRow(table.Row{fmt.Sprintf("%.2fs", result.General.TotalTime), result.General.TotalEvents})
-	t.Style().Title.Align = text.AlignCenter
-	generalAnalysis := t.Render()
-
-	t = table.NewWriter()
-	t.SetTitle("Latency (ms)")
-	t.AppendHeader(table.Row{"Min", "Avg", "Max", "NinetyFifth", "Sum"})
-	t.AppendRow(table.Row{result.Latency.Min, result.Latency.Avg, result.Latency.Max, result.Latency.NinetyFifth, result.Latency.Sum})
-	t.Style().Title.Align = text.AlignCenter
-	latencyAnalysis := t.Render()
-
-	t = table.NewWriter()
-	t.SetTitle("Threads Fairness")
-	t.AppendHeader(table.Row{"EventsAvg", "EventsStddev", "ExecTimeAvg", "ExecTimeStd"})
-	t.AppendRow(table.Row{result.ThreadsFairness.EventsAvg, result.ThreadsFairness.EventsStddev, result.ThreadsFairness.ExecTimeAvg, result.ThreadsFairness.ExecTimeStd})
-	t.Style().Title.Align = text.AlignCenter
-	threadsFairnessAnalysis := t.Render()
-
-	return fmt.Sprintf("\n%s\n%s\n%s\n%s\n", sqlAnalysis, generalAnalysis, latencyAnalysis, threadsFairnessAnalysis)
+	// delete the last \n
+	return strings.TrimSpace(result)
 }

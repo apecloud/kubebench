@@ -2,8 +2,8 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/benchmark.kubebench.io_sysbenches.yaml
-- bases/benchmark.kubebench.io_pgbenches.yaml
+- bases/benchmark.apecloud.io_sysbenches.yaml
+- bases/benchmark.apecloud.io_pgbenches.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:

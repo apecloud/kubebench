@@ -1,4 +1,4 @@
-apiVersion: benchmark.kubebench.io/v1alpha1
+apiVersion: benchmark.apecloud.io/v1alpha1
 kind: Pgbench
 metadata:
   labels:

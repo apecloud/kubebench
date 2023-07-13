@@ -18,7 +18,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - benchmark.kubebench.io
+  - benchmark.apecloud.io
   resources:
   - pgbenches
   verbs:
@@ -30,13 +30,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - benchmark.kubebench.io
+  - benchmark.apecloud.io
   resources:
   - pgbenches/finalizers
   verbs:
   - update
 - apiGroups:
-  - benchmark.kubebench.io
+  - benchmark.apecloud.io
   resources:
   - pgbenches/status
   verbs:
@@ -44,7 +44,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - benchmark.kubebench.io
+  - benchmark.apecloud.io
   resources:
   - sysbenches
   verbs:
@@ -56,13 +56,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - benchmark.kubebench.io
+  - benchmark.apecloud.io
   resources:
   - sysbenches/finalizers
   verbs:
   - update
 - apiGroups:
-  - benchmark.kubebench.io
+  - benchmark.apecloud.io
   resources:
   - sysbenches/status
   verbs:

@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.12.0
-  name: sysbenches.benchmark.kubebench.io
+  name: sysbenches.benchmark.apecloud.io
 spec:
-  group: benchmark.kubebench.io
+  group: benchmark.apecloud.io
   names:
     kind: Sysbench
     listKind: SysbenchList
@@ -56,8 +56,7 @@ spec:
                   driver:
                     type: string
                   host:
-                    type: string
-                  name:
+                    default: localhost
                     type: string
                   password:
                     type: string

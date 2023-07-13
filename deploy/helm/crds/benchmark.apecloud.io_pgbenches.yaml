@@ -4,14 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.12.0
-  name: sysbenches.benchmark.kubebench.io
+  name: pgbenches.benchmark.apecloud.io
 spec:
-  group: benchmark.kubebench.io
+  group: benchmark.apecloud.io
   names:
-    kind: Sysbench
-    listKind: SysbenchList
-    plural: sysbenches
-    singular: sysbench
+    kind: Pgbench
+    listKind: PgbenchList
+    plural: pgbenches
+    singular: pgbench
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -38,22 +38,33 @@ spec:
             type: object
           spec:
             properties:
+              clients:
+                default:
+                - 1
+                items:
+                  type: integer
+                minItems: 1
+                type: array
+              connect:
+                type: boolean
               duration:
-                minimum: 1
+                default: 60
+                minimum: 0
                 type: integer
               extraArgs:
                 items:
                   type: string
                 type: array
-              size:
+              scale:
+                default: 1
+                minimum: 1
                 type: integer
-              tables:
-                type: integer
+              selectOnly:
+                type: boolean
               target:
                 properties:
                   database:
-                    type: string
-                  driver:
+                    default: postgres
                     type: string
                   host:
                     default: localhost
@@ -61,22 +72,27 @@ spec:
                   password:
                     type: string
                   port:
+                    default: 5432
                     type: integer
                   user:
+                    default: postgres
                     type: string
+                required:
+                - database
+                - host
+                - port
+                - user
                 type: object
               threads:
-                items:
-                  type: integer
-                minItems: 1
-                type: array
-              types:
-                items:
-                  type: string
-                minItems: 1
-                type: array
+                default: 1
+                minimum: 1
+                type: integer
+              transactions:
+                default: 0
+                minimum: 0
+                type: integer
             required:
-            - types
+            - target
             type: object
           status:
             properties:
@@ -131,6 +147,8 @@ spec:
                   - Complete
                   - Failed
                 type: string
+              ready:
+                type: boolean
               succeeded:
                 type: integer
               total:

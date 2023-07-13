@@ -38,9 +38,9 @@ type SysbenchReconciler struct {
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=sysbenches,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=sysbenches/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=sysbenches/finalizers,verbs=update
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches/finalizers,verbs=update
 
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete;deletecollection
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;delete;deletecollection

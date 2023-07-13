@@ -38,9 +38,9 @@ type PgbenchReconciler struct {
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.kubebench.io,resources=pgbenches/finalizers,verbs=update
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

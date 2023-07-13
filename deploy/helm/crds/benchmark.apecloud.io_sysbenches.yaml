@@ -4,14 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.12.0
-  name: pgbenches.benchmark.kubebench.io
+  name: sysbenches.benchmark.apecloud.io
 spec:
-  group: benchmark.kubebench.io
+  group: benchmark.apecloud.io
   names:
-    kind: Pgbench
-    listKind: PgbenchList
-    plural: pgbenches
-    singular: pgbench
+    kind: Sysbench
+    listKind: SysbenchList
+    plural: sysbenches
+    singular: sysbench
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -38,13 +38,6 @@ spec:
             type: object
           spec:
             properties:
-              clients:
-                items:
-                  type: integer
-                minItems: 1
-                type: array
-              connect:
-                type: boolean
               duration:
                 minimum: 1
                 type: integer
@@ -52,18 +45,18 @@ spec:
                 items:
                   type: string
                 type: array
-              scale:
-                minimum: 1
+              size:
                 type: integer
-              selectOnly:
-                type: boolean
+              tables:
+                type: integer
               target:
                 properties:
                   database:
                     type: string
-                  host:
+                  driver:
                     type: string
-                  name:
+                  host:
+                    default: localhost
                     type: string
                   password:
                     type: string
@@ -73,11 +66,17 @@ spec:
                     type: string
                 type: object
               threads:
-                minimum: 1
-                type: integer
-              transactions:
-                minimum: 1
-                type: integer
+                items:
+                  type: integer
+                minItems: 1
+                type: array
+              types:
+                items:
+                  type: string
+                minItems: 1
+                type: array
+            required:
+            - types
             type: object
           status:
             properties:
@@ -132,8 +131,6 @@ spec:
                   - Complete
                   - Failed
                 type: string
-              ready:
-                type: boolean
               succeeded:
                 type: integer
               total:

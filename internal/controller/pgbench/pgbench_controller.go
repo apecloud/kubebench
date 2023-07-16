@@ -19,6 +19,7 @@ package pgbench
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -142,7 +143,6 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			}
 			pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 
-			// TODO add func to process log
 			// record the result
 			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
 				return controllerutil.RequeueWithError(err, l, "unable to record the fail log")
@@ -202,4 +202,28 @@ func (r *PgbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&benchmarkv1alpha1.Pgbench{}).
 		Complete(r)
+}
+
+func ParsePgbench(msg string) string {
+	result := ""
+	lines := strings.Split(msg, "\n")
+	index := len(lines)
+
+	for i, l := range lines {
+		if strings.Contains(l, "transaction type") {
+			index = i
+			result += fmt.Sprintf("%s\n", l)
+			break
+		}
+	}
+
+	for i := index + 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			// align the output
+			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
+		}
+	}
+
+	// delete the last \n
+	return strings.TrimSpace(result)
 }

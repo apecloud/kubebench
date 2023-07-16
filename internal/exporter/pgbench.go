@@ -1,7 +1,6 @@
-package pgbench
+package exporter
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -57,7 +56,7 @@ type PgbenchResult struct {
 	AvgLatency             float64 `json:"avgLatency"`
 	StdLatency             float64 `json:"stdLatency"`
 	InitialConnectionsTime float64 `json:"initialConnectionsTime"`
-	Tps                    float64 `json:"tps"`
+	TPS                    float64 `json:"tps"`
 }
 
 func ParsePgbenchResult(msg string) *PgbenchResult {
@@ -106,33 +105,9 @@ func ParsePgbenchResult(msg string) *PgbenchResult {
 		case tpsRegex.MatchString(l):
 			tps := strings.TrimSpace(strings.Split(l, "=")[1])
 			tps = strings.TrimSpace(strings.Split(tps, "(")[0])
-			result.Tps, _ = strconv.ParseFloat(tps, 64)
+			result.TPS, _ = strconv.ParseFloat(tps, 64)
 		}
 	}
 
 	return result
-}
-
-func ParsePgbench(msg string) string {
-	result := ""
-	lines := strings.Split(msg, "\n")
-	index := len(lines)
-
-	for i, l := range lines {
-		if strings.Contains(l, "transaction type") {
-			index = i
-			result += fmt.Sprintf("%s\n", l)
-			break
-		}
-	}
-
-	for i := index + 1; i < len(lines); i++ {
-		if lines[i] != "" {
-			// align the output
-			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
-		}
-	}
-
-	// delete the last \n
-	return strings.TrimSpace(result)
 }

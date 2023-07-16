@@ -19,6 +19,7 @@ package sysbench
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -189,4 +190,28 @@ func (r *SysbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&benchmarkv1alpha1.Sysbench{}).
 		Complete(r)
+}
+
+func ParseSysBench(msg string) string {
+	result := ""
+	lines := strings.Split(msg, "\n")
+	index := len(lines)
+
+	for i, l := range lines {
+		if strings.Contains(l, "SQL statistics") {
+			index = i
+			result += fmt.Sprintf("%s\n", l)
+			break
+		}
+	}
+
+	for i := index + 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			// align the output
+			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
+		}
+	}
+
+	// delete the last \n
+	return strings.TrimSpace(result)
 }

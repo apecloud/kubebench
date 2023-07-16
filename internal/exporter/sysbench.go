@@ -1,7 +1,6 @@
-package sysbench
+package exporter
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -170,28 +169,4 @@ func ParseSysBenchResult(msg string) SysbenchResult {
 	}
 
 	return *result
-}
-
-func ParseSysBench(msg string) string {
-	result := ""
-	lines := strings.Split(msg, "\n")
-	index := len(lines)
-
-	for i, l := range lines {
-		if strings.Contains(l, "SQL statistics") {
-			index = i
-			result += fmt.Sprintf("%s\n", l)
-			break
-		}
-	}
-
-	for i := index + 1; i < len(lines); i++ {
-		if lines[i] != "" {
-			// align the output
-			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
-		}
-	}
-
-	// delete the last \n
-	return strings.TrimSpace(result)
 }

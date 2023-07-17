@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    monitor.kubeblocks.io/agamotto: "false"
+    monitor.kubeblocks.io/path: /metrics
+    monitor.kubeblocks.io/port: "9187"
+    monitor.kubeblocks.io/scheme: http
+    monitor.kubeblocks.io/scrape: "true"
+  labels:
+    app.kubernetes.io/managed-by: kubeblocks
+  name: exporter
+  namespace: default
+spec:
+  clusterIP: None
+  clusterIPs:
+    - None
+  ports:
+    - name: http-metrics
+      port: 9187
+      protocol: TCP
+      targetPort: http-metrics
+  selector:
+    app.kubernetes.io/managed-by: kubebench
+  type: ClusterIP

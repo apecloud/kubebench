@@ -17,6 +17,7 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 
 	cmd := "pgbench"
 	if cr.Status.Ready {
+		cmd = fmt.Sprintf("%s -P 1", cmd)
 		cmd = fmt.Sprintf("%s -c %d", cmd, cr.Spec.Clients[cr.Status.Succeeded])
 
 		// priority: transactions > time

@@ -22,7 +22,8 @@ func main() {
 
 	quit := make(chan struct{}, 1)
 
-	exporter.Register(benchType)
+	exporter.InitMetrics()
+	exporter.Register()
 	exporter.Scrape(benchType, file, quit)
 
 	r := gin.Default()

@@ -1,0 +1,16 @@
+pgbench (15.3 (Debian 15.3-1.pgdg120+1), server 14.8 (Ubuntu 14.8-1.pgdg22.04+1))
+starting vacuum...end.
+progress: 1.0 s, 610.0 tps, lat 3.043 ms stddev 8.900, 0 failed
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 100
+query mode: simple
+number of clients: 2
+number of threads: 1
+maximum number of tries: 1
+duration: 30 s
+number of transactions actually processed: 22583
+number of failed transactions: 0 (0.000%)
+latency average = 2.647 ms
+latency stddev = 11.912 ms
+initial connection time = 70.124 ms
+tps = 754.431143 (without initial connection time)

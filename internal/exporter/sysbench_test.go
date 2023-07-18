@@ -27,7 +27,7 @@ func TestParseSysBenchResult(t *testing.T) {
 					Min:         0.96,
 					Avg:         10.17,
 					Max:         184.54,
-					NinetyFifth: 75.82,
+					NinetyNinth: 75.82,
 					Sum:         79990.39,
 				},
 				ThreadsFairness: ThreadsFairness{
@@ -49,7 +49,7 @@ func TestParseSysBenchResult(t *testing.T) {
 						Write:       2257.58,
 						Other:       1130.79,
 						Errors:      0.00,
-						NinetyFifth: 70.55,
+						NinetyNinth: 70.55,
 						Reconnects:  0.00,
 					},
 				},
@@ -97,8 +97,8 @@ func TestParseSysBenchResult(t *testing.T) {
 			t.Errorf("Expected %f, got %f", tc.expected.Latency.Max, result.Latency.Max)
 		}
 
-		if result.Latency.NinetyFifth != tc.expected.Latency.NinetyFifth {
-			t.Errorf("Expected %f, got %f", tc.expected.Latency.NinetyFifth, result.Latency.NinetyFifth)
+		if result.Latency.NinetyNinth != tc.expected.Latency.NinetyNinth {
+			t.Errorf("Expected %f, got %f", tc.expected.Latency.NinetyNinth, result.Latency.NinetyNinth)
 		}
 
 		if result.Latency.Sum != tc.expected.Latency.Sum {
@@ -170,8 +170,8 @@ func TestParseSysBenchResult(t *testing.T) {
 				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].Errors, sr.Errors)
 			}
 
-			if sr.NinetyFifth != tc.expected.SecondResults[i].NinetyFifth {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].NinetyFifth, sr.NinetyFifth)
+			if sr.NinetyNinth != tc.expected.SecondResults[i].NinetyNinth {
+				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].NinetyNinth, sr.NinetyNinth)
 			}
 
 			if sr.Reconnects != tc.expected.SecondResults[i].Reconnects {
@@ -181,13 +181,13 @@ func TestParseSysBenchResult(t *testing.T) {
 	}
 }
 
-func TestParseSecondsResult(t *testing.T) {
+func TestParseSysbenchSecondsResult(t *testing.T) {
 	testcase := []struct {
 		input    string
 		expected *SysbenchSecondResult
 	}{
 		{
-			input: "[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,95%): 70.55 err/s: 0.00 reconn/s: 0.00",
+			input: "[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,99%): 70.55 err/s: 0.00 reconn/s: 0.00",
 			expected: &SysbenchSecondResult{
 				Threads:     4,
 				TPS:         563.40,
@@ -196,12 +196,12 @@ func TestParseSecondsResult(t *testing.T) {
 				Write:       2257.58,
 				Other:       1130.79,
 				Errors:      0.00,
-				NinetyFifth: 70.55,
+				NinetyNinth: 70.55,
 				Reconnects:  0.00,
 			},
 		},
 		{
-			input: "[ 20s ] thds: 10 tps: 368.98 qps: 7389.62 (r/w/o: 5171.74/1479.92/737.96) lat (ms,95%): 74.46 err/s: 0.00 reconn/s: 0.00",
+			input: "[ 20s ] thds: 10 tps: 368.98 qps: 7389.62 (r/w/o: 5171.74/1479.92/737.96) lat (ms,99%): 74.46 err/s: 0.00 reconn/s: 0.00",
 			expected: &SysbenchSecondResult{
 				Threads:     10,
 				TPS:         368.98,
@@ -210,7 +210,7 @@ func TestParseSecondsResult(t *testing.T) {
 				Write:       1479.92,
 				Other:       737.96,
 				Errors:      0.00,
-				NinetyFifth: 74.46,
+				NinetyNinth: 74.46,
 				Reconnects:  0.00,
 			},
 		},
@@ -239,8 +239,8 @@ func TestParseSecondsResult(t *testing.T) {
 		if result.Errors != tc.expected.Errors {
 			t.Errorf("expected %f, got %f", tc.expected.Errors, result.Errors)
 		}
-		if result.NinetyFifth != tc.expected.NinetyFifth {
-			t.Errorf("expected %f, got %f", tc.expected.NinetyFifth, result.NinetyFifth)
+		if result.NinetyNinth != tc.expected.NinetyNinth {
+			t.Errorf("expected %f, got %f", tc.expected.NinetyNinth, result.NinetyNinth)
 		}
 		if result.Reconnects != tc.expected.Reconnects {
 			t.Errorf("expected %f, got %f", tc.expected.Reconnects, result.Reconnects)

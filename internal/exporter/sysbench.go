@@ -52,8 +52,8 @@ var (
 	//match "max:                                   91.40"
 	latencyMaxRegex = regexp.MustCompile(`max:\s+(\d+\.\d+)`)
 
-	//match "95th percentile:                       71.83"
-	latencyNinetyFifthRegex = regexp.MustCompile(`95th\s+percentile:\s+(\d+\.\d+)`)
+	//match "99th percentile:                       71.83"
+	latencyNinetyNinthRegex = regexp.MustCompile(`99th\s+percentile:\s+(\d+\.\d+)`)
 
 	//match "sum:                                39998.33"
 	latencySumRegex = regexp.MustCompile(`sum:\s+(\d+\.\d+)`)
@@ -64,8 +64,8 @@ var (
 	//match "execution time (avg/stddev):   9.9996/0.00"
 	execTimeRegex = regexp.MustCompile(`execution\s+time\s+\(avg/stddev\):\s+(\d+\.\d+)/(\d+\.\d+)`)
 
-	//match "[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,95%): 70.55 err/s: 0.00 reconn/s: 0.00"
-	sysbenchSecondRegex = regexp.MustCompile(`\[ \d+s \]\s+thds:\s+(\d+)\s+tps:\s+(\d+\.\d+)\s+qps:\s+(\d+\.\d+)\s+\(r/w/o:\s+(\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+)\)\s+lat\s+\(ms,95%\):\s+(\d+\.\d+)\s+err/s:\s+(\d+\.\d+)\s+reconn/s:\s+(\d+\.\d+)`)
+	//match "[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,99%): 70.55 err/s: 0.00 reconn/s: 0.00"
+	sysbenchSecondRegex = regexp.MustCompile(`\[ \d+s \]\s+thds:\s+(\d+)\s+tps:\s+(\d+\.\d+)\s+qps:\s+(\d+\.\d+)\s+\(r/w/o:\s+(\d+\.\d+)/(\d+\.\d+)/(\d+\.\d+)\)\s+lat\s+\(ms,99%\):\s+(\d+\.\d+)\s+err/s:\s+(\d+\.\d+)\s+reconn/s:\s+(\d+\.\d+)`)
 )
 
 const (
@@ -108,8 +108,8 @@ const (
 	SysbenchLatencyMaxName = "kubebench_sysbench_latency_max"
 	SysbenchLatencyMaxHelp = "Sysbench latency max"
 
-	SysbenchLatencyNinetyFifthName = "kubebench_sysbench_latency_ninety_fifth"
-	SysbenchLatencyNinetyFifthHelp = "Sysbench latency ninety fifth"
+	SysbenchLatencyNinetyNinthName = "kubebench_sysbench_latency_ninety_ninth"
+	SysbenchLatencyNinetyNinthHelp = "Sysbench latency ninety ninth"
 
 	SysbenchLatencySumName = "kubebench_sysbench_latency_sum"
 	SysbenchLatencySumHelp = "Sysbench latency sum"
@@ -175,7 +175,7 @@ func InitSysbench() {
 	SysbenchGaugeMap[SysbenchLatencyMinName] = NewGauge(SysbenchLatencyMinName, SysbenchLatencyMinHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchLatencyAvgName] = NewGauge(SysbenchLatencyAvgName, SysbenchLatencyAvgHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchLatencyMaxName] = NewGauge(SysbenchLatencyMaxName, SysbenchLatencyMaxHelp, SysbenchLabels)
-	SysbenchGaugeMap[SysbenchLatencyNinetyFifthName] = NewGauge(SysbenchLatencyNinetyFifthName, SysbenchLatencyNinetyFifthHelp, SysbenchLabels)
+	SysbenchGaugeMap[SysbenchLatencyNinetyNinthName] = NewGauge(SysbenchLatencyNinetyNinthName, SysbenchLatencyNinetyNinthHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchLatencySumName] = NewGauge(SysbenchLatencySumName, SysbenchLatencySumHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchEventsAvgName] = NewGauge(SysbenchEventsAvgName, SysbenchEventsAvgHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchEventsStddevName] = NewGauge(SysbenchEventsStddevName, SysbenchEventsStddevHelp, SysbenchLabels)
@@ -211,7 +211,7 @@ type SysbenchSecondResult struct {
 	Read        float64 `json:"read"`
 	Write       float64 `json:"write"`
 	Other       float64 `json:"other"`
-	NinetyFifth float64 `json:"ninetyFifth"`
+	NinetyNinth float64 `json:"ninetyNinth"`
 	Errors      float64 `json:"errs"`
 	Reconnects  float64 `json:"reconnects"`
 }
@@ -232,7 +232,7 @@ type Latency struct {
 	Min         float64 `json:"min"`
 	Avg         float64 `json:"avg"`
 	Max         float64 `json:"max"`
-	NinetyFifth float64 `json:"ninetyFifth"`
+	NinetyNinth float64 `json:"ninetyNinth"`
 	Sum         float64 `json:"sum"`
 }
 
@@ -310,9 +310,9 @@ func ParseSysBenchResult(msg string) *SysbenchResult {
 		case latencyMaxRegex.MatchString(l):
 			latencyMax := strings.TrimSpace(strings.Split(l, ":")[1])
 			result.Latency.Max, _ = strconv.ParseFloat(latencyMax, 64)
-		case latencyNinetyFifthRegex.MatchString(l):
-			latencyNinetyFifth := strings.TrimSpace(strings.Split(l, ":")[1])
-			result.Latency.NinetyFifth, _ = strconv.ParseFloat(latencyNinetyFifth, 64)
+		case latencyNinetyNinthRegex.MatchString(l):
+			latencyNinetyNinth := strings.TrimSpace(strings.Split(l, ":")[1])
+			result.Latency.NinetyNinth, _ = strconv.ParseFloat(latencyNinetyNinth, 64)
 		case latencySumRegex.MatchString(l):
 			latencySum := strings.TrimSpace(strings.Split(l, ":")[1])
 			result.Latency.Sum, _ = strconv.ParseFloat(latencySum, 64)
@@ -335,14 +335,14 @@ func ParseSysBenchResult(msg string) *SysbenchResult {
 }
 
 func ParseSysbenchSecondResult(msg string) *SysbenchSecondResult {
-	//parse string like "[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,95%): 70.55 err/s: 0.00 reconn/s: 0.00"
+	//parse string like "[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,99%): 70.55 err/s: 0.00 reconn/s: 0.00"
 	result := new(SysbenchSecondResult)
 
 	thdsIndex := strings.Index(msg, "thds:")
 	tpsIndex := strings.Index(msg, "tps:")
 	qpsIndex := strings.Index(msg, "qps:")
 	rwoIndex := strings.Index(msg, "(r/w/o:")
-	latIndex := strings.Index(msg, "lat (ms,95%):")
+	latIndex := strings.Index(msg, "lat (ms,99%):")
 	errIndex := strings.Index(msg, "err/s:")
 	reconnIndex := strings.Index(msg, "reconn/s:")
 
@@ -375,7 +375,7 @@ func ParseSysbenchSecondResult(msg string) *SysbenchSecondResult {
 	// parse ninety-fifth latency
 	latMsg := msg[latIndex:errIndex]
 	latMsg = strings.TrimSpace(strings.Split(latMsg, ":")[1])
-	result.NinetyFifth, _ = strconv.ParseFloat(latMsg, 64)
+	result.NinetyNinth, _ = strconv.ParseFloat(latMsg, 64)
 
 	// parse errors
 	errMsg := msg[errIndex:reconnIndex]
@@ -401,7 +401,7 @@ func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 		SysbenchGaugeMap[SysbenchReadQpsSecondName].WithLabelValues(value...).Set(secondResult.Read)
 		SysbenchGaugeMap[SysbenchWriteQpsSecondName].WithLabelValues(value...).Set(secondResult.Write)
 		SysbenchGaugeMap[SysbenchOtherQpsSecondName].WithLabelValues(value...).Set(secondResult.Other)
-		SysbenchGaugeMap[SysbenchLatencySecondName].WithLabelValues(value...).Set(secondResult.NinetyFifth)
+		SysbenchGaugeMap[SysbenchLatencySecondName].WithLabelValues(value...).Set(secondResult.NinetyNinth)
 		SysbenchGaugeMap[SysbenchErrorsSecondName].WithLabelValues(value...).Set(secondResult.Errors)
 		SysbenchGaugeMap[SysbenchReconnectsSecondName].WithLabelValues(value...).Set(secondResult.Reconnects)
 
@@ -420,7 +420,7 @@ func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 	SysbenchGaugeMap[SysbenchLatencyMinName].WithLabelValues(value...).Set(result.Latency.Min)
 	SysbenchGaugeMap[SysbenchLatencyAvgName].WithLabelValues(value...).Set(result.Latency.Avg)
 	SysbenchGaugeMap[SysbenchLatencyMaxName].WithLabelValues(value...).Set(result.Latency.Max)
-	SysbenchGaugeMap[SysbenchLatencyNinetyFifthName].WithLabelValues(value...).Set(result.Latency.NinetyFifth)
+	SysbenchGaugeMap[SysbenchLatencyNinetyNinthName].WithLabelValues(value...).Set(result.Latency.NinetyNinth)
 	SysbenchGaugeMap[SysbenchEventsAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.EventsAvg)
 	SysbenchGaugeMap[SysbenchEventsStddevName].WithLabelValues(value...).Set(result.ThreadsFairness.EventsStddev)
 	SysbenchGaugeMap[SysbenchExecTimeAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeAvg)

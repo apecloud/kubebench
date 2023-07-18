@@ -1,4 +1,4 @@
-[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,95%): 70.55 err/s: 0.00 reconn/s: 0.00
+[ 1s ] thds: 4 tps: 563.40 qps: 11319.87 (r/w/o: 7931.50/2257.58/1130.79) lat (ms,99%): 70.55 err/s: 0.00 reconn/s: 0.00
 SQL statistics:
     queries performed:
         read:                            110110
@@ -18,7 +18,7 @@ Latency (ms):
          min:                                    0.96
          avg:                                   10.17
          max:                                  184.54
-         95th percentile:                       75.82
+         99th percentile:                       75.82
          sum:                                79990.39
 
 Threads fairness:

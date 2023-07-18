@@ -2,6 +2,8 @@ package exporter
 
 import (
 	"fmt"
+
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -10,7 +12,7 @@ const (
 )
 
 // Scrape is a function to scrape benchmark result from log.
-func Scrape(benchType string, file string, ch chan struct{}) {
+func Scrape(benchType, file, benchName, jobName string, ch chan struct{}) {
 	defer func() {
 		// notify the channel
 		ch <- struct{}{}
@@ -18,9 +20,11 @@ func Scrape(benchType string, file string, ch chan struct{}) {
 
 	switch benchType {
 	case Pgbench:
-		ScrapPgbench(file)
+		klog.Info("scrape pgbench result")
+		ScrapPgbench(file, benchName, jobName)
 	case Sysbench:
-		ScrapeSysbench(file)
+		klog.Info("scrape sysbench result")
+		ScrapeSysbench(file, benchName, jobName)
 	default:
 		fmt.Printf("not support benchmark type: %s\n", benchType)
 	}

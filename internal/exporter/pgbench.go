@@ -2,12 +2,14 @@ package exporter
 
 import (
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -99,7 +101,7 @@ const (
 )
 
 var (
-	PgbenchLabels   = []string{"name", "mode"}
+	PgbenchLabels   = []string{"benchName", "jobName", "mode"}
 	PgbenchGaugeMap = map[string]*prometheus.GaugeVec{}
 )
 
@@ -229,8 +231,9 @@ func ParsePgbenchSecondResult(msg string) *PgbenchSecondResult {
 	return result
 }
 
-func ScrapPgbench(file string) {
+func ScrapPgbench(file, benchName, jobName string) {
 	// read the file
+	klog.Infof("read file %s", file)
 	data, err := os.ReadFile(file)
 	if err != nil {
 		fmt.Printf("read file error: %s\n", err)
@@ -239,13 +242,12 @@ func ScrapPgbench(file string) {
 
 	// parse the file
 	result := ParsePgbenchResult(string(data))
-	name := strings.Split(file, ".")[0]
-	UpdatePgbenchMetrics(name, result)
+	UpdatePgbenchMetrics(benchName, jobName, result)
 }
 
-func UpdatePgbenchMetrics(name string, result *PgbenchResult) {
+func UpdatePgbenchMetrics(benchName, jobName string, result *PgbenchResult) {
 	queryMode := result.QueryMode
-	values := []string{name, queryMode}
+	values := []string{benchName, jobName, queryMode}
 
 	// update second metrics
 	for _, secondResult := range result.SecondResults {
@@ -255,6 +257,7 @@ func UpdatePgbenchMetrics(name string, result *PgbenchResult) {
 		PgbenchGaugeMap[PgbenchTransactionsFailedSecondName].WithLabelValues(values...).Set(float64(secondResult.FailedTransactionsSum))
 
 		// sleep 1 second to mock metrics collected every second
+		klog.Info("update pgbench second metrics")
 		time.Sleep(1 * time.Second)
 	}
 
@@ -270,4 +273,5 @@ func UpdatePgbenchMetrics(name string, result *PgbenchResult) {
 	PgbenchGaugeMap[PgbenchStdLatencyName].WithLabelValues(values...).Set(result.StdLatency)
 	PgbenchGaugeMap[PgbenchInitialConnectionsTimeName].WithLabelValues(values...).Set(result.InitialConnectionsTime)
 	PgbenchGaugeMap[PgbenchTpsName].WithLabelValues(values...).Set(result.TPS)
+	klog.Info("UpdatePgbenchTotalMetrics result")
 }

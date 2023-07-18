@@ -31,8 +31,8 @@ var (
 	// match "number of transactions per client: 100"
 	transactionsPerClientRegex = regexp.MustCompile(`number of transactions per client: (\d+)`)
 
-	// match "number of transactions actually processed: 1000/1000"
-	transactionsProcessedRegex = regexp.MustCompile(`number of transactions actually processed: (\d+)/(\d+)`)
+	// match // "number of transactions actually processed: 1000/1000" // or "number of transactions actually processed: 1000"
+	transactionsProcessedRegex = regexp.MustCompile(`number of transactions actually processed: (\d+)(/\d+)?`)
 
 	// match "number of failed transactions: 0 (0.000%)"
 	transactionsFailedRegex = regexp.MustCompile(`number of failed transactions: (\d+) \((\d+\.\d+)%\)`)

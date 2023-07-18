@@ -1,6 +1,9 @@
 package exporter
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func TestParsePgbenchResult(t *testing.T) {
 	testcase := []struct {
@@ -15,7 +18,6 @@ func TestParsePgbenchResult(t *testing.T) {
 				Clients:                2,
 				Threads:                1,
 				MaximumTry:             1,
-				TransactionsPerClient:  22583,
 				TransactionsProcessed:  22583,
 				TransactionsFailed:     0,
 				AvgLatency:             2.647,
@@ -35,66 +37,73 @@ func TestParsePgbenchResult(t *testing.T) {
 	}
 
 	for _, tc := range testcase {
-		for i, sr := range tc.expected.SecondResults {
-			if sr.TPS != tc.expected.SecondResults[i].TPS {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].TPS, sr.TPS)
+		msg, _ := os.ReadFile(tc.path)
+		reuslt := ParsePgbenchResult(string(msg))
+
+		if reuslt.Scale != tc.expected.Scale {
+			t.Errorf("Expected scale is %d, got %d", tc.expected.Scale, reuslt.Scale)
+		}
+
+		if reuslt.QueryMode != tc.expected.QueryMode {
+			t.Errorf("Expected query mode is %s, got %s", tc.expected.QueryMode, reuslt.QueryMode)
+		}
+
+		if reuslt.Clients != tc.expected.Clients {
+			t.Errorf("Expected clients is %d, got %d", tc.expected.Clients, reuslt.Clients)
+		}
+
+		if reuslt.Threads != tc.expected.Threads {
+			t.Errorf("Expected threads is %d, got %d", tc.expected.Threads, reuslt.Threads)
+		}
+
+		if reuslt.MaximumTry != tc.expected.MaximumTry {
+			t.Errorf("Expected maximum try is %d, got %d", tc.expected.MaximumTry, reuslt.MaximumTry)
+		}
+
+		if reuslt.TransactionsPerClient != tc.expected.TransactionsPerClient {
+			t.Errorf("Expected transcations per client is %d, got %d", tc.expected.TransactionsPerClient, reuslt.TransactionsPerClient)
+		}
+
+		if reuslt.TransactionsProcessed != tc.expected.TransactionsProcessed {
+			t.Errorf("Expected transcations processed is %d, got %d", tc.expected.TransactionsProcessed, reuslt.TransactionsProcessed)
+		}
+
+		if reuslt.TransactionsFailed != tc.expected.TransactionsFailed {
+			t.Errorf("Expected transcations failed is %d, got %d", tc.expected.TransactionsFailed, reuslt.TransactionsFailed)
+		}
+
+		if reuslt.AvgLatency != tc.expected.AvgLatency {
+			t.Errorf("Expected avg latency is %f, got %f", tc.expected.AvgLatency, reuslt.AvgLatency)
+		}
+
+		if reuslt.StdLatency != tc.expected.StdLatency {
+			t.Errorf("Expected std latency is %f, got %f", tc.expected.StdLatency, reuslt.StdLatency)
+		}
+
+		if reuslt.InitialConnectionsTime != tc.expected.InitialConnectionsTime {
+			t.Errorf("Expected initial connections time is %f, got %f", tc.expected.InitialConnectionsTime, reuslt.InitialConnectionsTime)
+		}
+
+		if reuslt.TPS != tc.expected.TPS {
+			t.Errorf("Expected tps is %f, got %f", tc.expected.TPS, reuslt.TPS)
+		}
+
+		for i, result := range reuslt.SecondResults {
+			if result.TPS != tc.expected.SecondResults[i].TPS {
+				t.Errorf("Expected tps is %f, got %f", tc.expected.SecondResults[i].TPS, result.TPS)
 			}
 
-			if sr.AvgLatency != tc.expected.SecondResults[i].AvgLatency {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].AvgLatency, sr.AvgLatency)
+			if result.AvgLatency != tc.expected.SecondResults[i].AvgLatency {
+				t.Errorf("Expected avg latency is %f, got %f", tc.expected.SecondResults[i].AvgLatency, result.AvgLatency)
 			}
 
-			if sr.StdLatency != tc.expected.SecondResults[i].StdLatency {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].StdLatency, sr.StdLatency)
+			if result.StdLatency != tc.expected.SecondResults[i].StdLatency {
+				t.Errorf("Expected std latency is %f, got %f", tc.expected.SecondResults[i].StdLatency, result.StdLatency)
 			}
 
-			if sr.FailedTransactionsSum != tc.expected.SecondResults[i].FailedTransactionsSum {
-				t.Errorf("Expected %d, got %d", tc.expected.SecondResults[i].FailedTransactionsSum, sr.FailedTransactionsSum)
+			if result.FailedTransactionsSum != tc.expected.SecondResults[i].FailedTransactionsSum {
+				t.Errorf("Expected failed transactions sum is %d, got %d", tc.expected.SecondResults[i].FailedTransactionsSum, result.FailedTransactionsSum)
 			}
-		}
-
-		if tc.expected.Scale != tc.expected.Scale {
-			t.Errorf("Expected %d, got %d", tc.expected.Scale, tc.expected.Scale)
-		}
-
-		if tc.expected.QueryMode != tc.expected.QueryMode {
-			t.Errorf("Expected %s, got %s", tc.expected.QueryMode, tc.expected.QueryMode)
-		}
-
-		if tc.expected.Clients != tc.expected.Clients {
-			t.Errorf("Expected %d, got %d", tc.expected.Clients, tc.expected.Clients)
-		}
-
-		if tc.expected.Threads != tc.expected.Threads {
-			t.Errorf("Expected %d, got %d", tc.expected.Threads, tc.expected.Threads)
-		}
-
-		if tc.expected.MaximumTry != tc.expected.MaximumTry {
-			t.Errorf("Expected %d, got %d", tc.expected.MaximumTry, tc.expected.MaximumTry)
-		}
-
-		if tc.expected.TransactionsPerClient != tc.expected.TransactionsPerClient {
-			t.Errorf("Expected %d, got %d", tc.expected.TransactionsPerClient, tc.expected.TransactionsPerClient)
-		}
-
-		if tc.expected.TransactionsProcessed != tc.expected.TransactionsProcessed {
-			t.Errorf("Expected %d, got %d", tc.expected.TransactionsProcessed, tc.expected.TransactionsProcessed)
-		}
-
-		if tc.expected.TransactionsFailed != tc.expected.TransactionsFailed {
-			t.Errorf("Expected %d, got %d", tc.expected.TransactionsFailed, tc.expected.TransactionsFailed)
-		}
-
-		if tc.expected.AvgLatency != tc.expected.AvgLatency {
-			t.Errorf("Expected %f, got %f", tc.expected.AvgLatency, tc.expected.AvgLatency)
-		}
-
-		if tc.expected.StdLatency != tc.expected.StdLatency {
-			t.Errorf("Expected %f, got %f", tc.expected.StdLatency, tc.expected.StdLatency)
-		}
-
-		if tc.expected.InitialConnectionsTime != tc.expected.InitialConnectionsTime {
-			t.Errorf("Expected %f, got %f", tc.expected.InitialConnectionsTime, tc.expected.InitialConnectionsTime)
 		}
 	}
 }

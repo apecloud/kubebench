@@ -17,6 +17,7 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 
 	cmd := "pgbench"
 	if cr.Status.Ready {
+		cmd = fmt.Sprintf("%s -P 1", cmd)
 		cmd = fmt.Sprintf("%s -c %d", cmd, cr.Spec.Clients[cr.Status.Succeeded])
 
 		// priority: transactions > time
@@ -124,7 +125,7 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 					},
 				},
 				Command: []string{"/exporter"},
-				Args:    []string{"-type", "pgbench", "-file", "/var/log/pgbench.log"},
+				Args:    []string{"-type", "pgbench", "-file", "/var/log/pgbench.log", "-bench", cr.Name, "-job", jobName},
 				VolumeMounts: []corev1.VolumeMount{
 					{
 						Name:      "log",

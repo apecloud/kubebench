@@ -87,7 +87,7 @@ func NewJob(cr *v1alpha1.Sysbench, jobName string) *batchv1.Job {
 								},
 							},
 							Command: []string{"/exporter"},
-							Args:    []string{"-type", "sysbench", "-file", "/var/log/sysbench.log"},
+							Args:    []string{"-type", "sysbench", "-file", "/var/log/sysbench.log", "-bench", cr.Name, "-job", jobName},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "log",

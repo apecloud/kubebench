@@ -208,6 +208,11 @@ func ParsePgbenchResult(msg string) *PgbenchResult {
 		}
 	}
 
+	// if use pgbench -T, we need to calculate the transactions per client
+	if result.TransactionsPerClient == 0 {
+		result.TransactionsPerClient = result.TransactionsProcessed / result.Clients
+	}
+
 	return result
 }
 

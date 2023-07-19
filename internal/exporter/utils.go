@@ -11,3 +11,13 @@ func NewGauge(name string, help string, labels []string) *prometheus.GaugeVec {
 		labels,
 	)
 }
+
+func NewCounter(name string, help string, labels []string) *prometheus.CounterVec {
+	return prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: name,
+			Help: help,
+		},
+		labels,
+	)
+}

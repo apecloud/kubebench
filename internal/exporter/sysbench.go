@@ -155,7 +155,7 @@ const (
 )
 
 var (
-	SysbenchLabels   = []string{"benchName", "jobName"}
+	SysbenchLabels   = []string{"benchmark", "name"}
 	SysbenchGaugeMap = map[string]*prometheus.GaugeVec{}
 )
 
@@ -190,6 +190,13 @@ func InitSysbench() {
 	SysbenchGaugeMap[SysbenchLatencySecondName] = NewGauge(SysbenchLatencySecondName, SysbenchLatencySecondHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchErrorsSecondName] = NewGauge(SysbenchErrorsSecondName, SysbenchErrorsSecondHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchReconnectsSecondName] = NewGauge(SysbenchReconnectsSecondName, SysbenchReconnectsSecondHelp, SysbenchLabels)
+}
+
+// RegisterSysbenchMetrics register sysbench metrics
+func RegisterSysbenchMetrics() {
+	for _, v := range SysbenchGaugeMap {
+		prometheus.MustRegister(v)
+	}
 }
 
 type SysbenchResult struct {
@@ -393,22 +400,7 @@ func ParseSysbenchSecondResult(msg string) *SysbenchSecondResult {
 func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 	value := []string{benchName, jobName}
 
-	// update second metrics
-	for _, secondResult := range result.SecondResults {
-		SysbenchGaugeMap[SysbenchThreadsName].WithLabelValues(value...).Set(float64(secondResult.Threads))
-		SysbenchGaugeMap[SysbenchTpsSecondName].WithLabelValues(value...).Set(secondResult.TPS)
-		SysbenchGaugeMap[SysbenchQpsSecondName].WithLabelValues(value...).Set(secondResult.QPS)
-		SysbenchGaugeMap[SysbenchReadQpsSecondName].WithLabelValues(value...).Set(secondResult.Read)
-		SysbenchGaugeMap[SysbenchWriteQpsSecondName].WithLabelValues(value...).Set(secondResult.Write)
-		SysbenchGaugeMap[SysbenchOtherQpsSecondName].WithLabelValues(value...).Set(secondResult.Other)
-		SysbenchGaugeMap[SysbenchLatencySecondName].WithLabelValues(value...).Set(secondResult.NinetyNinth)
-		SysbenchGaugeMap[SysbenchErrorsSecondName].WithLabelValues(value...).Set(secondResult.Errors)
-		SysbenchGaugeMap[SysbenchReconnectsSecondName].WithLabelValues(value...).Set(secondResult.Reconnects)
-
-		// sleep 1 second to mock metrics collected every second
-		klog.Info("update sysbench second metrics")
-		time.Sleep(1 * time.Second)
-	}
+	CommonCouterInc(benchName, jobName, Sysbench)
 
 	// update total metrics
 	SysbenchGaugeMap[SysbenchQueryReadName].WithLabelValues(value...).Set(float64(result.SQL.Read))
@@ -426,4 +418,21 @@ func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 	SysbenchGaugeMap[SysbenchExecTimeAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeAvg)
 	SysbenchGaugeMap[SysbenchExecTimeStddevName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeStd)
 	klog.Info("update sysbench total metrics")
+
+	// update second metrics
+	for _, secondResult := range result.SecondResults {
+		SysbenchGaugeMap[SysbenchThreadsName].WithLabelValues(value...).Set(float64(secondResult.Threads))
+		SysbenchGaugeMap[SysbenchTpsSecondName].WithLabelValues(value...).Set(secondResult.TPS)
+		SysbenchGaugeMap[SysbenchQpsSecondName].WithLabelValues(value...).Set(secondResult.QPS)
+		SysbenchGaugeMap[SysbenchReadQpsSecondName].WithLabelValues(value...).Set(secondResult.Read)
+		SysbenchGaugeMap[SysbenchWriteQpsSecondName].WithLabelValues(value...).Set(secondResult.Write)
+		SysbenchGaugeMap[SysbenchOtherQpsSecondName].WithLabelValues(value...).Set(secondResult.Other)
+		SysbenchGaugeMap[SysbenchLatencySecondName].WithLabelValues(value...).Set(secondResult.NinetyNinth)
+		SysbenchGaugeMap[SysbenchErrorsSecondName].WithLabelValues(value...).Set(secondResult.Errors)
+		SysbenchGaugeMap[SysbenchReconnectsSecondName].WithLabelValues(value...).Set(secondResult.Reconnects)
+
+		// sleep 1 second to mock metrics collected every second
+		klog.Info("update sysbench second metrics")
+		time.Sleep(1 * time.Second)
+	}
 }

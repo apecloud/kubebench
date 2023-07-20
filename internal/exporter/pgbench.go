@@ -261,7 +261,7 @@ func UpdatePgbenchMetrics(benchName, jobName string, result *PgbenchResult) {
 	queryMode := result.QueryMode
 	values := []string{benchName, jobName, queryMode}
 
-	CommonCouterInc(benchName, jobName, Pgbench)
+	CommonCounterInc(benchName, jobName, Pgbench)
 
 	// update total metrics
 	PgbenchGaugeMap[PgbenchScaleName].WithLabelValues(values...).Set(float64(result.Scale))

@@ -16,6 +16,6 @@ func RegisterCommon() {
 	prometheus.MustRegister(KubebenchCounter)
 }
 
-func CommonCouterInc(benchmark, name, typ string) {
+func CommonCounterInc(benchmark, name, typ string) {
 	KubebenchCounter.WithLabelValues(benchmark, name, typ).Inc()
 }

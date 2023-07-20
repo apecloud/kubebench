@@ -400,7 +400,7 @@ func ParseSysbenchSecondResult(msg string) *SysbenchSecondResult {
 func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 	value := []string{benchName, jobName}
 
-	CommonCouterInc(benchName, jobName, Sysbench)
+	CommonCounterInc(benchName, jobName, Sysbench)
 
 	// update total metrics
 	SysbenchGaugeMap[SysbenchQueryReadName].WithLabelValues(value...).Set(float64(result.SQL.Read))

@@ -101,7 +101,7 @@ const (
 )
 
 var (
-	PgbenchLabels   = []string{"benchName", "jobName", "mode"}
+	PgbenchLabels   = []string{"benchmark", "name", "mode"}
 	PgbenchGaugeMap = map[string]*prometheus.GaugeVec{}
 )
 
@@ -123,6 +123,13 @@ func InitPgbench() {
 	PgbenchGaugeMap[PgbenchAvgLatencySecondName] = NewGauge(PgbenchAvgLatencySecondName, PgbenchAvgLatencySecondHelp, PgbenchLabels)
 	PgbenchGaugeMap[PgbenchStdLatencySecondName] = NewGauge(PgbenchStdLatencySecondName, PgbenchStdLatencySecondHelp, PgbenchLabels)
 	PgbenchGaugeMap[PgbenchTransactionsFailedSecondName] = NewGauge(PgbenchTransactionsFailedSecondName, PgbenchTransactionsFailedSecondHelp, PgbenchLabels)
+}
+
+// RegisterPgbenchMetrics registers the pgbench metrics
+func RegisterPgbenchMetrics() {
+	for _, gague := range PgbenchGaugeMap {
+		prometheus.MustRegister(gague)
+	}
 }
 
 type PgbenchResult struct {
@@ -201,6 +208,11 @@ func ParsePgbenchResult(msg string) *PgbenchResult {
 		}
 	}
 
+	// if use pgbench -T, we need to calculate the transactions per client
+	if result.TransactionsPerClient == 0 {
+		result.TransactionsPerClient = result.TransactionsProcessed / result.Clients
+	}
+
 	return result
 }
 
@@ -249,17 +261,7 @@ func UpdatePgbenchMetrics(benchName, jobName string, result *PgbenchResult) {
 	queryMode := result.QueryMode
 	values := []string{benchName, jobName, queryMode}
 
-	// update second metrics
-	for _, secondResult := range result.SecondResults {
-		PgbenchGaugeMap[PgbenchTpsSecondName].WithLabelValues(values...).Set(secondResult.TPS)
-		PgbenchGaugeMap[PgbenchAvgLatencySecondName].WithLabelValues(values...).Set(secondResult.AvgLatency)
-		PgbenchGaugeMap[PgbenchStdLatencySecondName].WithLabelValues(values...).Set(secondResult.StdLatency)
-		PgbenchGaugeMap[PgbenchTransactionsFailedSecondName].WithLabelValues(values...).Set(float64(secondResult.FailedTransactionsSum))
-
-		// sleep 1 second to mock metrics collected every second
-		klog.Info("update pgbench second metrics")
-		time.Sleep(1 * time.Second)
-	}
+	CommonCounterInc(benchName, jobName, Pgbench)
 
 	// update total metrics
 	PgbenchGaugeMap[PgbenchScaleName].WithLabelValues(values...).Set(float64(result.Scale))
@@ -274,4 +276,16 @@ func UpdatePgbenchMetrics(benchName, jobName string, result *PgbenchResult) {
 	PgbenchGaugeMap[PgbenchInitialConnectionsTimeName].WithLabelValues(values...).Set(result.InitialConnectionsTime)
 	PgbenchGaugeMap[PgbenchTpsName].WithLabelValues(values...).Set(result.TPS)
 	klog.Info("UpdatePgbenchTotalMetrics result")
+
+	// update second metrics
+	for _, secondResult := range result.SecondResults {
+		PgbenchGaugeMap[PgbenchTpsSecondName].WithLabelValues(values...).Set(secondResult.TPS)
+		PgbenchGaugeMap[PgbenchAvgLatencySecondName].WithLabelValues(values...).Set(secondResult.AvgLatency)
+		PgbenchGaugeMap[PgbenchStdLatencySecondName].WithLabelValues(values...).Set(secondResult.StdLatency)
+		PgbenchGaugeMap[PgbenchTransactionsFailedSecondName].WithLabelValues(values...).Set(float64(secondResult.FailedTransactionsSum))
+
+		// sleep 1 second to mock metrics collected every second
+		klog.Info("update pgbench second metrics")
+		time.Sleep(1 * time.Second)
+	}
 }

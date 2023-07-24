@@ -155,7 +155,7 @@ const (
 )
 
 var (
-	SysbenchLabels   = []string{"benchName", "jobName"}
+	SysbenchLabels   = []string{"benchmark", "name"}
 	SysbenchGaugeMap = map[string]*prometheus.GaugeVec{}
 )
 
@@ -190,6 +190,13 @@ func InitSysbench() {
 	SysbenchGaugeMap[SysbenchLatencySecondName] = NewGauge(SysbenchLatencySecondName, SysbenchLatencySecondHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchErrorsSecondName] = NewGauge(SysbenchErrorsSecondName, SysbenchErrorsSecondHelp, SysbenchLabels)
 	SysbenchGaugeMap[SysbenchReconnectsSecondName] = NewGauge(SysbenchReconnectsSecondName, SysbenchReconnectsSecondHelp, SysbenchLabels)
+}
+
+// RegisterSysbenchMetrics register sysbench metrics
+func RegisterSysbenchMetrics() {
+	for _, v := range SysbenchGaugeMap {
+		prometheus.MustRegister(v)
+	}
 }
 
 type SysbenchResult struct {
@@ -393,6 +400,30 @@ func ParseSysbenchSecondResult(msg string) *SysbenchSecondResult {
 func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 	value := []string{benchName, jobName}
 
+	CommonCounterInc(benchName, jobName, Sysbench)
+
+	// update total metrics
+	SysbenchGaugeMap[SysbenchQueryReadName].WithLabelValues(value...).Set(float64(result.SQL.Read))
+	SysbenchGaugeMap[SysbenchQueryWriteName].WithLabelValues(value...).Set(float64(result.SQL.Write))
+	SysbenchGaugeMap[SysbenchQueryOtherName].WithLabelValues(value...).Set(float64(result.SQL.Other))
+	SysbenchGaugeMap[SysbenchQueryTotalName].WithLabelValues(value...).Set(float64(result.SQL.Total))
+	SysbenchGaugeMap[SysbenchTransactionsName].WithLabelValues(value...).Set(float64(result.Transactions))
+	SysbenchGaugeMap[SysbenchQueriesName].WithLabelValues(value...).Set(float64(result.Queries))
+	SysbenchGaugeMap[SysbenchIgnoredErrorsName].WithLabelValues(value...).Set(float64(result.IgnoreErrors))
+	SysbenchGaugeMap[SysbenchReconnectsName].WithLabelValues(value...).Set(float64(result.Reconnects))
+	SysbenchGaugeMap[SysbenchTotalEventsName].WithLabelValues(value...).Set(float64(result.General.TotalEvents))
+	SysbenchGaugeMap[SysbenchTotalTimeName].WithLabelValues(value...).Set(result.General.TotalTime)
+	SysbenchGaugeMap[SysbenchLatencyMinName].WithLabelValues(value...).Set(result.Latency.Min)
+	SysbenchGaugeMap[SysbenchLatencyAvgName].WithLabelValues(value...).Set(result.Latency.Avg)
+	SysbenchGaugeMap[SysbenchLatencyMaxName].WithLabelValues(value...).Set(result.Latency.Max)
+	SysbenchGaugeMap[SysbenchLatencyNinetyNinthName].WithLabelValues(value...).Set(result.Latency.NinetyNinth)
+	SysbenchGaugeMap[SysbenchLatencySumName].WithLabelValues(value...).Set(result.Latency.Sum)
+	SysbenchGaugeMap[SysbenchEventsAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.EventsAvg)
+	SysbenchGaugeMap[SysbenchEventsStddevName].WithLabelValues(value...).Set(result.ThreadsFairness.EventsStddev)
+	SysbenchGaugeMap[SysbenchExecTimeAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeAvg)
+	SysbenchGaugeMap[SysbenchExecTimeStddevName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeStd)
+	klog.Info("update sysbench total metrics")
+
 	// update second metrics
 	for _, secondResult := range result.SecondResults {
 		SysbenchGaugeMap[SysbenchThreadsName].WithLabelValues(value...).Set(float64(secondResult.Threads))
@@ -409,21 +440,4 @@ func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 		klog.Info("update sysbench second metrics")
 		time.Sleep(1 * time.Second)
 	}
-
-	// update total metrics
-	SysbenchGaugeMap[SysbenchQueryReadName].WithLabelValues(value...).Set(float64(result.SQL.Read))
-	SysbenchGaugeMap[SysbenchQueryWriteName].WithLabelValues(value...).Set(float64(result.SQL.Write))
-	SysbenchGaugeMap[SysbenchQueryOtherName].WithLabelValues(value...).Set(float64(result.SQL.Other))
-	SysbenchGaugeMap[SysbenchQueryTotalName].WithLabelValues(value...).Set(float64(result.SQL.Total))
-	SysbenchGaugeMap[SysbenchTotalTimeName].WithLabelValues(value...).Set(result.General.TotalTime)
-	SysbenchGaugeMap[SysbenchTotalEventsName].WithLabelValues(value...).Set(float64(result.General.TotalEvents))
-	SysbenchGaugeMap[SysbenchLatencyMinName].WithLabelValues(value...).Set(result.Latency.Min)
-	SysbenchGaugeMap[SysbenchLatencyAvgName].WithLabelValues(value...).Set(result.Latency.Avg)
-	SysbenchGaugeMap[SysbenchLatencyMaxName].WithLabelValues(value...).Set(result.Latency.Max)
-	SysbenchGaugeMap[SysbenchLatencyNinetyNinthName].WithLabelValues(value...).Set(result.Latency.NinetyNinth)
-	SysbenchGaugeMap[SysbenchEventsAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.EventsAvg)
-	SysbenchGaugeMap[SysbenchEventsStddevName].WithLabelValues(value...).Set(result.ThreadsFairness.EventsStddev)
-	SysbenchGaugeMap[SysbenchExecTimeAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeAvg)
-	SysbenchGaugeMap[SysbenchExecTimeStddevName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeStd)
-	klog.Info("update sysbench total metrics")
 }

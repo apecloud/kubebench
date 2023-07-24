@@ -18,6 +18,7 @@ func TestParsePgbenchResult(t *testing.T) {
 				Clients:                2,
 				Threads:                1,
 				MaximumTry:             1,
+				TransactionsPerClient:  11291,
 				TransactionsProcessed:  22583,
 				TransactionsFailed:     0,
 				AvgLatency:             2.647,

@@ -23,16 +23,33 @@ func NewJob(cr *v1alpha1.Ycsb, jobName string) *batchv1.Job {
 		cmd = fmt.Sprintf("%s load %s -p dropdata=true", cmd, cr.Spec.Target.Driver)
 	}
 
-	totalProportion := cr.Spec.ReadProportion + cr.Spec.UpdateProportion
-	readProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ReadProportion)/float64(totalProportion)), 64)
-	updateProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.UpdateProportion)/float64(totalProportion)), 64)
 	cmd = fmt.Sprintf("%s %s", cmd, NewWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
-	cmd = fmt.Sprintf("%s -p readproportion=%f", cmd, readProportion)
-	cmd = fmt.Sprintf("%s -p updateproportion=%f", cmd, updateProportion)
 	cmd = fmt.Sprintf("%s -p threadcount=%d", cmd, cr.Spec.Threads[cr.Status.Succeeded])
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
+
+	totalProportion := cr.Spec.ReadProportion + cr.Spec.UpdateProportion + cr.Spec.InsertProportion + cr.Spec.ReadModifyWriteProportion + cr.Spec.ScanProportion
+	if cr.Spec.ReadProportion > 0 {
+		readProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ReadProportion)/float64(totalProportion)), 64)
+		cmd = fmt.Sprintf("%s -p readproportion=%f", cmd, readProportion)
+	}
+	if cr.Spec.UpdateProportion > 0 {
+		updateProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.UpdateProportion)/float64(totalProportion)), 64)
+		cmd = fmt.Sprintf("%s -p updateproportion=%f", cmd, updateProportion)
+	}
+	if cr.Spec.InsertProportion > 0 {
+		insertProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.InsertProportion)/float64(totalProportion)), 64)
+		cmd = fmt.Sprintf("%s -p insertproportion=%f", cmd, insertProportion)
+	}
+	if cr.Spec.ReadModifyWriteProportion > 0 {
+		readModifyWriteProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ReadModifyWriteProportion)/float64(totalProportion)), 64)
+		cmd = fmt.Sprintf("%s -p readmodifywriteproportion=%f", cmd, readModifyWriteProportion)
+	}
+	if cr.Spec.ScanProportion > 0 {
+		scanProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ScanProportion)/float64(totalProportion)), 64)
+		cmd = fmt.Sprintf("%s -p scanproportion=%f", cmd, scanProportion)
+	}
 
 	cmd = fmt.Sprintf("%s 2>&1 | tee /var/log/ycsb.log", cmd)
 

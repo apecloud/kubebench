@@ -40,16 +40,37 @@ type YcsbSpec struct {
 	// the proportion of reads in the run phase.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	// +kubebuilder:default=50
+	// +kubebuilder:default=0
 	// +optional
 	ReadProportion int `json:"readProportion,omitempty"`
 
 	// the proportion of updates in the run phase.
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
-	// +kubebuilder:default=50
+	// +kubebuilder:default=0
 	// +optional
 	UpdateProportion int `json:"updateProportion,omitempty"`
+
+	// the proportion of inserts in the run phase.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=0
+	// +optional
+	InsertProportion int `json:"insertProportion,omitempty"`
+
+	// the proportion of operations read then modify a record in the run phase.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=0
+	// +optional
+	ReadModifyWriteProportion int `json:"readModifyWriteProportion,omitempty"`
+
+	// the proportion of scans in the run phase.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
+	// +kubebuilder:default=0
+	// +optional
+	ScanProportion int `json:"scanProportion,omitempty"`
 
 	// the number of threads
 	// +kubebuilder:validation:MinItems=1

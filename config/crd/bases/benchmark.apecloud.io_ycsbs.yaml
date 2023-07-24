@@ -42,18 +42,33 @@ spec:
                 items:
                   type: string
                 type: array
+              insertProportion:
+                default: 0
+                maximum: 100
+                minimum: 0
+                type: integer
               operationCount:
                 default: 10000
                 minimum: 1
                 type: integer
+              readModifyWriteProportion:
+                default: 0
+                maximum: 100
+                minimum: 0
+                type: integer
               readProportion:
-                default: 50
+                default: 0
                 maximum: 100
                 minimum: 0
                 type: integer
               recordCount:
                 default: 10000
                 minimum: 1
+                type: integer
+              scanProportion:
+                default: 0
+                maximum: 100
+                minimum: 0
                 type: integer
               target:
                 properties:
@@ -83,7 +98,7 @@ spec:
                 minItems: 1
                 type: array
               updateProportion:
-                default: 50
+                default: 0
                 maximum: 100
                 minimum: 0
                 type: integer

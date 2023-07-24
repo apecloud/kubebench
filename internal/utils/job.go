@@ -19,6 +19,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -78,17 +79,6 @@ func DelteJob(cli client.Client, reqCtx context.Context, jobName string, namespa
 	var job batchv1.Job
 	if err := cli.Get(reqCtx, client.ObjectKey{Name: jobName, Namespace: namespace}, &job); err != nil {
 		return err
-	}
-
-	// delete the pods created by the job
-	podList, err := GetPodListFromJob(cli, reqCtx, jobName, namespace)
-	if err != nil {
-		return err
-	}
-	for _, pod := range podList.Items {
-		if err := cli.Delete(reqCtx, &pod); err != nil {
-			return err
-		}
 	}
 
 	// delete the job
@@ -151,6 +141,8 @@ func LogJobPodToCond(cli client.Client, restConfig *rest.Config, reqCtx context.
 			msg = call(msg)
 		}
 
+		msg = trimTooLongLog(msg)
+
 		// record the log to the conditions
 		meta.SetStatusCondition(conditions, metav1.Condition{
 			Type:               fmt.Sprintf("%s-%s", pod.Name, pod.Status.Phase),
@@ -163,4 +155,17 @@ func LogJobPodToCond(cli client.Client, restConfig *rest.Config, reqCtx context.
 	}
 
 	return nil
+}
+
+func trimTooLongLog(log string) string {
+	lines := strings.Split(log, "\n")
+	reuslt := ""
+	for _, line := range lines {
+		if len(reuslt)+len(line) > 32768 {
+			break
+		}
+		reuslt += line + "\n"
+	}
+	// remove the last "\n"
+	return strings.TrimSpace(reuslt)
 }

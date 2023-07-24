@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -33,6 +34,7 @@ import (
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
 	"github.com/apecloud/kubebench/internal/controller/pgbench"
 	"github.com/apecloud/kubebench/internal/controller/sysbench"
+	"github.com/apecloud/kubebench/internal/controller/ycsb"
 )
 
 var (
@@ -102,6 +104,14 @@ func main() {
 		RestConfig: mgr.GetConfig(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Pgbench")
+		os.Exit(1)
+	}
+	if err = (&ycsb.YcsbReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		RestConfig: mgr.GetConfig(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Ycsb")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

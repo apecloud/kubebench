@@ -70,6 +70,32 @@ rules:
   - patch
   - update
 - apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - ycsbs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - ycsbs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - ycsbs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - ""
   resources:
   - pods

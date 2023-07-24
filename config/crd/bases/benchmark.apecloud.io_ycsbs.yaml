@@ -1,0 +1,155 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.12.0
+  name: ycsbs.benchmark.apecloud.io
+spec:
+  group: benchmark.apecloud.io
+  names:
+    kind: Ycsb
+    listKind: YcsbList
+    plural: ycsbs
+    singular: ycsb
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - description: status phase
+      jsonPath: .status.phase
+      name: STATUS
+      type: string
+    - description: completions
+      jsonPath: .status.completions
+      name: COMPLETIONS
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              extraArgs:
+                items:
+                  type: string
+                type: array
+              operationCount:
+                default: 10000
+                minimum: 1
+                type: integer
+              readProportion:
+                default: 50
+                maximum: 100
+                minimum: 0
+                type: integer
+              recordCount:
+                default: 10000
+                minimum: 1
+                type: integer
+              target:
+                properties:
+                  database:
+                    type: string
+                  driver:
+                    type: string
+                  host:
+                    default: localhost
+                    type: string
+                  password:
+                    type: string
+                  port:
+                    type: integer
+                  user:
+                    type: string
+                required:
+                - driver
+                - host
+                - port
+                type: object
+              threads:
+                default:
+                - 1
+                items:
+                  type: integer
+                minItems: 1
+                type: array
+              updateProportion:
+                default: 50
+                maximum: 100
+                minimum: 0
+                type: integer
+            type: object
+          status:
+            properties:
+              completions:
+                type: string
+              conditions:
+                items:
+                  properties:
+                    lastTransitionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+              phase:
+                allOf:
+                - enum:
+                  - Pending
+                  - Running
+                  - Complete
+                  - Failed
+                - enum:
+                  - Pending
+                  - Running
+                  - Complete
+                  - Failed
+                type: string
+              ready:
+                type: boolean
+              succeeded:
+                type: integer
+              total:
+                type: integer
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hpcloud/tail"
 	"github.com/prometheus/client_golang/prometheus"
@@ -252,22 +253,31 @@ func ScrapeSysbench(file, benchName, jobName string) {
 	klog.Info("read file: ", file)
 	t, _ := tail.TailFile(file, tail.Config{Follow: true})
 
+	timer := time.NewTicker(30 * time.Second)
+	defer timer.Stop()
+
 	msg := ""
-	for line := range t.Lines {
-		text := strings.TrimSpace(line.Text)
-		klog.Info("ScrapeSysbench: ", text)
-		switch {
-		case sysbenchSecondRegex.MatchString(text):
-			// this represents the output of every second
-			msg = line.Text
-			UpdateSysbenchMetricsSecond(benchName, jobName, msg)
-		case execTimeRegex.MatchString(line.Text):
-			// this represents the output of the whole test
-			msg += line.Text
-			UpdateSysbenchMetrics(benchName, jobName, msg)
+	for {
+		select {
+		case line := <-t.Lines:
+			klog.Info("ScrapeSysbench: ", line.Text)
+			timer.Reset(30 * time.Second)
+			switch {
+			case sysbenchSecondRegex.MatchString(line.Text):
+				// this represents the output of every second
+				msg = line.Text
+				UpdateSysbenchMetricsSecond(benchName, jobName, msg)
+			case execTimeRegex.MatchString(line.Text):
+				// this represents the output of the whole test
+				msg += line.Text
+				UpdateSysbenchMetrics(benchName, jobName, msg)
+				return
+			default:
+				msg += line.Text + "\n"
+			}
+		case <-timer.C:
+			// don't receive any message in 30s, we think the sysbench test is finished
 			return
-		default:
-			msg += line.Text + "\n"
 		}
 	}
 }

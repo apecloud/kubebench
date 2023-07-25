@@ -9,7 +9,7 @@ metadata:
     monitor.kubeblocks.io/scrape: "true"
   labels:
     app.kubernetes.io/managed-by: kubeblocks
-  name: exporter
+  name: kubebench-exporter
   namespace: default
 spec:
   clusterIP: None

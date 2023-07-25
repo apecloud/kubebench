@@ -435,6 +435,8 @@ func UpdateSysbenchMetricsSecond(benchName, jobName, msg string) {
 	value := []string{benchName, jobName}
 	secondResult := ParseSysbenchSecondResult(msg)
 
+	CommonCounterInc(benchName, jobName, Sysbench)
+
 	// update second metrics
 	SysbenchGaugeMap[SysbenchThreadsName].WithLabelValues(value...).Set(float64(secondResult.Threads))
 	SysbenchGaugeMap[SysbenchTpsSecondName].WithLabelValues(value...).Set(secondResult.TPS)

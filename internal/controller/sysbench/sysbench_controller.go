@@ -33,6 +33,10 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
+const (
+	SysbenchJobNamePrefix = "sysbench-"
+)
+
 // SysbenchReconciler reconciles a Sysbench object
 type SysbenchReconciler struct {
 	client.Client
@@ -80,7 +84,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// check if the job already exists
-	jobName := fmt.Sprintf("sysbench-%s-%d", sysbench.Name, sysbench.Status.Succeeded)
+	jobName := SysbenchJobNamePrefix + fmt.Sprintf("%s-%d", sysbench.Name, sysbench.Status.Succeeded)
 	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, sysbench.Namespace)
 	if err != nil {
 		return controllerutil.RequeueWithError(err, l, "unable to check if job exists")

@@ -45,7 +45,7 @@ func NewJob(cr *v1alpha1.Sysbench, jobName string) *batchv1.Job {
 					},
 				},
 				Spec: corev1.PodSpec{
-					InitContainers: []corev1.Container{
+					Containers: []corev1.Container{
 						{
 							Name:            constants.ContainerName,
 							Image:           constants.SysbenchImage,
@@ -73,8 +73,6 @@ func NewJob(cr *v1alpha1.Sysbench, jobName string) *batchv1.Job {
 								},
 							},
 						},
-					},
-					Containers: []corev1.Container{
 						{
 							Name:            "metrics",
 							Image:           constants.PrometheusExporterImage,
@@ -87,7 +85,7 @@ func NewJob(cr *v1alpha1.Sysbench, jobName string) *batchv1.Job {
 								},
 							},
 							Command: []string{"/exporter"},
-							Args:    []string{"-type", "sysbench", "-file", "/var/log/sysbench.log", "-bench", cr.Name, "-job", jobName},
+							Args:    []string{"-type", "sysbench", "-file", "/var/log/sysbench.log", "-bench", cr.Name, "-job", strings.TrimPrefix(jobName, SysbenchJobNamePrefix)},
 							VolumeMounts: []corev1.VolumeMount{
 								{
 									Name:      "log",

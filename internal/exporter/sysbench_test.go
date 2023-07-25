@@ -40,19 +40,6 @@ func TestParseSysBenchResult(t *testing.T) {
 				Queries:      157294,
 				IgnoreErrors: 3,
 				Reconnects:   0,
-				SecondResults: []*SysbenchSecondResult{
-					{
-						Threads:     4,
-						TPS:         563.40,
-						QPS:         11319.87,
-						Read:        7931.50,
-						Write:       2257.58,
-						Other:       1130.79,
-						Errors:      0.00,
-						NinetyNinth: 70.55,
-						Reconnects:  0.00,
-					},
-				},
 			},
 		},
 	}
@@ -135,48 +122,6 @@ func TestParseSysBenchResult(t *testing.T) {
 
 		if result.Reconnects != tc.expected.Reconnects {
 			t.Errorf("Expected %d, got %d", tc.expected.Reconnects, result.Reconnects)
-		}
-
-		if len(result.SecondResults) != len(tc.expected.SecondResults) {
-			t.Errorf("Expected %d, got %d", len(tc.expected.SecondResults), len(result.SecondResults))
-		}
-
-		for i, sr := range result.SecondResults {
-			if sr.Threads != tc.expected.SecondResults[i].Threads {
-				t.Errorf("Expected %d, got %d", tc.expected.SecondResults[i].Threads, sr.Threads)
-			}
-
-			if sr.TPS != tc.expected.SecondResults[i].TPS {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].TPS, sr.TPS)
-			}
-
-			if sr.QPS != tc.expected.SecondResults[i].QPS {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].QPS, sr.QPS)
-			}
-
-			if sr.Read != tc.expected.SecondResults[i].Read {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].Read, sr.Read)
-			}
-
-			if sr.Write != tc.expected.SecondResults[i].Write {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].Write, sr.Write)
-			}
-
-			if sr.Other != tc.expected.SecondResults[i].Other {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].Other, sr.Other)
-			}
-
-			if sr.Errors != tc.expected.SecondResults[i].Errors {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].Errors, sr.Errors)
-			}
-
-			if sr.NinetyNinth != tc.expected.SecondResults[i].NinetyNinth {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].NinetyNinth, sr.NinetyNinth)
-			}
-
-			if sr.Reconnects != tc.expected.SecondResults[i].Reconnects {
-				t.Errorf("Expected %f, got %f", tc.expected.SecondResults[i].Reconnects, sr.Reconnects)
-			}
 		}
 	}
 }

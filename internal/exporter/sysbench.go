@@ -1,13 +1,11 @@
 package exporter
 
 import (
-	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/hpcloud/tail"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/klog/v2"
 )
@@ -200,15 +198,14 @@ func RegisterSysbenchMetrics() {
 }
 
 type SysbenchResult struct {
-	SQL             SQLStatistics           `json:"sql"`
-	General         GeneralStatistics       `json:"general"`
-	Latency         Latency                 `json:"latency"`
-	ThreadsFairness ThreadsFairness         `json:"threadsFairness"`
-	Transactions    int                     `json:"transactions"`
-	Queries         int                     `json:"queries"`
-	IgnoreErrors    int                     `json:"ignoreErrors"`
-	Reconnects      int                     `json:"reconnects"`
-	SecondResults   []*SysbenchSecondResult `json:"secondResults"`
+	SQL             SQLStatistics     `json:"sql"`
+	General         GeneralStatistics `json:"general"`
+	Latency         Latency           `json:"latency"`
+	ThreadsFairness ThreadsFairness   `json:"threadsFairness"`
+	Transactions    int               `json:"transactions"`
+	Queries         int               `json:"queries"`
+	IgnoreErrors    int               `json:"ignoreErrors"`
+	Reconnects      int               `json:"reconnects"`
 }
 
 type SysbenchSecondResult struct {
@@ -253,15 +250,26 @@ type ThreadsFairness struct {
 func ScrapeSysbench(file, benchName, jobName string) {
 	// read the file
 	klog.Info("read file: ", file)
-	data, err := os.ReadFile(file)
-	if err != nil {
-		fmt.Printf("read file error: %s\n", err)
-		return
-	}
+	t, _ := tail.TailFile(file, tail.Config{Follow: true})
 
-	// parse the file
-	result := ParseSysBenchResult(string(data))
-	UpdateSysbenchMetrics(benchName, jobName, result)
+	msg := ""
+	for line := range t.Lines {
+		text := strings.TrimSpace(line.Text)
+		klog.Info("ScrapeSysbench: ", text)
+		switch {
+		case sysbenchSecondRegex.MatchString(text):
+			// this represents the output of every second
+			msg = line.Text
+			UpdateSysbenchMetricsSecond(benchName, jobName, msg)
+		case execTimeRegex.MatchString(line.Text):
+			// this represents the output of the whole test
+			msg += line.Text
+			UpdateSysbenchMetrics(benchName, jobName, msg)
+			return
+		default:
+			msg += line.Text + "\n"
+		}
+	}
 }
 
 func ParseSysBenchResult(msg string) *SysbenchResult {
@@ -270,9 +278,6 @@ func ParseSysBenchResult(msg string) *SysbenchResult {
 
 	for _, l := range lines {
 		switch {
-		case sysbenchSecondRegex.MatchString(l):
-			secondResult := ParseSysbenchSecondResult(l)
-			result.SecondResults = append(result.SecondResults, secondResult)
 		case readRegex.MatchString(l):
 			read := strings.TrimSpace(strings.Split(l, ":")[1])
 			result.SQL.Read, _ = strconv.Atoi(read)
@@ -397,8 +402,9 @@ func ParseSysbenchSecondResult(msg string) *SysbenchSecondResult {
 	return result
 }
 
-func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
+func UpdateSysbenchMetrics(benchName, jobName, msg string) {
 	value := []string{benchName, jobName}
+	result := ParseSysBenchResult(msg)
 
 	CommonCounterInc(benchName, jobName, Sysbench)
 
@@ -423,21 +429,22 @@ func UpdateSysbenchMetrics(benchName, jobName string, result *SysbenchResult) {
 	SysbenchGaugeMap[SysbenchExecTimeAvgName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeAvg)
 	SysbenchGaugeMap[SysbenchExecTimeStddevName].WithLabelValues(value...).Set(result.ThreadsFairness.ExecTimeStd)
 	klog.Info("update sysbench total metrics")
+}
+
+func UpdateSysbenchMetricsSecond(benchName, jobName, msg string) {
+	value := []string{benchName, jobName}
+	secondResult := ParseSysbenchSecondResult(msg)
 
 	// update second metrics
-	for _, secondResult := range result.SecondResults {
-		SysbenchGaugeMap[SysbenchThreadsName].WithLabelValues(value...).Set(float64(secondResult.Threads))
-		SysbenchGaugeMap[SysbenchTpsSecondName].WithLabelValues(value...).Set(secondResult.TPS)
-		SysbenchGaugeMap[SysbenchQpsSecondName].WithLabelValues(value...).Set(secondResult.QPS)
-		SysbenchGaugeMap[SysbenchReadQpsSecondName].WithLabelValues(value...).Set(secondResult.Read)
-		SysbenchGaugeMap[SysbenchWriteQpsSecondName].WithLabelValues(value...).Set(secondResult.Write)
-		SysbenchGaugeMap[SysbenchOtherQpsSecondName].WithLabelValues(value...).Set(secondResult.Other)
-		SysbenchGaugeMap[SysbenchLatencySecondName].WithLabelValues(value...).Set(secondResult.NinetyNinth)
-		SysbenchGaugeMap[SysbenchErrorsSecondName].WithLabelValues(value...).Set(secondResult.Errors)
-		SysbenchGaugeMap[SysbenchReconnectsSecondName].WithLabelValues(value...).Set(secondResult.Reconnects)
+	SysbenchGaugeMap[SysbenchThreadsName].WithLabelValues(value...).Set(float64(secondResult.Threads))
+	SysbenchGaugeMap[SysbenchTpsSecondName].WithLabelValues(value...).Set(secondResult.TPS)
+	SysbenchGaugeMap[SysbenchQpsSecondName].WithLabelValues(value...).Set(secondResult.QPS)
+	SysbenchGaugeMap[SysbenchReadQpsSecondName].WithLabelValues(value...).Set(secondResult.Read)
+	SysbenchGaugeMap[SysbenchWriteQpsSecondName].WithLabelValues(value...).Set(secondResult.Write)
+	SysbenchGaugeMap[SysbenchOtherQpsSecondName].WithLabelValues(value...).Set(secondResult.Other)
+	SysbenchGaugeMap[SysbenchLatencySecondName].WithLabelValues(value...).Set(secondResult.NinetyNinth)
+	SysbenchGaugeMap[SysbenchErrorsSecondName].WithLabelValues(value...).Set(secondResult.Errors)
+	SysbenchGaugeMap[SysbenchReconnectsSecondName].WithLabelValues(value...).Set(secondResult.Reconnects)
 
-		// sleep 1 second to mock metrics collected every second
-		klog.Info("update sysbench second metrics")
-		time.Sleep(1 * time.Second)
-	}
+	klog.Info("update sysbench second metrics")
 }

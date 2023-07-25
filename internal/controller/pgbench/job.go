@@ -74,8 +74,8 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 	}
 
 	if cr.Status.Ready {
-		job.Spec.Template.Spec.InitContainers = append(
-			job.Spec.Template.Spec.InitContainers,
+		job.Spec.Template.Spec.Containers = append(
+			job.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            constants.ContainerName,
 				Image:           constants.PgbenchImage,
@@ -125,7 +125,7 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 					},
 				},
 				Command: []string{"/exporter"},
-				Args:    []string{"-type", "pgbench", "-file", "/var/log/pgbench.log", "-bench", cr.Name, "-job", jobName},
+				Args:    []string{"-type", "pgbench", "-file", "/var/log/pgbench.log", "-bench", cr.Name, "-job", strings.TrimPrefix(jobName, PgbenchJobNamePrefix)},
 				VolumeMounts: []corev1.VolumeMount{
 					{
 						Name:      "log",

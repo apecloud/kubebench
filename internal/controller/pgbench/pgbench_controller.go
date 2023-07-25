@@ -33,6 +33,10 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
+const (
+	PgbenchJobNamePrefix = "pgbench-"
+)
+
 // PgbenchReconciler reconciles a Pgbench object
 type PgbenchReconciler struct {
 	client.Client
@@ -76,9 +80,9 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	var jobName string
 	if pgbench.Status.Ready {
-		jobName = fmt.Sprintf("pgbench-%s-%d", pgbench.Name, pgbench.Status.Succeeded)
+		jobName = PgbenchJobNamePrefix + fmt.Sprintf("%s-%d", pgbench.Name, pgbench.Status.Succeeded)
 	} else {
-		jobName = fmt.Sprintf("pgbench-%s-init", pgbench.Name)
+		jobName = PgbenchJobNamePrefix + fmt.Sprintf("%s-init", pgbench.Name)
 	}
 
 	// check if the job already exists

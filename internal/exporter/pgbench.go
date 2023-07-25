@@ -1,13 +1,11 @@
 package exporter
 
 import (
-	"fmt"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/hpcloud/tail"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/klog/v2"
 )
@@ -101,7 +99,7 @@ const (
 )
 
 var (
-	PgbenchLabels   = []string{"benchmark", "name", "mode"}
+	PgbenchLabels   = []string{"benchmark", "name"}
 	PgbenchGaugeMap = map[string]*prometheus.GaugeVec{}
 )
 
@@ -133,19 +131,18 @@ func RegisterPgbenchMetrics() {
 }
 
 type PgbenchResult struct {
-	Scale                  int                    `json:"scale"`
-	QueryMode              string                 `json:"queryMode"`
-	Clients                int                    `json:"clients"`
-	Threads                int                    `json:"threads"`
-	MaximumTry             int                    `json:"maximumTry"`
-	TransactionsPerClient  int                    `json:"transactionsPerClient"`
-	TransactionsProcessed  int                    `json:"transactionsSum"`
-	TransactionsFailed     int                    `json:"failedTransactionsSum"`
-	AvgLatency             float64                `json:"avgLatency"`
-	StdLatency             float64                `json:"stdLatency"`
-	InitialConnectionsTime float64                `json:"initialConnectionsTime"`
-	TPS                    float64                `json:"tps"`
-	SecondResults          []*PgbenchSecondResult `json:"secondResults"`
+	Scale                  int     `json:"scale"`
+	QueryMode              string  `json:"queryMode"`
+	Clients                int     `json:"clients"`
+	Threads                int     `json:"threads"`
+	MaximumTry             int     `json:"maximumTry"`
+	TransactionsPerClient  int     `json:"transactionsPerClient"`
+	TransactionsProcessed  int     `json:"transactionsSum"`
+	TransactionsFailed     int     `json:"failedTransactionsSum"`
+	AvgLatency             float64 `json:"avgLatency"`
+	StdLatency             float64 `json:"stdLatency"`
+	InitialConnectionsTime float64 `json:"initialConnectionsTime"`
+	TPS                    float64 `json:"tps"`
 }
 
 type PgbenchSecondResult struct {
@@ -161,9 +158,6 @@ func ParsePgbenchResult(msg string) *PgbenchResult {
 
 	for _, l := range lines {
 		switch {
-		case pgbenchSecondRegex.MatchString(l):
-			secondResult := ParsePgbenchSecondResult(l)
-			result.SecondResults = append(result.SecondResults, secondResult)
 		case scaleRegex.MatchString(l):
 			scale := strings.TrimSpace(strings.Split(l, ":")[1])
 			result.Scale, _ = strconv.Atoi(scale)
@@ -246,20 +240,30 @@ func ParsePgbenchSecondResult(msg string) *PgbenchSecondResult {
 func ScrapPgbench(file, benchName, jobName string) {
 	// read the file
 	klog.Infof("read file %s", file)
-	data, err := os.ReadFile(file)
-	if err != nil {
-		fmt.Printf("read file error: %s\n", err)
-		return
-	}
+	t, _ := tail.TailFile(file, tail.Config{Follow: true})
 
-	// parse the file
-	result := ParsePgbenchResult(string(data))
-	UpdatePgbenchMetrics(benchName, jobName, result)
+	msg := ""
+	for line := range t.Lines {
+		klog.Info("ScrapPgbench: ", line.Text)
+		switch {
+		case pgbenchSecondRegex.MatchString(line.Text):
+			// this represents the output of pgbench per second
+			msg = line.Text
+			UpdatePgbenchMetricsSecond(benchName, jobName, msg)
+		case tpsRegex.MatchString(line.Text):
+			// this means the pgbench is finished
+			msg += line.Text
+			UpdatePgbenchMetrics(benchName, jobName, msg)
+			return
+		default:
+			msg += line.Text + "\n"
+		}
+	}
 }
 
-func UpdatePgbenchMetrics(benchName, jobName string, result *PgbenchResult) {
-	queryMode := result.QueryMode
-	values := []string{benchName, jobName, queryMode}
+func UpdatePgbenchMetrics(benchName, jobName, msg string) {
+	values := []string{benchName, jobName}
+	result := ParsePgbenchResult(msg)
 
 	CommonCounterInc(benchName, jobName, Pgbench)
 
@@ -276,16 +280,17 @@ func UpdatePgbenchMetrics(benchName, jobName string, result *PgbenchResult) {
 	PgbenchGaugeMap[PgbenchInitialConnectionsTimeName].WithLabelValues(values...).Set(result.InitialConnectionsTime)
 	PgbenchGaugeMap[PgbenchTpsName].WithLabelValues(values...).Set(result.TPS)
 	klog.Info("UpdatePgbenchTotalMetrics result")
+}
 
-	// update second metrics
-	for _, secondResult := range result.SecondResults {
-		PgbenchGaugeMap[PgbenchTpsSecondName].WithLabelValues(values...).Set(secondResult.TPS)
-		PgbenchGaugeMap[PgbenchAvgLatencySecondName].WithLabelValues(values...).Set(secondResult.AvgLatency)
-		PgbenchGaugeMap[PgbenchStdLatencySecondName].WithLabelValues(values...).Set(secondResult.StdLatency)
-		PgbenchGaugeMap[PgbenchTransactionsFailedSecondName].WithLabelValues(values...).Set(float64(secondResult.FailedTransactionsSum))
+func UpdatePgbenchMetricsSecond(benchName, jobName, msg string) {
+	values := []string{benchName, jobName}
+	secondResult := ParsePgbenchSecondResult(msg)
+	CommonCounterInc(benchName, jobName, Pgbench)
 
-		// sleep 1 second to mock metrics collected every second
-		klog.Info("update pgbench second metrics")
-		time.Sleep(1 * time.Second)
-	}
+	PgbenchGaugeMap[PgbenchTpsSecondName].WithLabelValues(values...).Set(secondResult.TPS)
+	PgbenchGaugeMap[PgbenchAvgLatencySecondName].WithLabelValues(values...).Set(secondResult.AvgLatency)
+	PgbenchGaugeMap[PgbenchStdLatencySecondName].WithLabelValues(values...).Set(secondResult.StdLatency)
+	PgbenchGaugeMap[PgbenchTransactionsFailedSecondName].WithLabelValues(values...).Set(float64(secondResult.FailedTransactionsSum))
+
+	klog.Info("update pgbench second metrics")
 }

@@ -25,14 +25,6 @@ func TestParsePgbenchResult(t *testing.T) {
 				StdLatency:             11.912,
 				InitialConnectionsTime: 70.124,
 				TPS:                    754.431143,
-				SecondResults: []*PgbenchSecondResult{
-					{
-						TPS:                   610.0,
-						AvgLatency:            3.043,
-						StdLatency:            8.900,
-						FailedTransactionsSum: 0,
-					},
-				},
 			},
 		},
 	}
@@ -89,23 +81,6 @@ func TestParsePgbenchResult(t *testing.T) {
 			t.Errorf("Expected tps is %f, got %f", tc.expected.TPS, reuslt.TPS)
 		}
 
-		for i, result := range reuslt.SecondResults {
-			if result.TPS != tc.expected.SecondResults[i].TPS {
-				t.Errorf("Expected tps is %f, got %f", tc.expected.SecondResults[i].TPS, result.TPS)
-			}
-
-			if result.AvgLatency != tc.expected.SecondResults[i].AvgLatency {
-				t.Errorf("Expected avg latency is %f, got %f", tc.expected.SecondResults[i].AvgLatency, result.AvgLatency)
-			}
-
-			if result.StdLatency != tc.expected.SecondResults[i].StdLatency {
-				t.Errorf("Expected std latency is %f, got %f", tc.expected.SecondResults[i].StdLatency, result.StdLatency)
-			}
-
-			if result.FailedTransactionsSum != tc.expected.SecondResults[i].FailedTransactionsSum {
-				t.Errorf("Expected failed transactions sum is %d, got %d", tc.expected.SecondResults[i].FailedTransactionsSum, result.FailedTransactionsSum)
-			}
-		}
 	}
 }
 

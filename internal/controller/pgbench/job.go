@@ -125,7 +125,7 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 					},
 				},
 				Command: []string{"/exporter"},
-				Args:    []string{"-type", "pgbench", "-file", "/var/log/pgbench.log", "-bench", cr.Name, "-job", strings.TrimPrefix(jobName, PgbenchJobNamePrefix)},
+				Args:    []string{"-type", "pgbench", "-file", "/var/log/pgbench.log", "-bench", cr.Name, "-job", jobName},
 				VolumeMounts: []corev1.VolumeMount{
 					{
 						Name:      "log",

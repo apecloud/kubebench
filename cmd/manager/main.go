@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/apecloud/kubebench/internal/controller/tpcc"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -112,6 +113,14 @@ func main() {
 		RestConfig: mgr.GetConfig(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Ycsb")
+		os.Exit(1)
+	}
+	if err = (&tpcc.TpccReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		RestConfig: mgr.GetConfig(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Tpcc")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

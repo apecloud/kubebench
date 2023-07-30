@@ -3,4 +3,5 @@ resources:
 - benchmark_v1alpha1_sysbench.yaml
 - benchmark_v1alpha1_pgbench.yaml
 - benchmark_v1alpha1_ycsb.yaml
+- benchmark_v1alpha1_tpcc.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

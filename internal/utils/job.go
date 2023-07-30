@@ -162,7 +162,8 @@ func trimTooLongLog(log string) string {
 	reuslt := ""
 	for _, line := range lines {
 		if len(reuslt)+len(line) > 32768 {
-			break
+			// delete from the start
+			reuslt = reuslt[len(line)+1:]
 		}
 		reuslt += line + "\n"
 	}

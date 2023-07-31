@@ -72,6 +72,32 @@ rules:
 - apiGroups:
   - benchmark.apecloud.io
   resources:
+  - tpccs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - tpccs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - tpccs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
   - ycsbs
   verbs:
   - create

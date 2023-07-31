@@ -35,4 +35,13 @@ resources:
   kind: Ycsb
   path: github.com/apecloud/kubebench/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: apecloud.io
+  group: benchmark
+  kind: Tpcc
+  path: github.com/apecloud/kubebench/api/v1alpha1
+  version: v1alpha1
 version: "3"

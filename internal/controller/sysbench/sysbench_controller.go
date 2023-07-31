@@ -26,15 +26,12 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
-	"github.com/apecloud/kubebench/internal/controllerutil"
+	intctrlutil "github.com/apecloud/kubebench/internal/controllerutil"
 	"github.com/apecloud/kubebench/internal/utils"
-)
-
-const (
-	SysbenchJobNamePrefix = "sysbench-"
 )
 
 // SysbenchReconciler reconciles a Sysbench object
@@ -71,7 +68,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	// Run to one completion
 	if sysbench.Status.Phase == benchmarkv1alpha1.Complete || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
-		return controllerutil.Reconciled()
+		return intctrlutil.Reconciled()
 	}
 
 	if sysbench.Status.Phase == "" {
@@ -79,61 +76,61 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		sysbench.Status.Total = len(sysbench.Spec.Threads) * len(sysbench.Spec.Types)
 		sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
 		if err := r.Status().Update(ctx, &sysbench); err != nil {
-			return controllerutil.RequeueWithError(err, l, "unable to update sysbench status")
+			return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
 		}
 	}
 
 	// check if the job already exists
-	jobName := SysbenchJobNamePrefix + fmt.Sprintf("%s-%d", sysbench.Name, sysbench.Status.Succeeded)
+	jobName := fmt.Sprintf("%s-%d", sysbench.Name, sysbench.Status.Succeeded)
 	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, sysbench.Namespace)
 	if err != nil {
-		return controllerutil.RequeueWithError(err, l, "unable to check if job exists")
+		return intctrlutil.RequeueWithError(err, l, "unable to check if job exists")
 	}
 	if existed {
 		l.Info("job already exists", "job", jobName)
 		// get the job status
 		status, err := utils.GetJobStatus(r.Client, ctx, jobName, sysbench.Namespace)
 		if err != nil {
-			return controllerutil.RequeueWithError(err, l, "unable to get job status")
+			return intctrlutil.RequeueWithError(err, l, "unable to get job status")
 		}
 		l.Info("job status", "job", jobName, "status", status)
 
 		// job is still running
 		if status.Active > 0 {
 			l.Info("job is still running", "job", jobName)
-			return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
+			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 		}
 
 		// job is failed
 		if status.Failed > 0 {
 			l.Info("job is failed", "job", jobName)
 			if err := r.Get(ctx, types.NamespacedName{Name: sysbench.Name, Namespace: sysbench.Namespace}, &sysbench); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to get sysbench")
+				return intctrlutil.RequeueWithError(err, l, "unable to get sysbench")
 			}
 
 			// record the fail log
 			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, sysbench.Namespace, &sysbench.Status.Conditions, nil); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to record the fail log")
+				return intctrlutil.RequeueWithError(err, l, "unable to record the fail log")
 			}
 
 			// delete the job
 			if err := utils.DelteJob(r.Client, ctx, jobName, sysbench.Namespace); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to delete Job")
+				return intctrlutil.RequeueWithError(err, l, "unable to delete Job")
 			}
 
 			// update the sysbench status
 			if err := r.Status().Update(ctx, &sysbench); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to update sysbench status")
+				return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
 			}
 
-			return controllerutil.Reconciled()
+			return intctrlutil.Reconciled()
 		}
 
 		// job is completed
 		if status.Succeeded > 0 {
 			l.Info("job is succeeded", "jobName", jobName)
 			if err := r.Get(ctx, types.NamespacedName{Name: sysbench.Name, Namespace: sysbench.Namespace}, &sysbench); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to get sysbench")
+				return intctrlutil.RequeueWithError(err, l, "unable to get sysbench")
 			}
 
 			sysbench.Status.Succeeded += 1
@@ -141,30 +138,30 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 			// record the result
 			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to record the fail log")
+				return intctrlutil.RequeueWithError(err, l, "unable to record the fail log")
 			}
 
 			// delete the job
 			if err := utils.DelteJob(r.Client, ctx, jobName, sysbench.Namespace); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to delete Job")
+				return intctrlutil.RequeueWithError(err, l, "unable to delete Job")
 			}
 
 			// update the sysbench status
 			if err := r.Status().Update(ctx, &sysbench); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to update sysbench status")
+				return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
 			}
-			return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
+			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 		}
 
 		// status is empty, job is creating
-		return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
+		return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 	} else {
 		// check the success number
 		if sysbench.Status.Succeeded >= sysbench.Status.Total {
 			if err := updateSysbenchStatus(r, ctx, &sysbench, benchmarkv1alpha1.Complete); err != nil {
-				return controllerutil.RequeueWithError(err, l, "unable to update sysbench status")
+				return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
 			}
-			return controllerutil.Reconciled()
+			return intctrlutil.Reconciled()
 		}
 
 		l.Info("Job isn't existed", "jobName", jobName)
@@ -172,11 +169,16 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		// create the job
 		job := NewJob(&sysbench, jobName)
 		l.Info("creating job", "job", job.Name)
+
+		if err := controllerutil.SetOwnerReference(&sysbench, job, r.Scheme); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to set ownerReference for Job")
+		}
+
 		if err := r.Create(ctx, job); err != nil {
-			return controllerutil.RequeueWithError(err, l, "unable to create job")
+			return intctrlutil.RequeueWithError(err, l, "unable to create job")
 		}
 		l.Info("job created", "job", job.Name)
-		return controllerutil.RequeueAfter(controllerutil.RequeueDuration)
+		return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 	}
 }
 

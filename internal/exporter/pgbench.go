@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hpcloud/tail"
 	"github.com/prometheus/client_golang/prometheus"
@@ -242,21 +243,31 @@ func ScrapPgbench(file, benchName, jobName string) {
 	klog.Infof("read file %s", file)
 	t, _ := tail.TailFile(file, tail.Config{Follow: true})
 
+	timer := time.NewTicker(30 * time.Second)
+	defer timer.Stop()
+
 	msg := ""
-	for line := range t.Lines {
-		klog.Info("ScrapPgbench: ", line.Text)
-		switch {
-		case pgbenchSecondRegex.MatchString(line.Text):
-			// this represents the output of pgbench per second
-			msg = line.Text
-			UpdatePgbenchMetricsSecond(benchName, jobName, msg)
-		case tpsRegex.MatchString(line.Text):
-			// this means the pgbench is finished
-			msg += line.Text
-			UpdatePgbenchMetrics(benchName, jobName, msg)
+	for {
+		select {
+		case line := <-t.Lines:
+			klog.Info("ScrapPgbench: ", line.Text)
+			timer.Reset(30 * time.Second)
+			switch {
+			case pgbenchSecondRegex.MatchString(line.Text):
+				// this represents the output of pgbench per second
+				msg = line.Text
+				UpdatePgbenchMetricsSecond(benchName, jobName, msg)
+			case tpsRegex.MatchString(line.Text):
+				// this means the pgbench is finished
+				msg += line.Text
+				UpdatePgbenchMetrics(benchName, jobName, msg)
+				return
+			default:
+				msg += line.Text + "\n"
+			}
+		case <-timer.C:
+			// don't receive any message in 30s, we think the pgbench is finished
 			return
-		default:
-			msg += line.Text + "\n"
 		}
 	}
 }

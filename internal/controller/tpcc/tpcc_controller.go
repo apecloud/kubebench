@@ -19,10 +19,10 @@ package tpcc
 import (
 	"context"
 	"fmt"
+	"time"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,7 +57,8 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	l := log.FromContext(ctx)
 
 	var tpcc benchmarkv1alpha1.Tpcc
-	if err := r.Get(ctx, req.NamespacedName, &tpcc); err != nil {
+	var err error
+	if err = r.Get(ctx, req.NamespacedName, &tpcc); err != nil {
 		l.Error(err, "unable to fetch Tpcc")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -67,123 +68,75 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return intctrlutil.Reconciled()
 	}
 
-	if tpcc.Status.Phase == "" {
-		tpcc.Status.Phase = benchmarkv1alpha1.Running
-		tpcc.Status.Total = len(tpcc.Spec.Threads)
-		tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
-		if err := r.Status().Update(ctx, &tpcc); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update Tpcc status")
-		}
+	l.Info("reconciling tpcc", "tpcc mode", tpcc.Spec.Mode)
+
+	jobs := NewJobs(&tpcc)
+
+	tpcc.Status.Phase = benchmarkv1alpha1.Running
+	tpcc.Status.Total = len(jobs)
+	tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
+	if err := r.Status().Update(ctx, &tpcc); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
 	}
 
-	// check if the job is already exist
-	jobName := fmt.Sprintf("%s-%d", tpcc.Name, tpcc.Status.Succeeded)
-	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, tpcc.Namespace)
-	if err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to check if job exists")
+	if err = r.Status().Update(ctx, &tpcc); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "update to update tpcc status")
 	}
-	if existed {
-		l.Info("job already exists", "job", jobName)
-		// get the job status
-		status, err := utils.GetJobStatus(r.Client, ctx, jobName, tpcc.Namespace)
+
+	for _, job := range jobs {
+		if err = controllerutil.SetOwnerReference(&tpcc, job, r.Scheme); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
+		}
+
+		if err = r.Create(ctx, job); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to create job")
+		}
+
+		l.Info("created job", "job", job.Name)
+		// wait for the job to complete, then update the tpcc status
+
+		for {
+			// sleep for a while to avoid too many requests
+			time.Sleep(time.Second)
+
+			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+			if err != nil {
+				l.Error(err, "failed to get job status")
+				break
+			}
+
+			// job is still running
+			if status.Active > 0 {
+				l.Info("job is still running", "job", job.Name)
+				continue
+			}
+
+			// job is failed
+			if status.Failed > 0 {
+				l.Info("job is failed", "job", job.Name)
+				tpcc.Status.Phase = benchmarkv1alpha1.Failed
+				break
+			}
+
+			// job is completed
+			if status.Succeeded > 0 {
+				l.Info("job is succeeded", "jobName", job.Name)
+				tpcc.Status.Succeeded += 1
+				tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
+				break
+			}
+		}
+
+		r.Status().Update(ctx, &tpcc)
+
 		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to get job status")
+			return intctrlutil.RequeueWithError(err, l, "")
 		}
-		l.Info("job status", "job", jobName, "status", status)
-
-		// job is still running
-		if status.Active > 0 {
-			l.Info("job is still running", "job", jobName)
-			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
-		}
-
-		// job is failed
-		if status.Failed > 0 {
-			l.Info("job is failed", "job", jobName)
-			if err := r.Get(ctx, types.NamespacedName{Name: tpcc.Name, Namespace: tpcc.Namespace}, &tpcc); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to get tpcc")
-			}
-
-			// record the fail log
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, tpcc.Namespace, &tpcc.Status.Conditions, nil); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the fail log")
-			}
-
-			// delete the job
-			if err := utils.DelteJob(r.Client, ctx, jobName, tpcc.Namespace); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to delete Job")
-			}
-
-			// update the tpcc status
-			if err := r.Status().Update(ctx, &tpcc); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
-			}
-
-			return intctrlutil.Reconciled()
-		}
-
-		// job is completed
-		if status.Succeeded > 0 {
-			l.Info("job is succeeded", "jobName", jobName)
-			if err := r.Get(ctx, types.NamespacedName{Name: tpcc.Name, Namespace: tpcc.Namespace}, &tpcc); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to get tpcc")
-			}
-
-			tpcc.Status.Succeeded += 1
-			tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
-
-			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, tpcc.Namespace, &tpcc.Status.Conditions, nil); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the fail log")
-			}
-
-			// delete the job
-			if err := utils.DelteJob(r.Client, ctx, jobName, tpcc.Namespace); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to delete Job")
-			}
-
-			// update the tpcc status
-			if err := r.Status().Update(ctx, &tpcc); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
-			}
-			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
-		}
-
-		// status is empty, job is creating
-		return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
-	} else {
-		// check the success number
-		if tpcc.Status.Succeeded >= tpcc.Status.Total {
-			if err := updatetpccStatus(r, ctx, &tpcc, benchmarkv1alpha1.Complete); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
-			}
-			return intctrlutil.Reconciled()
-		}
-
-		l.Info("Job isn't existed", "jobName", jobName)
-
-		// create the job
-		job := NewJob(&tpcc, jobName)
-
-		if err := controllerutil.SetControllerReference(&tpcc, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to set ownerReference for job")
-		}
-
-		l.Info("creating job", "job", job.Name)
-		if err := r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to create job")
-		}
-		l.Info("job created", "job", job.Name)
-		return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 	}
-}
 
-func updatetpccStatus(r *TpccReconciler, ctx context.Context, tpcc *benchmarkv1alpha1.Tpcc, phase benchmarkv1alpha1.BenchmarkPhase) error {
-	if err := r.Get(ctx, client.ObjectKeyFromObject(tpcc), tpcc); err != nil {
-		return err
-	}
-	tpcc.Status.Phase = phase
-	return r.Status().Update(ctx, tpcc)
+	tpcc.Status.Phase = benchmarkv1alpha1.Complete
+	r.Status().Update(ctx, &tpcc)
+	return intctrlutil.Reconciled()
 }
 
 // SetupWithManager sets up the controller with the Manager.

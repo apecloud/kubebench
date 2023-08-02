@@ -41,6 +41,15 @@ type SysbenchSpec struct {
 	// +optional
 	Duration int `json:"duration,omitempty"`
 
+	// mode is all, will run cleanup, prepare, run
+	// mode is cleanup, will run cleanup
+	// mode is prepare, will run prepare
+	// mode is run, will run cleanup, prepare, run
+	// +kubebuilder:default=all
+	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
+	// +optional
+	Mode string `json:"mode,omitempty"`
+
 	// the other sysbench run command flags to use for sysbench
 	// +optional
 	ExtraArgs []string `json:"extraArgs,omitempty"`
@@ -90,10 +99,6 @@ type SysbenchStatus struct {
 
 	// failed is the number of failed sysbench runs
 	Total int `json:"total,omitempty"`
-
-	// Describes the current state of add-on API installation conditions.
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true

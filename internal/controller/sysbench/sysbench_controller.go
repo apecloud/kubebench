@@ -19,6 +19,7 @@ package sysbench
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -118,7 +119,6 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			if status.Failed > 0 {
 				l.Info("job is failed", "job", job.Name)
 				sysbench.Status.Phase = benchmarkv1alpha1.Failed
-				break
 			}
 
 			// job is completed
@@ -126,8 +126,14 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 				l.Info("job is succeeded", "jobName", job.Name)
 				sysbench.Status.Succeeded += 1
 				sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
-				break
 			}
+
+			// record the result
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
+			}
+
+			break
 		}
 
 		r.Status().Update(ctx, &sysbench)
@@ -147,4 +153,28 @@ func (r *SysbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&benchmarkv1alpha1.Sysbench{}).
 		Complete(r)
+}
+
+func ParseSysBench(msg string) string {
+	result := ""
+	lines := strings.Split(msg, "\n")
+	index := len(lines)
+
+	for i, l := range lines {
+		if strings.Contains(l, "SQL statistics") {
+			index = i
+			result += fmt.Sprintf("%s\n", l)
+			break
+		}
+	}
+
+	for i := index + 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			// align the output
+			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
+		}
+	}
+
+	// delete the last \n
+	return strings.TrimSpace(result)
 }

@@ -99,6 +99,10 @@ type SysbenchStatus struct {
 
 	// failed is the number of failed sysbench runs
 	Total int `json:"total,omitempty"`
+
+	// Describes the current state of benchmark conditions.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true

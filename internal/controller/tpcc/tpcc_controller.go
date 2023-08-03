@@ -19,6 +19,7 @@ package tpcc
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
@@ -125,14 +126,16 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			}
 
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpcc.Namespace, &tpcc.Status.Conditions, nil); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpcc.Namespace, &tpcc.Status.Conditions, ParseTPCC); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 
 			break
 		}
 
-		r.Status().Update(ctx, &tpcc)
+		if err := r.Status().Update(ctx, &tpcc); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
+		}
 
 		if err != nil {
 			return intctrlutil.RequeueWithError(err, l, "")
@@ -149,4 +152,28 @@ func (r *TpccReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&benchmarkv1alpha1.Tpcc{}).
 		Complete(r)
+}
+
+func ParseTPCC(msg string) string {
+	result := ""
+	lines := strings.Split(msg, "\n")
+	index := len(lines)
+
+	for i, l := range lines {
+		if strings.Contains(l, "Measured tpmC (NewOrders)") {
+			index = i
+			result += fmt.Sprintf("%s\n", l)
+			break
+		}
+	}
+
+	for i := index + 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			// align the output
+			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
+		}
+	}
+
+	// delete the last \n
+	return strings.TrimSpace(result)
 }

@@ -19,6 +19,7 @@ package ycsb
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -124,14 +125,16 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			}
 
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, nil); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, ParseYcsb); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 
 			break
 		}
 
-		r.Status().Update(ctx, &ycsb)
+		if err := r.Status().Update(ctx, &ycsb); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
+		}
 
 		if err != nil {
 			return intctrlutil.RequeueWithError(err, l, "")
@@ -148,4 +151,28 @@ func (r *YcsbReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&benchmarkv1alpha1.Ycsb{}).
 		Complete(r)
+}
+
+func ParseYcsb(msg string) string {
+	result := ""
+	lines := strings.Split(msg, "\n")
+	index := len(lines)
+
+	for i, l := range lines {
+		if strings.Contains(l, "Run finished, takes") {
+			index = i
+			result += fmt.Sprintf("%s\n", l)
+			break
+		}
+	}
+
+	for i := index + 1; i < len(lines); i++ {
+		if lines[i] != "" {
+			// align the output
+			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
+		}
+	}
+
+	// delete the last \n
+	return strings.TrimSpace(result)
 }

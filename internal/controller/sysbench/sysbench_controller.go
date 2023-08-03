@@ -136,7 +136,10 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			break
 		}
 
-		r.Status().Update(ctx, &sysbench)
+		// update the sysbench status
+		if err := r.Status().Update(ctx, &sysbench); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
+		}
 
 		if err != nil {
 			return intctrlutil.RequeueWithError(err, l, "")

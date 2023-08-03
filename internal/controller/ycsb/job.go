@@ -58,7 +58,7 @@ func NewPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 
 func NewRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd := "/go-ycsb"
-	cmd = fmt.Sprintf("%s run %s", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s run %s --interval 1", cmd, cr.Spec.Target.Driver)
 	cmd = fmt.Sprintf("%s %s", cmd, NewWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)

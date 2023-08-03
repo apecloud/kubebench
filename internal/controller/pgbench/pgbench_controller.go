@@ -128,7 +128,10 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			break
 		}
 
-		r.Status().Update(ctx, &pgbench)
+		// update the pgbench status
+		if err := r.Status().Update(ctx, &pgbench); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
+		}
 
 		if err != nil {
 			return intctrlutil.RequeueWithError(err, l, "")

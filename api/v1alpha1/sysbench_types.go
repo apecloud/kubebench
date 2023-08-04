@@ -41,10 +41,10 @@ type SysbenchSpec struct {
 	// +optional
 	Duration int `json:"duration,omitempty"`
 
-	// mode is all, will run cleanup, prepare, run
-	// mode is cleanup, will run cleanup
-	// mode is prepare, will run prepare
-	// mode is run, will run cleanup, prepare, run
+	// mode is all, will exec cleanup, prepare, run
+	// mode is cleanup, will exec cleanup
+	// mode is prepare, will exec prepare
+	// mode is run, will exec run
 	// +kubebuilder:default=all
 	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
 	// +optional

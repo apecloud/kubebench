@@ -7,26 +7,61 @@ import (
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/apecloud/kubebench/api/v1alpha1"
+	"github.com/apecloud/kubebench/internal/utils"
 	"github.com/apecloud/kubebench/pkg/constants"
 )
 
-func NewJob(cr *v1alpha1.Ycsb, jobName string) *batchv1.Job {
-	backoffLimit := int32(0) // no retry
+func NewJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	jobs := make([]*batchv1.Job, 0)
 
-	cmd := "/go-ycsb"
-	if cr.Status.Ready {
-		cmd = fmt.Sprintf("%s run %s", cmd, cr.Spec.Target.Driver)
-	} else {
-		cmd = fmt.Sprintf("%s load %s -p dropdata=true", cmd, cr.Spec.Target.Driver)
+	step := cr.Spec.Step
+	// TODO: add cleanup
+	if step == "prepare" || step == "all" {
+		jobs = append(jobs, NewPrepareJobs(cr)...)
+	}
+	if step == "run" || step == "all" {
+		jobs = append(jobs, NewRunJobs(cr)...)
 	}
 
+	return jobs
+}
+
+// TODO
+func NewCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	return nil
+}
+
+func NewPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	cmd := "/go-ycsb"
+	cmd = fmt.Sprintf("%s load %s", cmd, cr.Spec.Target.Driver)
 	cmd = fmt.Sprintf("%s %s", cmd, NewWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
-	cmd = fmt.Sprintf("%s -p threadcount=%d", cmd, cr.Spec.Threads[cr.Status.Succeeded])
+	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
+	cmd = fmt.Sprintf("%s 2>&1 | tee /var/log/ycsb.log", cmd)
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-prepare", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.YcsbImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/bin/sh", "-c", cmd},
+		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	cmd := "/go-ycsb"
+	cmd = fmt.Sprintf("%s run %s --interval 1", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s %s", cmd, NewWorkloadParams(cr))
+	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
+	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 
 	totalProportion := cr.Spec.ReadProportion + cr.Spec.UpdateProportion + cr.Spec.InsertProportion + cr.Spec.ReadModifyWriteProportion + cr.Spec.ScanProportion
@@ -51,37 +86,24 @@ func NewJob(cr *v1alpha1.Ycsb, jobName string) *batchv1.Job {
 		cmd = fmt.Sprintf("%s -p scanproportion=%f", cmd, scanProportion)
 	}
 
-	cmd = fmt.Sprintf("%s 2>&1 | tee /var/log/ycsb.log", cmd)
-
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
-			Namespace: cr.Namespace,
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "kubebench",
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:            constants.ContainerName,
-							Image:           constants.YcsbImage,
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         []string{"/bin/sh", "-c", cmd},
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyNever,
-				},
+	jobs := make([]*batchv1.Job, 0)
+	for i, thread := range cr.Spec.Threads {
+		jobName := fmt.Sprintf("%s-run-%d", cr.Name, i)
+		curJob := utils.JobTemplate(jobName, cr.Namespace)
+		curCmd := fmt.Sprintf("%s -p threadcount=%d", cmd, thread)
+		curJob.Spec.Template.Spec.Containers = append(
+			curJob.Spec.Template.Spec.Containers,
+			corev1.Container{
+				Name:            constants.ContainerName,
+				Image:           constants.YcsbImage,
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Command:         []string{"/bin/sh", "-c", curCmd},
 			},
-		},
+		)
+		jobs = append(jobs, curJob)
 	}
 
-	return job
+	return jobs
 }
 
 func NewWorkloadParams(cr *v1alpha1.Ycsb) string {

@@ -78,6 +78,15 @@ type YcsbSpec struct {
 	// +optional
 	Threads []int `json:"threads,omitempty"`
 
+	// step is all, will exec cleanup, prepare, run
+	// step is cleanup, will exec cleanup
+	// step is prepare, will exec prepare
+	// step is run, will exec run
+	// +kubebuilder:default=all
+	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
+	// +optional
+	Step string `json:"step,omitempty"`
+
 	// the other ycsb run command options to use for ycsb
 	// +optional
 	ExtraArgs []string `json:"extraArgs,omitempty"`
@@ -123,16 +132,13 @@ type YcsbStatus struct {
 	// completions is the completed/total number of sysbench runs
 	Completions string `json:"completions,omitempty"`
 
-	// ready is true when the pgbench benchmark prepared data
-	Ready bool `json:"ready,omitempty"`
-
 	// succeeded is the number of successful sysbench runs
 	Succeeded int `json:"succeeded,omitempty"`
 
 	// failed is the number of failed sysbench runs
 	Total int `json:"total,omitempty"`
 
-	// Describes the current state of add-on API installation conditions.
+	// Describes the current state of benchmark conditions.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

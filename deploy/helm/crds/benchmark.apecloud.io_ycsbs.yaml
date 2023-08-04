@@ -57,7 +57,7 @@ spec:
                 minimum: 0
                 type: integer
               readProportion:
-                default: 50
+                default: 0
                 maximum: 100
                 minimum: 0
                 type: integer
@@ -70,6 +70,14 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
+              step:
+                default: all
+                enum:
+                - all
+                - cleanup
+                - prepare
+                - run
+                type: string
               target:
                 properties:
                   database:
@@ -98,7 +106,7 @@ spec:
                 minItems: 1
                 type: array
               updateProportion:
-                default: 50
+                default: 0
                 maximum: 100
                 minimum: 0
                 type: integer
@@ -156,8 +164,6 @@ spec:
                   - Complete
                   - Failed
                 type: string
-              ready:
-                type: boolean
               succeeded:
                 type: integer
               total:

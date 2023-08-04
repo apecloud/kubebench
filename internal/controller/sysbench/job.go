@@ -6,16 +6,31 @@ import (
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/apecloud/kubebench/api/v1alpha1"
+	"github.com/apecloud/kubebench/internal/utils"
 	"github.com/apecloud/kubebench/pkg/constants"
 )
 
-func NewJob(cr *v1alpha1.Sysbench, jobName string) *batchv1.Job {
-	backoffLimit := int32(0) // no retry
+func NewJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+	jobs := make([]*batchv1.Job, 0)
 
-	value := fmt.Sprintf("mode:%s", "all")
+	step := cr.Spec.Step
+	if step == "cleanup" || step == "all" {
+		jobs = append(jobs, NewCleanupJobs(cr)...)
+	}
+	if step == "prepare" || step == "all" {
+		jobs = append(jobs, NewPrepareJobs(cr)...)
+	}
+	if step == "run" || step == "all" {
+		jobs = append(jobs, NewRunJobs(cr)...)
+	}
+
+	return jobs
+}
+
+func NewCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+	value := fmt.Sprintf("mode:%s", "cleanup")
 	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
 	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
 	value = fmt.Sprintf("%s,port:%d", value, cr.Spec.Target.Port)
@@ -25,88 +40,174 @@ func NewJob(cr *v1alpha1.Sysbench, jobName string) *batchv1.Job {
 	value = fmt.Sprintf("%s,tables:%d", value, cr.Spec.Tables)
 	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
 	value = fmt.Sprintf("%s,times:%d", value, cr.Spec.Duration)
-	value = fmt.Sprintf("%s,threads:%d", value, cr.Spec.Threads[cr.Status.Succeeded/len(cr.Spec.Threads)])
-	value = fmt.Sprintf("%s,type:%s", value, cr.Spec.Types[cr.Status.Succeeded%len(cr.Spec.Types)])
 
 	// TODO add func to parse extra args
 	value = fmt.Sprintf("%s,others:%s", value, strings.Join(cr.Spec.ExtraArgs, " "))
 
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
-			Namespace: cr.Namespace,
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "kubebench",
-					},
+	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.SysbenchImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/bin/sh", "-c"},
+			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
+			Env: []corev1.EnvVar{
+				{
+					Name:  "TYPE",
+					Value: "2",
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:            constants.ContainerName,
-							Image:           constants.SysbenchImage,
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         []string{"/bin/sh", "-c"},
-							Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
-							Env: []corev1.EnvVar{
-								{
-									Name:  "TYPE",
-									Value: "2",
-								},
-								{
-									Name:  "FLAG",
-									Value: "0",
-								},
-								{
-									Name:  "CONFIGS",
-									Value: value,
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "log",
-									MountPath: "/var/log",
-								},
-							},
-						},
-						{
-							Name:            "metrics",
-							Image:           constants.PrometheusExporterImage,
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Ports: []corev1.ContainerPort{
-								{
-									ContainerPort: 9187,
-									Name:          "http-metrics",
-									Protocol:      corev1.ProtocolTCP,
-								},
-							},
-							Command: []string{"/exporter"},
-							Args:    []string{"-type", "sysbench", "-file", "/var/log/sysbench.log", "-bench", cr.Name, "-job", jobName},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "log",
-									MountPath: "/var/log",
-								},
-							},
-						},
-					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "log",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyNever,
+				{
+					Name:  "FLAG",
+					Value: "0",
+				},
+				{
+					Name:  "CONFIGS",
+					Value: value,
+				},
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "log",
+					MountPath: "/var/log",
 				},
 			},
 		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+	value := fmt.Sprintf("mode:%s", "prepare")
+	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
+	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
+	value = fmt.Sprintf("%s,port:%d", value, cr.Spec.Target.Port)
+	value = fmt.Sprintf("%s,user:%s", value, cr.Spec.Target.User)
+	value = fmt.Sprintf("%s,password:%s", value, cr.Spec.Target.Password)
+	value = fmt.Sprintf("%s,db:%s", value, cr.Spec.Target.Database)
+	value = fmt.Sprintf("%s,tables:%d", value, cr.Spec.Tables)
+	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
+	value = fmt.Sprintf("%s,times:%d", value, cr.Spec.Duration)
+
+	// TODO add func to parse extra args
+	value = fmt.Sprintf("%s,others:%s", value, strings.Join(cr.Spec.ExtraArgs, " "))
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-prepare", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.SysbenchImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/bin/sh", "-c"},
+			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
+			Env: []corev1.EnvVar{
+				{
+					Name:  "TYPE",
+					Value: "2",
+				},
+				{
+					Name:  "FLAG",
+					Value: "0",
+				},
+				{
+					Name:  "CONFIGS",
+					Value: value,
+				},
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "log",
+					MountPath: "/var/log",
+				},
+			},
+		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+	value := fmt.Sprintf("mode:%s", "run")
+	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
+	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
+	value = fmt.Sprintf("%s,port:%d", value, cr.Spec.Target.Port)
+	value = fmt.Sprintf("%s,user:%s", value, cr.Spec.Target.User)
+	value = fmt.Sprintf("%s,password:%s", value, cr.Spec.Target.Password)
+	value = fmt.Sprintf("%s,db:%s", value, cr.Spec.Target.Database)
+	value = fmt.Sprintf("%s,tables:%d", value, cr.Spec.Tables)
+	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
+	value = fmt.Sprintf("%s,times:%d", value, cr.Spec.Duration)
+
+	// TODO add func to parse extra args
+	value = fmt.Sprintf("%s,others:%s", value, strings.Join(cr.Spec.ExtraArgs, " "))
+
+	jobs := make([]*batchv1.Job, 0)
+	for i := 0; i < len(cr.Spec.Threads)*len(cr.Spec.Types); i++ {
+		curValue := fmt.Sprintf("%s,threads:%d", value, cr.Spec.Threads[i/len(cr.Spec.Threads)])
+		curValue = fmt.Sprintf("%s,type:%s", curValue, cr.Spec.Types[i%len(cr.Spec.Types)])
+		jobName := fmt.Sprintf("%s-run-%d", cr.Name, i)
+		curJob := utils.JobTemplate(jobName, cr.Namespace)
+
+		curJob.Spec.Template.Spec.Containers = append(
+			curJob.Spec.Template.Spec.Containers,
+			corev1.Container{
+				Name:            constants.ContainerName,
+				Image:           constants.SysbenchImage,
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Command:         []string{"/bin/sh", "-c"},
+				Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
+				Env: []corev1.EnvVar{
+					{
+						Name:  "TYPE",
+						Value: "2",
+					},
+					{
+						Name:  "FLAG",
+						Value: "0",
+					},
+					{
+						Name:  "CONFIGS",
+						Value: curValue,
+					},
+				},
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      "log",
+						MountPath: "/var/log",
+					},
+				},
+			},
+		)
+
+		curJob.Spec.Template.Spec.Containers = append(
+			curJob.Spec.Template.Spec.Containers,
+			corev1.Container{
+				Name:            "metrics",
+				Image:           constants.PrometheusExporterImage,
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Ports: []corev1.ContainerPort{
+					{
+						ContainerPort: 9187,
+						Name:          "http-metrics",
+						Protocol:      corev1.ProtocolTCP,
+					},
+				},
+				Command: []string{"/exporter"},
+				Args:    []string{"-type", "sysbench", "-file", "/var/log/sysbench.log", "-bench", cr.Name, "-job", jobName},
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      "log",
+						MountPath: "/var/log",
+					},
+				},
+			},
+		)
+
+		jobs = append(jobs, curJob)
 	}
 
-	return job
+	return jobs
 }

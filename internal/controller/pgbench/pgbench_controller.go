@@ -20,9 +20,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,7 +58,8 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	l := log.FromContext(ctx)
 
 	var pgbench benchmarkv1alpha1.Pgbench
-	if err := r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
+	var err error
+	if err = r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -66,141 +67,78 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return intctrlutil.Reconciled()
 	}
 
-	if pgbench.Status.Phase == "" {
-		pgbench.Status.Phase = benchmarkv1alpha1.Running
-		pgbench.Status.Total = len(pgbench.Spec.Clients)
-		pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
-		if err := r.Status().Update(ctx, &pgbench); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "update to update pgbench status")
-		}
+	jobs := NewJobs(&pgbench)
+
+	pgbench.Status.Phase = benchmarkv1alpha1.Running
+	pgbench.Status.Total = len(jobs)
+	pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
+
+	if err = r.Status().Update(ctx, &pgbench); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "update to update pgbench status")
 	}
 
-	var jobName string
-	if pgbench.Status.Ready {
-		jobName = fmt.Sprintf("%s-%d", pgbench.Name, pgbench.Status.Succeeded)
-	} else {
-		jobName = fmt.Sprintf("%s-init", pgbench.Name)
-	}
-
-	// check if the job already exists
-	existed, err := utils.IsJobExisted(r.Client, ctx, jobName, pgbench.Namespace)
-	if err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to check if the Job already exists")
-	}
-	if existed {
-		l.Info("Job already exists", "jobName", jobName)
-		// get the job status
-		status, err := utils.GetJobStatus(r.Client, ctx, jobName, pgbench.Namespace)
-		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to get Job status")
-		}
-		l.Info("Job status", "jobName", jobName, "status", status)
-
-		// job is still running
-		if status.Active > 0 {
-			l.Info("Job is still running", "jobName", jobName)
-			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
+	for _, job := range jobs {
+		if err = controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
 		}
 
-		// job is failed
-		if status.Failed > 0 {
-			l.Info("Job is failed", "jobName", jobName)
-			if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, &pgbench); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
-			}
-
-			// update the status
-			pgbench.Status.Phase = benchmarkv1alpha1.Failed
-
-			// record the fail log
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, nil); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the fail log")
-			}
-
-			// delete the job
-			l.V(1).Info("delete the Job", "jobName", jobName)
-			if err := utils.DelteJob(r.Client, ctx, jobName, pgbench.Namespace); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to delete Job")
-			}
-
-			// update the pgbench status
-			if err := r.Status().Update(ctx, &pgbench); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
-			}
-
-			return ctrl.Result{}, nil
+		if err = r.Create(ctx, job); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to create job")
 		}
 
-		if status.Succeeded > 0 {
-			l.Info("Job is succeeded", "jobName", jobName)
-			if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, &pgbench); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
+		l.Info("created job", "job", job.Name)
+		// wait for the job to complete, then update the pgbench status
+
+		for {
+			// sleep for a while to avoid too many requests
+			time.Sleep(time.Second)
+
+			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+			if err != nil {
+				l.Error(err, "failed to get job status")
+				break
 			}
 
-			if !pgbench.Status.Ready {
-				pgbench.Status.Ready = true
-			} else {
+			// job is still running
+			if status.Active > 0 {
+				l.Info("job is still running", "job", job.Name)
+				continue
+			}
+
+			// job is failed
+			if status.Failed > 0 {
+				l.Info("job is failed", "job", job.Name)
+				pgbench.Status.Phase = benchmarkv1alpha1.Failed
+			}
+
+			// job is completed
+			if status.Succeeded > 0 {
+				l.Info("job is succeeded", "jobName", job.Name)
 				pgbench.Status.Succeeded += 1
+				pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 			}
-			pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, jobName, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the fail log")
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 
-			// delete the job
-			l.V(1).Info("delete the Job", "jobName", jobName)
-			if err := utils.DelteJob(r.Client, ctx, jobName, pgbench.Namespace); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to delete Job")
-			}
-
-			// update the pgbench status
-			if err := r.Status().Update(ctx, &pgbench); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
-			}
-			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
+			break
 		}
 
-		// status is empty, job is creating
-		return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
-	} else {
-		// check the success number
-		if pgbench.Status.Succeeded >= pgbench.Status.Total {
-			if err := updatePgbenchStatus(r, ctx, &pgbench, benchmarkv1alpha1.Complete); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
-			}
-			return intctrlutil.Reconciled()
+		// update the pgbench status
+		if err := r.Status().Update(ctx, &pgbench); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
 		}
 
-		l.Info("Job isn't existed", "jobName", jobName)
-
-		// don't have job, and the pgbench is not complete
-		// create a new job
-		job := NewJob(&pgbench, jobName)
-		l.Info("create a new Job", "jobName", job.Name)
-
-		if err := controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to set ownerReference for Job")
+		if err != nil {
+			return intctrlutil.RequeueWithError(err, l, "")
 		}
-
-		if err := r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to create Job")
-		}
-		return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 	}
-}
 
-func updatePgbenchStatus(r *PgbenchReconciler, ctx context.Context, pgbench *benchmarkv1alpha1.Pgbench, status benchmarkv1alpha1.BenchmarkPhase) error {
-	// The pgbench could have been modified since the last time we got it
-	if err := r.Get(ctx, types.NamespacedName{Name: pgbench.Name, Namespace: pgbench.Namespace}, pgbench); err != nil {
-		return err
-	}
-	pgbench.Status.Phase = status
-	if err := r.Status().Update(ctx, pgbench); err != nil {
-		return err
-	}
-	return nil
+	pgbench.Status.Phase = benchmarkv1alpha1.Complete
+	r.Status().Update(ctx, &pgbench)
+	return intctrlutil.Reconciled()
 }
 
 // SetupWithManager sets up the controller with the Manager.

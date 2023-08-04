@@ -54,7 +54,7 @@ type PgbenchSpec struct {
 
 	// Establish a connection for each transaction, rather than doing it just
 	// once per client session. This is useful to measure the connection overhead.
-	// +kubeBuilder:default=false
+	// +kubebuilder:default=false
 	// +optional
 	Connect bool `json:"connect,omitempty"`
 
@@ -76,6 +76,15 @@ type PgbenchSpec struct {
 	// +kubebuilder:default=60
 	// +optional
 	Duration int `json:"duration,omitempty"`
+
+	// step is all, will exec cleanup, prepare, run
+	// step is cleanup, will exec cleanup
+	// step is prepare, will exec prepare
+	// step is run, will exec run
+	// +kubebuilder:default=all
+	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
+	// +optional
+	Step string `json:"step,omitempty"`
 
 	// The other pgbench run command options to use for pgbench
 	// +optional
@@ -122,16 +131,13 @@ type PgbenchStatus struct {
 	// completions is the completed/total number of pgbench runs
 	Completions string `json:"completions,omitempty"`
 
-	// ready is true when the pgbench benchmark is ready
-	Ready bool `json:"ready,omitempty"`
-
 	// succeeded is the number of successful pgbench runs
 	Succeeded int `json:"succeeded,omitempty"`
 
 	// total is the number of pgbench runs
 	Total int `json:"total,omitempty"`
 
-	// Describes the current state of pgbench benchmark.
+	// Describes the current state of benchmark conditions.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

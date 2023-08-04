@@ -90,6 +90,15 @@ type TpccSpec struct {
 	// +optional
 	StockLevel int `json:"stockLevel,omitempty"`
 
+	// step is all, will exec cleanup, prepare, run
+	// step is cleanup, will exec cleanup
+	// step is prepare, will exec prepare
+	// step is run, will exec run
+	// +kubebuilder:default=all
+	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
+	// +optional
+	Step string `json:"step,omitempty"`
+
 	// the other tpcc run command flags to use for tpcc
 	// +optional
 	ExtraArgs []string `json:"extraArgs,omitempty"`
@@ -141,7 +150,7 @@ type TpccStatus struct {
 	// failed is the number of failed sysbench runs
 	Total int `json:"total,omitempty"`
 
-	// Describes the current state of add-on API installation conditions.
+	// Describes the current state of benchmark conditions.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

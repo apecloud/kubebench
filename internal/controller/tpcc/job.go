@@ -2,24 +2,88 @@ package tpcc
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/apecloud/kubebench/api/v1alpha1"
+	"github.com/apecloud/kubebench/internal/utils"
 	"github.com/apecloud/kubebench/pkg/constants"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func NewJob(cr *v1alpha1.Tpcc, jobName string) *batchv1.Job {
-	backoffLimit := int32(0) // no retry
+func NewJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 
+	jobs := make([]*batchv1.Job, 0)
+
+	step := cr.Spec.Step
+	if step == "cleanup" || step == "all" {
+		jobs = append(jobs, NewCleanupJobs(cr)...)
+	}
+	if step == "prepare" || step == "all" {
+		jobs = append(jobs, NewPrepareJobs(cr)...)
+	}
+	if step == "run" || step == "all" {
+		jobs = append(jobs, NewRunJobs(cr)...)
+	}
+
+	return jobs
+}
+
+func NewCleanupJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	cmd := "python3 main.py"
+	cmd = fmt.Sprintf("%s --mode %s", cmd, "cleanup")
+	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
+	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
+	cmd = fmt.Sprintf("%s %s", cmd, NewWorkLoadParams(cr))
+	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.TpccImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/bin/sh", "-c", cmd},
+		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
+	cmd := "python3 main.py"
+	cmd = fmt.Sprintf("%s --mode %s", cmd, "prepare")
 	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
 	cmd = fmt.Sprintf("%s %s", cmd, NewWorkLoadParams(cr))
 	cmd = fmt.Sprintf("%s --warehouses %d", cmd, cr.Spec.WareHouses)
-	cmd = fmt.Sprintf("%s --threads %d", cmd, cr.Spec.Threads[cr.Status.Succeeded])
+	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-prepare", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.TpccImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/bin/sh", "-c", cmd},
+		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
+	cmd := "python3 main.py"
+	cmd = fmt.Sprintf("%s --mode %s", cmd, "run")
+	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
+	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
+	cmd = fmt.Sprintf("%s %s", cmd, NewWorkLoadParams(cr))
+	cmd = fmt.Sprintf("%s --warehouses %d", cmd, cr.Spec.WareHouses)
 	cmd = fmt.Sprintf("%s --limitTxnsPerMin %d", cmd, cr.Spec.LimitTxPerMin)
 
 	if cr.Spec.Transactions != 0 {
@@ -33,36 +97,26 @@ func NewJob(cr *v1alpha1.Tpcc, jobName string) *batchv1.Job {
 	cmd = fmt.Sprintf("%s --orderStatusWeight %d", cmd, cr.Spec.OrderStatus)
 	cmd = fmt.Sprintf("%s --deliveryWeight %d", cmd, cr.Spec.Delivery)
 	cmd = fmt.Sprintf("%s --stockLevelWeight %d", cmd, cr.Spec.StockLevel)
+	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
-			Namespace: cr.Namespace,
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "kubebench",
-					},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:            constants.ContainerName,
-							Image:           constants.TpccImage,
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         []string{"/bin/sh", "-c", cmd},
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyNever,
-				},
+	jobs := make([]*batchv1.Job, 0)
+	for i, thread := range cr.Spec.Threads {
+		curCmd := fmt.Sprintf("%s --threads %d", cmd, thread)
+		jobName := fmt.Sprintf("%s-run-%d", cr.Name, i)
+		curJob := utils.JobTemplate(jobName, cr.Namespace)
+		curJob.Spec.Template.Spec.Containers = append(
+			curJob.Spec.Template.Spec.Containers,
+			corev1.Container{
+				Name:            constants.ContainerName,
+				Image:           constants.TpccImage,
+				ImagePullPolicy: corev1.PullIfNotPresent,
+				Command:         []string{"/bin/sh", "-c", curCmd},
 			},
-		},
+		)
+		jobs = append(jobs, curJob)
 	}
 
-	return job
+	return jobs
 }
 
 func NewWorkLoadParams(cr *v1alpha1.Tpcc) string {
@@ -77,8 +131,8 @@ func NewWorkLoadParams(cr *v1alpha1.Tpcc) string {
 }
 
 func NewMysqlParams(cr *v1alpha1.Tpcc) string {
-	result := fmt.Sprintf("--driver %s", "com.mysql.jdbc.Driver")
-	result = fmt.Sprintf("%s --conn jdbc:mysql://%s:%d/%s?useSSL=false", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	result := fmt.Sprintf("--driver %s", "com.mysql.cj.jdbc.Driver")
+	result = fmt.Sprintf("%s --conn \"jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true\"", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 

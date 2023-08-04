@@ -47,6 +47,14 @@ spec:
                 type: array
               size:
                 type: integer
+              step:
+                default: all
+                enum:
+                - all
+                - cleanup
+                - prepare
+                - run
+                type: string
               tables:
                 type: integer
               target:

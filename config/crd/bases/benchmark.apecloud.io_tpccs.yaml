@@ -70,6 +70,14 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
+              step:
+                default: all
+                enum:
+                - all
+                - cleanup
+                - prepare
+                - run
+                type: string
               stockLevel:
                 default: 4
                 maximum: 100

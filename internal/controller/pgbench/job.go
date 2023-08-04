@@ -6,81 +6,158 @@ import (
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/apecloud/kubebench/api/v1alpha1"
+	"github.com/apecloud/kubebench/internal/utils"
 	"github.com/apecloud/kubebench/pkg/constants"
 )
 
-func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
-	backoffLimit := int32(0) // no retry
+func NewJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+	jobs := make([]*batchv1.Job, 0)
 
-	cmd := "pgbench"
-	if cr.Status.Ready {
-		cmd = fmt.Sprintf("%s -P 1", cmd)
-		cmd = fmt.Sprintf("%s -c %d", cmd, cr.Spec.Clients[cr.Status.Succeeded])
-
-		// priority: transactions > time
-		switch {
-		case cr.Spec.Transactions > 0:
-			cmd = fmt.Sprintf("%s -t %d", cmd, cr.Spec.Transactions)
-		case cr.Spec.Duration > 0:
-			cmd = fmt.Sprintf("%s -T %d", cmd, cr.Spec.Duration)
-		}
-
-		if cr.Spec.Connect {
-			cmd = fmt.Sprintf("%s -C", cmd)
-		}
-
-		if cr.Spec.SelectOnly {
-			cmd = fmt.Sprintf("%s -S", cmd)
-		}
-
-		// TODO add func to parse extra args
-		cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
-	} else {
-		// TODO add func to parse extra args
-		cmd = fmt.Sprintf("%s -i -s%d %s", cmd, cr.Spec.Scale, strings.Join(cr.Spec.ExtraArgs, " "))
+	step := cr.Spec.Step
+	if step == "cleanup" || step == "all" {
+		jobs = append(jobs, NewCleanupJobs(cr)...)
+	}
+	if step == "prepare" || step == "all" {
+		jobs = append(jobs, NewPrepareJobs(cr)...)
+	}
+	if step == "run" || step == "all" {
+		jobs = append(jobs, NewRunJobs(cr)...)
 	}
 
-	cmd = fmt.Sprintf("%s 2>&1 | tee /var/log/pgbench.log", cmd)
+	return jobs
+}
 
-	job := &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
-			Namespace: cr.Namespace,
-		},
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/managed-by": "kubebench",
-					},
+func NewCleanupJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+	cmd := "pgbench"
+	cmd = fmt.Sprintf("%s -i -I d", cmd)
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.PgbenchImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/bin/sh", "-c", cmd},
+			Env: []corev1.EnvVar{
+				{
+					Name:  "PGHOST",
+					Value: cr.Spec.Target.Host,
 				},
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{
-							Name: "log",
-							VolumeSource: corev1.VolumeSource{
-								EmptyDir: &corev1.EmptyDirVolumeSource{},
-							},
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyNever,
+				{
+					Name:  "PGPORT",
+					Value: fmt.Sprintf("%d", cr.Spec.Target.Port),
+				},
+				{
+					Name:  "PGUSER",
+					Value: cr.Spec.Target.User,
+				},
+				{
+					Name:  "PGPASSWORD",
+					Value: cr.Spec.Target.Password,
+				},
+				{
+					Name:  "PGDATABASE",
+					Value: cr.Spec.Target.Database,
+				},
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "log",
+					MountPath: "/var/log",
 				},
 			},
 		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+	cmd := "pgbench"
+	cmd = fmt.Sprintf("%s -i -s%d %s", cmd, cr.Spec.Scale, strings.Join(cr.Spec.ExtraArgs, " "))
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-prepare", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.PgbenchImage,
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/bin/sh", "-c", cmd},
+			Env: []corev1.EnvVar{
+				{
+					Name:  "PGHOST",
+					Value: cr.Spec.Target.Host,
+				},
+				{
+					Name:  "PGPORT",
+					Value: fmt.Sprintf("%d", cr.Spec.Target.Port),
+				},
+				{
+					Name:  "PGUSER",
+					Value: cr.Spec.Target.User,
+				},
+				{
+					Name:  "PGPASSWORD",
+					Value: cr.Spec.Target.Password,
+				},
+				{
+					Name:  "PGDATABASE",
+					Value: cr.Spec.Target.Database,
+				},
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{
+					Name:      "log",
+					MountPath: "/var/log",
+				},
+			},
+		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+	cmd := "pgbench"
+	cmd = fmt.Sprintf("%s -P 1", cmd)
+	cmd = fmt.Sprintf("%s -j %d", cmd, cr.Spec.Threads)
+
+	// priority: transactions > time
+	switch {
+	case cr.Spec.Transactions > 0:
+		cmd = fmt.Sprintf("%s -t %d", cmd, cr.Spec.Transactions)
+	case cr.Spec.Duration > 0:
+		cmd = fmt.Sprintf("%s -T %d", cmd, cr.Spec.Duration)
 	}
 
-	if cr.Status.Ready {
-		job.Spec.Template.Spec.Containers = append(
-			job.Spec.Template.Spec.Containers,
+	if cr.Spec.Connect {
+		cmd = fmt.Sprintf("%s -C", cmd)
+	}
+
+	if cr.Spec.SelectOnly {
+		cmd = fmt.Sprintf("%s -S", cmd)
+	}
+
+	// TODO add func to parse extra args
+	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
+
+	jobs := make([]*batchv1.Job, 0)
+	for i, client := range cr.Spec.Clients {
+		curCmd := fmt.Sprintf("%s -c %d", cmd, client)
+		jobName := fmt.Sprintf("%s-run-%d", cr.Name, i)
+		curJob := utils.JobTemplate(jobName, cr.Namespace)
+
+		curJob.Spec.Template.Spec.Containers = append(
+			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            constants.ContainerName,
 				Image:           constants.PgbenchImage,
 				ImagePullPolicy: corev1.PullIfNotPresent,
-				Command:         []string{"/bin/sh", "-c", cmd},
+				Command:         []string{"/bin/sh", "-c", curCmd},
 				Env: []corev1.EnvVar{
 					{
 						Name:  "PGHOST",
@@ -111,8 +188,8 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 				},
 			})
 
-		job.Spec.Template.Spec.Containers = append(
-			job.Spec.Template.Spec.Containers,
+		curJob.Spec.Template.Spec.Containers = append(
+			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            "metrics",
 				Image:           constants.PrometheusExporterImage,
@@ -133,45 +210,9 @@ func NewJob(cr *v1alpha1.Pgbench, jobName string) *batchv1.Job {
 					},
 				},
 			})
-	} else {
-		job.Spec.Template.Spec.Containers = append(
-			job.Spec.Template.Spec.Containers,
-			corev1.Container{
-				Name:            constants.ContainerName,
-				Image:           constants.PgbenchImage,
-				ImagePullPolicy: corev1.PullIfNotPresent,
-				Command:         []string{"/bin/sh", "-c", cmd},
-				Env: []corev1.EnvVar{
-					{
-						Name:  "PGHOST",
-						Value: cr.Spec.Target.Host,
-					},
-					{
-						Name:  "PGPORT",
-						Value: fmt.Sprintf("%d", cr.Spec.Target.Port),
-					},
-					{
-						Name:  "PGUSER",
-						Value: cr.Spec.Target.User,
-					},
-					{
-						Name:  "PGPASSWORD",
-						Value: cr.Spec.Target.Password,
-					},
-					{
-						Name:  "PGDATABASE",
-						Value: cr.Spec.Target.Database,
-					},
-				},
-				VolumeMounts: []corev1.VolumeMount{
-					{
-						Name:      "log",
-						MountPath: "/var/log",
-					},
-				},
-			},
-		)
+
+		jobs = append(jobs, curJob)
 	}
 
-	return job
+	return jobs
 }

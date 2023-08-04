@@ -132,7 +132,7 @@ func NewWorkLoadParams(cr *v1alpha1.Tpcc) string {
 
 func NewMysqlParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.mysql.cj.jdbc.Driver")
-	result = fmt.Sprintf("%s --conn jdbc:mysql://%s:%d/%s?useSSL=false", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	result = fmt.Sprintf("%s --conn \"jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true\"", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 

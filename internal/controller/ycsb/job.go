@@ -25,6 +25,11 @@ func NewJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 		jobs = append(jobs, NewRunJobs(cr)...)
 	}
 
+	// set tolerations for all jobs
+	for _, job := range jobs {
+		job.Spec.Template.Spec.Tolerations = cr.Spec.Tolerations
+	}
+
 	return jobs
 }
 

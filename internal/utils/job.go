@@ -28,8 +28,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/apecloud/kubebench/api/v1alpha1"
 )
 
 func IsJobExisted(cli client.Client, reqCtx context.Context, jobName string, namespace string) (bool, error) {
@@ -90,34 +88,6 @@ func DelteJob(cli client.Client, reqCtx context.Context, jobName string, namespa
 	}
 
 	return nil
-}
-
-func NewJob(jobName string, namespace string, objectMeta metav1.ObjectMeta, image v1alpha1.ImageSpec) *batchv1.Job {
-	backoffLimit := int32(0) // no retry
-
-	job := &batchv1.Job{
-		ObjectMeta: objectMeta,
-		Spec: batchv1.JobSpec{
-			BackoffLimit: &backoffLimit,
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:            jobName,
-							Image:           image.Image,
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Command:         image.Cmds,
-							Args:            image.Args,
-							Env:             image.Env,
-						},
-					},
-					RestartPolicy: corev1.RestartPolicyNever,
-				},
-			},
-		},
-	}
-
-	return job
 }
 
 // LogJobPodToCond record the log of job's pods to the conditions

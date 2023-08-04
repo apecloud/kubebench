@@ -16,12 +16,12 @@ import (
 func NewJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
-	mode := cr.Spec.Mode
+	step := cr.Spec.Step
 	// TODO: add cleanup
-	if mode == "prepare" || mode == "all" {
+	if step == "prepare" || step == "all" {
 		jobs = append(jobs, NewPrepareJobs(cr)...)
 	}
-	if mode == "run" || mode == "all" {
+	if step == "run" || step == "all" {
 		jobs = append(jobs, NewRunJobs(cr)...)
 	}
 

@@ -67,8 +67,6 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return intctrlutil.Reconciled()
 	}
 
-	l.Info("reconciling pgbench", "pgbench mode", pgbench.Spec.Mode)
-
 	jobs := NewJobs(&pgbench)
 
 	pgbench.Status.Phase = benchmarkv1alpha1.Running

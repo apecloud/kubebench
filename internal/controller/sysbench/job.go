@@ -15,14 +15,14 @@ import (
 func NewJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
-	mode := cr.Spec.Mode
-	if mode == "cleanup" || mode == "all" {
+	step := cr.Spec.Step
+	if step == "cleanup" || step == "all" {
 		jobs = append(jobs, NewCleanupJobs(cr)...)
 	}
-	if mode == "prepare" || mode == "all" {
+	if step == "prepare" || step == "all" {
 		jobs = append(jobs, NewPrepareJobs(cr)...)
 	}
-	if mode == "run" || mode == "all" {
+	if step == "run" || step == "all" {
 		jobs = append(jobs, NewRunJobs(cr)...)
 	}
 

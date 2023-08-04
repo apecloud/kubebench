@@ -47,14 +47,6 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
-              mode:
-                default: all
-                enum:
-                - all
-                - cleanup
-                - prepare
-                - run
-                type: string
               operationCount:
                 default: 10000
                 minimum: 1
@@ -78,6 +70,14 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
+              step:
+                default: all
+                enum:
+                - all
+                - cleanup
+                - prepare
+                - run
+                type: string
               target:
                 properties:
                   database:

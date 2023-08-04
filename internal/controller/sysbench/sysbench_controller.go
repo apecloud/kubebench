@@ -72,8 +72,6 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return intctrlutil.Reconciled()
 	}
 
-	l.Info("reconciling sysbench", "sysbench mode", sysbench.Spec.Mode)
-
 	jobs := NewJobs(&sysbench)
 
 	sysbench.Status.Phase = benchmarkv1alpha1.Running

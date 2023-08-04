@@ -45,7 +45,9 @@ spec:
                 items:
                   type: string
                 type: array
-              mode:
+              size:
+                type: integer
+              step:
                 default: all
                 enum:
                 - all
@@ -53,8 +55,6 @@ spec:
                 - prepare
                 - run
                 type: string
-              size:
-                type: integer
               tables:
                 type: integer
               target:

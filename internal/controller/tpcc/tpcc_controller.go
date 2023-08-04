@@ -69,8 +69,6 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return intctrlutil.Reconciled()
 	}
 
-	l.Info("reconciling tpcc", "tpcc mode", tpcc.Spec.Mode)
-
 	jobs := NewJobs(&tpcc)
 
 	tpcc.Status.Phase = benchmarkv1alpha1.Running

@@ -68,8 +68,6 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return intctrlutil.Reconciled()
 	}
 
-	l.Info("reconciling ycsb", "ycsb mode", ycsb.Spec.Mode)
-
 	jobs := NewJobs(&ycsb)
 
 	ycsb.Status.Phase = benchmarkv1alpha1.Running

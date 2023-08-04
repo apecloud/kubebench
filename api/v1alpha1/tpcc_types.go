@@ -90,14 +90,14 @@ type TpccSpec struct {
 	// +optional
 	StockLevel int `json:"stockLevel,omitempty"`
 
-	// mode is all, will exec cleanup, prepare, run
-	// mode is cleanup, will exec cleanup
-	// mode is prepare, will exec prepare
-	// mode is run, will exec run
+	// step is all, will exec cleanup, prepare, run
+	// step is cleanup, will exec cleanup
+	// step is prepare, will exec prepare
+	// step is run, will exec run
 	// +kubebuilder:default=all
 	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
 	// +optional
-	Mode string `json:"mode,omitempty"`
+	Step string `json:"step,omitempty"`
 
 	// the other tpcc run command flags to use for tpcc
 	// +optional

@@ -56,7 +56,13 @@ spec:
                 items:
                   type: string
                 type: array
-              mode:
+              scale:
+                default: 1
+                minimum: 1
+                type: integer
+              selectOnly:
+                type: boolean
+              step:
                 default: all
                 enum:
                 - all
@@ -64,12 +70,6 @@ spec:
                 - prepare
                 - run
                 type: string
-              scale:
-                default: 1
-                minimum: 1
-                type: integer
-              selectOnly:
-                type: boolean
               target:
                 properties:
                   database:

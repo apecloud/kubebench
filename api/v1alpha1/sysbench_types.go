@@ -50,41 +50,7 @@ type SysbenchSpec struct {
 	// +optional
 	Step string `json:"step,omitempty"`
 
-	// the other sysbench run command flags to use for sysbench
-	// +optional
-	ExtraArgs []string `json:"extraArgs,omitempty"`
-
-	// the target for the sysbench run command
-	Target SysbenchTarget `json:"target,omitempty"`
-
-	PodSpec `json:",inline"`
-}
-
-type SysbenchTarget struct {
-	// the driver of the sysbench target
-	// +required
-	Driver string `json:"driver,omitempty"`
-
-	// The database server's host name
-	// +kubebuilder:default=localhost
-	// +required
-	Host string `json:"host,omitempty"`
-
-	// The database server's port number
-	// +required
-	Port int `json:"port,omitempty"`
-
-	// the user of the sysbench target
-	// +required
-	User string `json:"user,omitempty"`
-
-	// The database server's password
-	// +optional
-	Password string `json:"password,omitempty"`
-
-	// the database of the sysbench target
-	// +required
-	Database string `json:"database,omitempty"`
+	BenchCommon `json:",inline"`
 }
 
 // SysbenchStatus defines the observed state of Sysbench

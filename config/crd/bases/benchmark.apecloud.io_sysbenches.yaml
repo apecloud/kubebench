@@ -64,7 +64,6 @@ spec:
                   driver:
                     type: string
                   host:
-                    default: localhost
                     type: string
                   password:
                     type: string
@@ -72,6 +71,9 @@ spec:
                     type: integer
                   user:
                     type: string
+                required:
+                - host
+                - port
                 type: object
               threads:
                 items:
@@ -100,6 +102,7 @@ spec:
                 minItems: 1
                 type: array
             required:
+            - target
             - types
             type: object
           status:

@@ -90,7 +90,6 @@ spec:
                   driver:
                     type: string
                   host:
-                    default: localhost
                     type: string
                   password:
                     type: string
@@ -98,6 +97,9 @@ spec:
                     type: integer
                   user:
                     type: string
+                required:
+                - host
+                - port
                 type: object
               threads:
                 default:
@@ -129,6 +131,8 @@ spec:
                 default: 1
                 minimum: 1
                 type: integer
+            required:
+            - target
             type: object
           status:
             properties:

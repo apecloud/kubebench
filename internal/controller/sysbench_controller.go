@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pgbench
+package controller
 
 import (
 	"context"
@@ -34,51 +34,59 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
-// PgbenchReconciler reconciles a Pgbench object
-type PgbenchReconciler struct {
+// SysbenchReconciler reconciles a Sysbench object
+type SysbenchReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/finalizers,verbs=update
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches/finalizers,verbs=update
+
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete;deletecollection
+// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;delete;deletecollection
+// +kubebuilder:rbac:groups=core,resources=pods/log,verbs=get;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Pgbench object against the actual cluster state, and then
+// the Sysbench object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.1controllerutil.RequeueDuration.0/pkg/reconcile
+func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var pgbench benchmarkv1alpha1.Pgbench
+	var sysbench benchmarkv1alpha1.Sysbench
 	var err error
-	if err = r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, &sysbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
+	// Run to one completion
+	if sysbench.Status.Phase == benchmarkv1alpha1.Complete || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
-	jobs := NewJobs(&pgbench)
+	jobs := NewSysbenchJobs(&sysbench)
 
-	pgbench.Status.Phase = benchmarkv1alpha1.Running
-	pgbench.Status.Total = len(jobs)
-	pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
+	sysbench.Status.Phase = benchmarkv1alpha1.Running
+	sysbench.Status.Total = len(jobs)
+	sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
+	if err := r.Status().Update(ctx, &sysbench); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
+	}
 
-	if err = r.Status().Update(ctx, &pgbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update pgbench status")
+	if err = r.Status().Update(ctx, &sysbench); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "update to update sysbench status")
 	}
 
 	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
+		if err = controllerutil.SetOwnerReference(&sysbench, job, r.Scheme); err != nil {
 			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
 		}
 
@@ -87,7 +95,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 
 		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the pgbench status
+		// wait for the job to complete, then update the sysbench status
 
 		for {
 			// sleep for a while to avoid too many requests
@@ -108,27 +116,27 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			// job is failed
 			if status.Failed > 0 {
 				l.Info("job is failed", "job", job.Name)
-				pgbench.Status.Phase = benchmarkv1alpha1.Failed
+				sysbench.Status.Phase = benchmarkv1alpha1.Failed
 			}
 
 			// job is completed
 			if status.Succeeded > 0 {
 				l.Info("job is succeeded", "jobName", job.Name)
-				pgbench.Status.Succeeded += 1
-				pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
+				sysbench.Status.Succeeded += 1
+				sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
 			}
 
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 
 			break
 		}
 
-		// update the pgbench status
-		if err := r.Status().Update(ctx, &pgbench); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
+		// update the sysbench status
+		if err := r.Status().Update(ctx, &sysbench); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
 		}
 
 		if err != nil {
@@ -136,25 +144,25 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
-	pgbench.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &pgbench)
+	sysbench.Status.Phase = benchmarkv1alpha1.Complete
+	r.Status().Update(ctx, &sysbench)
 	return intctrlutil.Reconciled()
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PgbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *SysbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Pgbench{}).
+		For(&benchmarkv1alpha1.Sysbench{}).
 		Complete(r)
 }
 
-func ParsePgbench(msg string) string {
+func ParseSysBench(msg string) string {
 	result := ""
 	lines := strings.Split(msg, "\n")
 	index := len(lines)
 
 	for i, l := range lines {
-		if strings.Contains(l, "transaction type") {
+		if strings.Contains(l, "SQL statistics") {
 			index = i
 			result += fmt.Sprintf("%s\n", l)
 			break

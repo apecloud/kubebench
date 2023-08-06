@@ -1,4 +1,4 @@
-package pgbench
+package controller
 
 import (
 	"fmt"
@@ -12,18 +12,18 @@ import (
 	"github.com/apecloud/kubebench/pkg/constants"
 )
 
-func NewJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+func NewPgbenchJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
 	if step == "cleanup" || step == "all" {
-		jobs = append(jobs, NewCleanupJobs(cr)...)
+		jobs = append(jobs, NewPgbenchCleanupJobs(cr)...)
 	}
 	if step == "prepare" || step == "all" {
-		jobs = append(jobs, NewPrepareJobs(cr)...)
+		jobs = append(jobs, NewPgbenchPrepareJobs(cr)...)
 	}
 	if step == "run" || step == "all" {
-		jobs = append(jobs, NewRunJobs(cr)...)
+		jobs = append(jobs, NewPgbenchRunJobs(cr)...)
 	}
 
 	// set tolerations for all jobs
@@ -34,7 +34,7 @@ func NewJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	return jobs
 }
 
-func NewCleanupJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+func NewPgbenchCleanupJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	cmd := "pgbench"
 	cmd = fmt.Sprintf("%s -i -I d", cmd)
 
@@ -80,7 +80,7 @@ func NewCleanupJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func NewPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+func NewPgbenchPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	cmd := "pgbench"
 	cmd = fmt.Sprintf("%s -i -s%d %s", cmd, cr.Spec.Scale, strings.Join(cr.Spec.ExtraArgs, " "))
 
@@ -126,7 +126,7 @@ func NewPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func NewRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
+func NewPgbenchRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	cmd := "pgbench"
 	cmd = fmt.Sprintf("%s -P 1", cmd)
 	cmd = fmt.Sprintf("%s -j %d", cmd, cr.Spec.Threads)

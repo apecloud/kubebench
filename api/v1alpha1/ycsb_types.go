@@ -87,42 +87,7 @@ type YcsbSpec struct {
 	// +optional
 	Step string `json:"step,omitempty"`
 
-	// the other ycsb run command options to use for ycsb
-	// +optional
-	ExtraArgs []string `json:"extraArgs,omitempty"`
-
-	// the target of the ycsb benchmark
-	// +required
-	Target YcsbTarget `json:"target,omitempty"`
-
-	PodSpec `json:",inline"`
-}
-
-type YcsbTarget struct {
-	// the driver of the ycsb target
-	// +required
-	Driver string `json:"driver"`
-
-	// The database server's host name
-	// +kubebuilder:default=localhost
-	// +required
-	Host string `json:"host"`
-
-	// The database server's port
-	// +required
-	Port int `json:"port"`
-
-	// The database server's username
-	// +optional
-	User string `json:"user,omitempty"`
-
-	// The database server's password
-	// +optional
-	Password string `json:"password,omitempty"`
-
-	// The database server's database name
-	// +optional
-	Database string `json:"database,omitempty"`
+	BenchCommon `json:",inline"`
 }
 
 // YcsbStatus defines the observed state of Ycsb

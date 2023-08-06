@@ -85,7 +85,6 @@ spec:
                   driver:
                     type: string
                   host:
-                    default: localhost
                     type: string
                   password:
                     type: string
@@ -94,7 +93,6 @@ spec:
                   user:
                     type: string
                 required:
-                - driver
                 - host
                 - port
                 type: object
@@ -126,6 +124,8 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
+            required:
+            - target
             type: object
           status:
             properties:

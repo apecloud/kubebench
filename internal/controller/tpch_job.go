@@ -17,10 +17,15 @@ func NewTpchJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 	step := cr.Spec.Step
 
 	if step == "all" {
-		return NewTpchAllJobs(cr)
+		jobs = append(jobs, NewTpchAllJobs(cr)...)
 	}
 	if step == "run" {
-		return NewTpchRunJobs(cr)
+		jobs = append(jobs, NewTpchRunJobs(cr)...)
+	}
+
+	// set tolerations for all jobs
+	for _, job := range jobs {
+		job.Spec.Template.Spec.Tolerations = cr.Spec.Tolerations
 	}
 
 	return jobs

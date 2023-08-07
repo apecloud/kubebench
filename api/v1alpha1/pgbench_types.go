@@ -77,15 +77,6 @@ type PgbenchSpec struct {
 	// +optional
 	Duration int `json:"duration,omitempty"`
 
-	// step is all, will exec cleanup, prepare, run
-	// step is cleanup, will exec cleanup
-	// step is prepare, will exec prepare
-	// step is run, will exec run
-	// +kubebuilder:default=all
-	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
-	// +optional
-	Step string `json:"step,omitempty"`
-
 	BenchCommon `json:",inline"`
 }
 

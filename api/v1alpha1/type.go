@@ -15,6 +15,15 @@ const (
 
 // BenchCommon defines common attributes for all benchmarks.
 type BenchCommon struct {
+	// step is all, will exec cleanup, prepare, run
+	// step is cleanup, will exec cleanup
+	// step is prepare, will exec prepare
+	// step is run, will exec run
+	// +kubebuilder:default=all
+	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
+	// +optional
+	Step string `json:"step,omitempty"`
+
 	// the database target to run benchmark
 	// +required
 	Target Target `json:"target"`

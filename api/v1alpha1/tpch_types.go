@@ -31,45 +31,7 @@ type TpchSpec struct {
 	// +required
 	Sizes []int `json:"sizes,omitempty"`
 
-	// step is all, will exec cleanup, prepare, run
-	// step is cleanup, will exec cleanup
-	// step is prepare, will exec prepare
-	// step is run, will exec run
-	// +kubebuilder:default=all
-	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
-	// +optional
-	Step string `json:"step,omitempty"`
-
-	// the other tpch run command flags to use for tpch
-	// +optional
-	ExtraArgs []string `json:"extraArgs,omitempty"`
-
-	// the tpch target to use for tpch
-	// +required
-	Target TpchTarget `json:"target,omitempty"`
-}
-
-type TpchTarget struct {
-	// The database server's host name
-	// +kubebuilder:default=localhost
-	// +required
-	Host string `json:"host,omitempty"`
-
-	// The database server's port
-	// +required
-	Port int `json:"port,omitempty"`
-
-	// The database server's username
-	// +required
-	User string `json:"user,omitempty"`
-
-	// The database server's password
-	// +optional
-	Password string `json:"password,omitempty"`
-
-	// The database server's database name
-	// +required
-	Database string `json:"database,omitempty"`
+	BenchCommon `json:",inline"`
 }
 
 // TpchStatus defines the observed state of Tpch

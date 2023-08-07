@@ -18,13 +18,11 @@ package main
 
 import (
 	"flag"
-	"github.com/apecloud/kubebench/internal/controller/tpcc"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -33,9 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
-	"github.com/apecloud/kubebench/internal/controller/pgbench"
-	"github.com/apecloud/kubebench/internal/controller/sysbench"
-	"github.com/apecloud/kubebench/internal/controller/ycsb"
+	"github.com/apecloud/kubebench/internal/controller"
 )
 
 var (
@@ -91,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&sysbench.SysbenchReconciler{
+	if err = (&controller.SysbenchReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),
@@ -99,7 +95,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Sysbench")
 		os.Exit(1)
 	}
-	if err = (&pgbench.PgbenchReconciler{
+	if err = (&controller.PgbenchReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),
@@ -107,7 +103,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Pgbench")
 		os.Exit(1)
 	}
-	if err = (&ycsb.YcsbReconciler{
+	if err = (&controller.YcsbReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),
@@ -115,7 +111,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Ycsb")
 		os.Exit(1)
 	}
-	if err = (&tpcc.TpccReconciler{
+	if err = (&controller.TpccReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		RestConfig: mgr.GetConfig(),

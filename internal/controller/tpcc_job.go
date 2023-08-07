@@ -1,41 +1,47 @@
-package tpcc
+package controller
 
 import (
 	"fmt"
 	"strings"
 
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/apecloud/kubebench/api/v1alpha1"
 	"github.com/apecloud/kubebench/internal/utils"
 	"github.com/apecloud/kubebench/pkg/constants"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 )
 
-func NewJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
+func NewTpccJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
 	if step == "cleanup" || step == "all" {
-		jobs = append(jobs, NewCleanupJobs(cr)...)
+		jobs = append(jobs, NewTpccCleanupJobs(cr)...)
 	}
 	if step == "prepare" || step == "all" {
-		jobs = append(jobs, NewPrepareJobs(cr)...)
+		jobs = append(jobs, NewTpccPrepareJobs(cr)...)
 	}
 	if step == "run" || step == "all" {
-		jobs = append(jobs, NewRunJobs(cr)...)
+		jobs = append(jobs, NewTpccRunJobs(cr)...)
+	}
+
+	// set tolerations for all jobs
+	for _, job := range jobs {
+		job.Spec.Template.Spec.Tolerations = cr.Spec.Tolerations
 	}
 
 	return jobs
 }
 
-func NewCleanupJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
+func NewTpccCleanupJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	cmd := "python3 main.py"
 	cmd = fmt.Sprintf("%s --mode %s", cmd, "cleanup")
 	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
-	cmd = fmt.Sprintf("%s %s", cmd, NewWorkLoadParams(cr))
+	cmd = fmt.Sprintf("%s %s", cmd, NewTpccWorkLoadParams(cr))
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 
 	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
@@ -52,13 +58,13 @@ func NewCleanupJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func NewPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
+func NewTpccPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	cmd := "python3 main.py"
 	cmd = fmt.Sprintf("%s --mode %s", cmd, "prepare")
 	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
-	cmd = fmt.Sprintf("%s %s", cmd, NewWorkLoadParams(cr))
+	cmd = fmt.Sprintf("%s %s", cmd, NewTpccWorkLoadParams(cr))
 	cmd = fmt.Sprintf("%s --warehouses %d", cmd, cr.Spec.WareHouses)
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 
@@ -76,13 +82,13 @@ func NewPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func NewRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
+func NewTpccRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	cmd := "python3 main.py"
 	cmd = fmt.Sprintf("%s --mode %s", cmd, "run")
 	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
-	cmd = fmt.Sprintf("%s %s", cmd, NewWorkLoadParams(cr))
+	cmd = fmt.Sprintf("%s %s", cmd, NewTpccWorkLoadParams(cr))
 	cmd = fmt.Sprintf("%s --warehouses %d", cmd, cr.Spec.WareHouses)
 	cmd = fmt.Sprintf("%s --limitTxnsPerMin %d", cmd, cr.Spec.LimitTxPerMin)
 
@@ -119,24 +125,24 @@ func NewRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	return jobs
 }
 
-func NewWorkLoadParams(cr *v1alpha1.Tpcc) string {
+func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 	switch cr.Spec.Target.Driver {
 	case "mysql":
-		return NewMysqlParams(cr)
+		return NewTpccMysqlParams(cr)
 	case "postgres":
-		return NewPostgresParams(cr)
+		return NewTpccPostgresParams(cr)
 	default:
 		return ""
 	}
 }
 
-func NewMysqlParams(cr *v1alpha1.Tpcc) string {
+func NewTpccMysqlParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.mysql.cj.jdbc.Driver")
 	result = fmt.Sprintf("%s --conn \"jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true\"", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 
-func NewPostgresParams(cr *v1alpha1.Tpcc) string {
+func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "org.postgresql.Driver")
 	result = fmt.Sprintf("%s --conn jdbc:postgresql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result

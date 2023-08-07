@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package sysbench
+package controller
 
 import (
 	"context"
@@ -34,59 +34,55 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
-// SysbenchReconciler reconciles a Sysbench object
-type SysbenchReconciler struct {
+// YcsbReconciler reconciles a Ycsb object
+type YcsbReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches/finalizers,verbs=update
-
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete;deletecollection
-// +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;delete;deletecollection
-// +kubebuilder:rbac:groups=core,resources=pods/log,verbs=get;list
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Sysbench object against the actual cluster state, and then
+// the Ycsb object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.1controllerutil.RequeueDuration.0/pkg/reconcile
-func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
+func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var sysbench benchmarkv1alpha1.Sysbench
+	var ycsb benchmarkv1alpha1.Ycsb
 	var err error
-	if err = r.Get(ctx, req.NamespacedName, &sysbench); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &ycsb); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Run to one completion
-	if sysbench.Status.Phase == benchmarkv1alpha1.Complete || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
+	// run if bench completion
+	if ycsb.Status.Phase == benchmarkv1alpha1.Complete || ycsb.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
-	jobs := NewJobs(&sysbench)
+	jobs := NewYcsbJobs(&ycsb)
 
-	sysbench.Status.Phase = benchmarkv1alpha1.Running
-	sysbench.Status.Total = len(jobs)
-	sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
-	if err := r.Status().Update(ctx, &sysbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
+	ycsb.Status.Phase = benchmarkv1alpha1.Running
+	ycsb.Status.Total = len(jobs)
+	ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
+	if err := r.Status().Update(ctx, &ycsb); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
 	}
 
-	if err = r.Status().Update(ctx, &sysbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update sysbench status")
+	if err = r.Status().Update(ctx, &ycsb); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "update to update ycsb status")
 	}
 
 	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&sysbench, job, r.Scheme); err != nil {
+		if err = controllerutil.SetOwnerReference(&ycsb, job, r.Scheme); err != nil {
 			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
 		}
 
@@ -95,7 +91,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 
 		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the sysbench status
+		// wait for the job to complete, then update the ycsb status
 
 		for {
 			// sleep for a while to avoid too many requests
@@ -116,27 +112,26 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 			// job is failed
 			if status.Failed > 0 {
 				l.Info("job is failed", "job", job.Name)
-				sysbench.Status.Phase = benchmarkv1alpha1.Failed
+				ycsb.Status.Phase = benchmarkv1alpha1.Failed
 			}
 
 			// job is completed
 			if status.Succeeded > 0 {
 				l.Info("job is succeeded", "jobName", job.Name)
-				sysbench.Status.Succeeded += 1
-				sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
+				ycsb.Status.Succeeded += 1
+				ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
 			}
 
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, ParseYcsb); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 
 			break
 		}
 
-		// update the sysbench status
-		if err := r.Status().Update(ctx, &sysbench); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
+		if err := r.Status().Update(ctx, &ycsb); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
 		}
 
 		if err != nil {
@@ -144,25 +139,25 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		}
 	}
 
-	sysbench.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &sysbench)
+	ycsb.Status.Phase = benchmarkv1alpha1.Complete
+	r.Status().Update(ctx, &ycsb)
 	return intctrlutil.Reconciled()
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SysbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *YcsbReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Sysbench{}).
+		For(&benchmarkv1alpha1.Ycsb{}).
 		Complete(r)
 }
 
-func ParseSysBench(msg string) string {
+func ParseYcsb(msg string) string {
 	result := ""
 	lines := strings.Split(msg, "\n")
 	index := len(lines)
 
 	for i, l := range lines {
-		if strings.Contains(l, "SQL statistics") {
+		if strings.Contains(l, "Run finished, takes") {
 			index = i
 			result += fmt.Sprintf("%s\n", l)
 			break

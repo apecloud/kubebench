@@ -99,40 +99,7 @@ type TpccSpec struct {
 	// +optional
 	Step string `json:"step,omitempty"`
 
-	// the other tpcc run command flags to use for tpcc
-	// +optional
-	ExtraArgs []string `json:"extraArgs,omitempty"`
-
-	// the tpcc target to use for tpcc
-	// +required
-	Target TpccTarget `json:"target,omitempty"`
-}
-
-type TpccTarget struct {
-	// the driver of the tpcc target
-	// +required
-	Driver string `json:"driver,omitempty"`
-
-	// The database server's host name
-	// +kubebuilder:default=localhost
-	// +required
-	Host string `json:"host,omitempty"`
-
-	// The database server's port
-	// +required
-	Port int `json:"port,omitempty"`
-
-	// The database server's username
-	// +required
-	User string `json:"user,omitempty"`
-
-	// The database server's password
-	// +optional
-	Password string `json:"password,omitempty"`
-
-	// The database server's database name
-	// +required
-	Database string `json:"database,omitempty"`
+	BenchCommon `json:",inline"`
 }
 
 // TpccStatus defines the observed state of Tpcc

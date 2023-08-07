@@ -1,8 +1,6 @@
 package v1alpha1
 
-import (
-	corev1 "k8s.io/api/core/v1"
-)
+import corev1 "k8s.io/api/core/v1"
 
 // BenchmarkPhase is the current state of the test.
 // +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
@@ -15,47 +13,43 @@ const (
 	Failed   BenchmarkPhase = "Failed"
 )
 
-// EnvVar is an environment variable
-type EnvVar struct {
-	// Name is the name of the environment variable
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+// BenchCommon defines common attributes for all benchmarks.
+type BenchCommon struct {
+	// the database target to run benchmark
+	// +required
+	Target Target `json:"target"`
 
-	// Value is the value of the environment variable
-	// +kubebuilder:validation:Required
-	Value string `json:"value"`
+	// the other sysbench run command flags to use for benchmark
+	// +optional
+	ExtraArgs []string `json:"extraArgs,omitempty"`
+
+	// If specified, the pod's tolerations.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty" protobuf:"bytes,22,opt,name=tolerations"`
 }
 
-type ImageSpec struct {
-	// Name of the container specified as a DNS_LABEL
-	Name string `json:"name"`
-
-	// Image is the Docker Image location including tag
-	// +kubebuilder:validation:Required
-	Image string `json:"image"`
-
+type Target struct {
+	// the driver of the sysbench target
 	// +optional
-	PullPolicy corev1.PullPolicy `json:"pullPolicy,omitempty"`
+	Driver string `json:"driver,omitempty"`
 
-	// Cmds is the commands to run in the container
-	// +optional
-	Cmds []string `json:"cmds,omitempty"`
+	// The database server's host name
+	// +required
+	Host string `json:"host"`
 
-	// Args is the arguments to pass to the command
-	// +optional
-	Args []string `json:"args,omitempty"`
+	// The database server's port number
+	// +required
+	Port int `json:"port"`
 
-	// Env is the environment variables to set in the container
+	// The username to connect as
 	// +optional
-	Env []corev1.EnvVar `json:"env,omitempty"`
-}
+	User string `json:"user,omitempty"`
 
-type PodConfigSpec struct {
-	// Annotations is the annotations to add to the pod
+	// The database server's password
 	// +optional
-	Annotations map[string]string `json:"annotations,omitempty"`
+	Password string `json:"password,omitempty"`
 
-	// Labels is the labels to add to the pod
-	// +optional
-	Labels map[string]string `json:"labels,omitempty"`
+	// The database name of the target
+	// +required
+	Database string `json:"database,omitempty"`
 }

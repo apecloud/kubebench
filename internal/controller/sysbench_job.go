@@ -1,4 +1,4 @@
-package sysbench
+package controller
 
 import (
 	"fmt"
@@ -12,24 +12,29 @@ import (
 	"github.com/apecloud/kubebench/pkg/constants"
 )
 
-func NewJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+func NewSysbenchJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
 	if step == "cleanup" || step == "all" {
-		jobs = append(jobs, NewCleanupJobs(cr)...)
+		jobs = append(jobs, NewSysbenchCleanupJobs(cr)...)
 	}
 	if step == "prepare" || step == "all" {
-		jobs = append(jobs, NewPrepareJobs(cr)...)
+		jobs = append(jobs, NewSysbenchPrepareJobs(cr)...)
 	}
 	if step == "run" || step == "all" {
-		jobs = append(jobs, NewRunJobs(cr)...)
+		jobs = append(jobs, NewSysbenchRunJobs(cr)...)
+	}
+
+	// set tolerations for all jobs
+	for _, job := range jobs {
+		job.Spec.Template.Spec.Tolerations = cr.Spec.Tolerations
 	}
 
 	return jobs
 }
 
-func NewCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+func NewSysbenchCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value := fmt.Sprintf("mode:%s", "cleanup")
 	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
 	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
@@ -79,7 +84,7 @@ func NewCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func NewPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+func NewSysbenchPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value := fmt.Sprintf("mode:%s", "prepare")
 	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
 	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
@@ -129,7 +134,7 @@ func NewPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func NewRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
+func NewSysbenchRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value := fmt.Sprintf("mode:%s", "run")
 	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
 	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)

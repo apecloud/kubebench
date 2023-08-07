@@ -1,4 +1,4 @@
-package ycsb
+package controller
 
 import (
 	"fmt"
@@ -13,30 +13,35 @@ import (
 	"github.com/apecloud/kubebench/pkg/constants"
 )
 
-func NewJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+func NewYcsbJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
 	// TODO: add cleanup
 	if step == "prepare" || step == "all" {
-		jobs = append(jobs, NewPrepareJobs(cr)...)
+		jobs = append(jobs, NewYcsbPrepareJobs(cr)...)
 	}
 	if step == "run" || step == "all" {
-		jobs = append(jobs, NewRunJobs(cr)...)
+		jobs = append(jobs, NewYcsbRunJobs(cr)...)
+	}
+
+	// set tolerations for all jobs
+	for _, job := range jobs {
+		job.Spec.Template.Spec.Tolerations = cr.Spec.Tolerations
 	}
 
 	return jobs
 }
 
 // TODO
-func NewCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+func NewYscbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	return nil
 }
 
-func NewPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd := "/go-ycsb"
 	cmd = fmt.Sprintf("%s load %s", cmd, cr.Spec.Target.Driver)
-	cmd = fmt.Sprintf("%s %s", cmd, NewWorkloadParams(cr))
+	cmd = fmt.Sprintf("%s %s", cmd, NewYcsbWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
@@ -56,10 +61,10 @@ func NewPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func NewRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+func NewYcsbRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd := "/go-ycsb"
 	cmd = fmt.Sprintf("%s run %s --interval 1", cmd, cr.Spec.Target.Driver)
-	cmd = fmt.Sprintf("%s %s", cmd, NewWorkloadParams(cr))
+	cmd = fmt.Sprintf("%s %s", cmd, NewYcsbWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
@@ -106,22 +111,22 @@ func NewRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	return jobs
 }
 
-func NewWorkloadParams(cr *v1alpha1.Ycsb) string {
+func NewYcsbWorkloadParams(cr *v1alpha1.Ycsb) string {
 	switch cr.Spec.Target.Driver {
 	case "mysql":
-		return NewMysqlParams(cr)
+		return NewYcsbMysqlParams(cr)
 	case "redis":
-		return NewRedisParams(cr)
+		return NewYcsbRedisParams(cr)
 	case "postgresql":
-		return NewPostgresParams(cr)
+		return NewYcsbPostgresParams(cr)
 	case "mongodb":
-		return NewMongodbParams(cr)
+		return NewYcsbMongodbParams(cr)
 	default:
 		return ""
 	}
 }
 
-func NewMysqlParams(cr *v1alpha1.Ycsb) string {
+func NewYcsbMysqlParams(cr *v1alpha1.Ycsb) string {
 	result := fmt.Sprintf("-p mysql.host=%s", cr.Spec.Target.Host)
 	result = fmt.Sprintf("%s -p mysql.port=%d", result, cr.Spec.Target.Port)
 	if cr.Spec.Target.User != "" {
@@ -137,7 +142,7 @@ func NewMysqlParams(cr *v1alpha1.Ycsb) string {
 	return result
 }
 
-func NewRedisParams(cr *v1alpha1.Ycsb) string {
+func NewYcsbRedisParams(cr *v1alpha1.Ycsb) string {
 	result := fmt.Sprintf("-p redis.addr=%s", fmt.Sprintf("%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port))
 	if cr.Spec.Target.User != "" {
 		result = fmt.Sprintf("%s -p redis.username=%s", result, cr.Spec.Target.User)
@@ -151,7 +156,7 @@ func NewRedisParams(cr *v1alpha1.Ycsb) string {
 	return result
 }
 
-func NewPostgresParams(cr *v1alpha1.Ycsb) string {
+func NewYcsbPostgresParams(cr *v1alpha1.Ycsb) string {
 	result := fmt.Sprintf("-p pg.host=%s", cr.Spec.Target.Host)
 	result = fmt.Sprintf("%s -p pg.port=%d", result, cr.Spec.Target.Port)
 	if cr.Spec.Target.User != "" {
@@ -166,7 +171,7 @@ func NewPostgresParams(cr *v1alpha1.Ycsb) string {
 	return result
 }
 
-func NewMongodbParams(cr *v1alpha1.Ycsb) string {
+func NewYcsbMongodbParams(cr *v1alpha1.Ycsb) string {
 	mongdbUri := "mongodb://%s:%s@%s:%d/admin?replicaset=test-mongo-mongodb"
 	result := fmt.Sprintf("-p mongodb.url=%s", fmt.Sprintf(mongdbUri, cr.Spec.Target.User, cr.Spec.Target.Password, cr.Spec.Target.Host, cr.Spec.Target.Port))
 	return result

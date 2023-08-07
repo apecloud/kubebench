@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package ycsb
+package controller
 
 import (
 	"context"
@@ -34,55 +34,56 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
-// YcsbReconciler reconciles a Ycsb object
-type YcsbReconciler struct {
+// TpccReconciler reconciles a Tpcc object
+type TpccReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpccs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpccs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpccs/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Ycsb object against the actual cluster state, and then
+// the Tpcc object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var ycsb benchmarkv1alpha1.Ycsb
+	var tpcc benchmarkv1alpha1.Tpcc
 	var err error
-	if err := r.Get(ctx, req.NamespacedName, &ycsb); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, &tpcc); err != nil {
+		l.Error(err, "unable to fetch Tpcc")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// run if bench completion
-	if ycsb.Status.Phase == benchmarkv1alpha1.Complete || ycsb.Status.Phase == benchmarkv1alpha1.Failed {
+	l.Info("reconciling Tpcc", "name", tpcc.Name)
+	if tpcc.Status.Phase == benchmarkv1alpha1.Complete || tpcc.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
-	jobs := NewJobs(&ycsb)
+	jobs := NewTpccJobs(&tpcc)
 
-	ycsb.Status.Phase = benchmarkv1alpha1.Running
-	ycsb.Status.Total = len(jobs)
-	ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
-	if err := r.Status().Update(ctx, &ycsb); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
+	tpcc.Status.Phase = benchmarkv1alpha1.Running
+	tpcc.Status.Total = len(jobs)
+	tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
+	if err := r.Status().Update(ctx, &tpcc); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
 	}
 
-	if err = r.Status().Update(ctx, &ycsb); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update ycsb status")
+	if err = r.Status().Update(ctx, &tpcc); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "update to update tpcc status")
 	}
 
 	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&ycsb, job, r.Scheme); err != nil {
+		if err = controllerutil.SetOwnerReference(&tpcc, job, r.Scheme); err != nil {
 			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
 		}
 
@@ -91,7 +92,7 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 
 		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the ycsb status
+		// wait for the job to complete, then update the tpcc status
 
 		for {
 			// sleep for a while to avoid too many requests
@@ -112,26 +113,26 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// job is failed
 			if status.Failed > 0 {
 				l.Info("job is failed", "job", job.Name)
-				ycsb.Status.Phase = benchmarkv1alpha1.Failed
+				tpcc.Status.Phase = benchmarkv1alpha1.Failed
 			}
 
 			// job is completed
 			if status.Succeeded > 0 {
 				l.Info("job is succeeded", "jobName", job.Name)
-				ycsb.Status.Succeeded += 1
-				ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
+				tpcc.Status.Succeeded += 1
+				tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
 			}
 
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, ParseYcsb); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpcc.Namespace, &tpcc.Status.Conditions, ParseTPCC); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 
 			break
 		}
 
-		if err := r.Status().Update(ctx, &ycsb); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
+		if err := r.Status().Update(ctx, &tpcc); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
 		}
 
 		if err != nil {
@@ -139,25 +140,25 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	ycsb.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &ycsb)
+	tpcc.Status.Phase = benchmarkv1alpha1.Complete
+	r.Status().Update(ctx, &tpcc)
 	return intctrlutil.Reconciled()
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *YcsbReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *TpccReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Ycsb{}).
+		For(&benchmarkv1alpha1.Tpcc{}).
 		Complete(r)
 }
 
-func ParseYcsb(msg string) string {
+func ParseTPCC(msg string) string {
 	result := ""
 	lines := strings.Split(msg, "\n")
 	index := len(lines)
 
 	for i, l := range lines {
-		if strings.Contains(l, "Run finished, takes") {
+		if strings.Contains(l, "Measured tpmC (NewOrders)") {
 			index = i
 			result += fmt.Sprintf("%s\n", l)
 			break

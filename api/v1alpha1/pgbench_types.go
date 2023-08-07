@@ -86,40 +86,7 @@ type PgbenchSpec struct {
 	// +optional
 	Step string `json:"step,omitempty"`
 
-	// The other pgbench run command options to use for pgbench
-	// +optional
-	ExtraArgs []string `json:"extraArgs,omitempty"`
-
-	// The target database to run pgbench
-	// +required
-	Target PgbenchTarget `json:"target"`
-}
-
-// PgbenchTarget defines the parameters for the pgbench target database
-type PgbenchTarget struct {
-	// The database server's host name
-	// +kubebuilder:default=localhost
-	// +required
-	Host string `json:"host"`
-
-	// The database server's port number
-	// +kubebuilder:default=5432
-	// +required
-	Port int `json:"port"`
-
-	// The username to connect as
-	// +kubebuilder:default=postgres
-	// +required
-	User string `json:"user"`
-
-	// The database server's password
-	// +optional
-	Password string `json:"password,omitempty"`
-
-	// The database name of the target
-	// +kubebuilder:default=postgres
-	// +required
-	Database string `json:"database"`
+	BenchCommon `json:",inline"`
 }
 
 // PgbenchStatus defines the observed state of Pgbench

@@ -73,29 +73,41 @@ spec:
               target:
                 properties:
                   database:
-                    default: postgres
+                    type: string
+                  driver:
                     type: string
                   host:
-                    default: localhost
                     type: string
                   password:
                     type: string
                   port:
-                    default: 5432
                     type: integer
                   user:
-                    default: postgres
                     type: string
                 required:
-                - database
                 - host
                 - port
-                - user
                 type: object
               threads:
                 default: 1
                 minimum: 1
                 type: integer
+              tolerations:
+                items:
+                  properties:
+                    effect:
+                      type: string
+                    key:
+                      type: string
+                    operator:
+                      type: string
+                    tolerationSeconds:
+                      format: int64
+                      type: integer
+                    value:
+                      type: string
+                  type: object
+                type: array
               transactions:
                 default: 0
                 minimum: 0

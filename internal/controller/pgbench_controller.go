@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tpcc
+package controller
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,60 +29,56 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
 	intctrlutil "github.com/apecloud/kubebench/internal/controllerutil"
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
-// TpccReconciler reconciles a Tpcc object
-type TpccReconciler struct {
+// PgbenchReconciler reconciles a Pgbench object
+type PgbenchReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpccs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpccs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpccs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Tpcc object against the actual cluster state, and then
+// the Pgbench object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var tpcc benchmarkv1alpha1.Tpcc
+	var pgbench benchmarkv1alpha1.Pgbench
 	var err error
-	if err = r.Get(ctx, req.NamespacedName, &tpcc); err != nil {
-		l.Error(err, "unable to fetch Tpcc")
+	if err = r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	l.Info("reconciling Tpcc", "name", tpcc.Name)
-	if tpcc.Status.Phase == benchmarkv1alpha1.Complete || tpcc.Status.Phase == benchmarkv1alpha1.Failed {
+	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
-	jobs := NewJobs(&tpcc)
+	jobs := NewPgbenchJobs(&pgbench)
 
-	tpcc.Status.Phase = benchmarkv1alpha1.Running
-	tpcc.Status.Total = len(jobs)
-	tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
-	if err := r.Status().Update(ctx, &tpcc); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
-	}
+	pgbench.Status.Phase = benchmarkv1alpha1.Running
+	pgbench.Status.Total = len(jobs)
+	pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 
-	if err = r.Status().Update(ctx, &tpcc); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update tpcc status")
+	if err = r.Status().Update(ctx, &pgbench); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "update to update pgbench status")
 	}
 
 	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&tpcc, job, r.Scheme); err != nil {
+		if err = controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
 			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
 		}
 
@@ -92,7 +87,7 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 
 		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the tpcc status
+		// wait for the job to complete, then update the pgbench status
 
 		for {
 			// sleep for a while to avoid too many requests
@@ -113,26 +108,27 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// job is failed
 			if status.Failed > 0 {
 				l.Info("job is failed", "job", job.Name)
-				tpcc.Status.Phase = benchmarkv1alpha1.Failed
+				pgbench.Status.Phase = benchmarkv1alpha1.Failed
 			}
 
 			// job is completed
 			if status.Succeeded > 0 {
 				l.Info("job is succeeded", "jobName", job.Name)
-				tpcc.Status.Succeeded += 1
-				tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
+				pgbench.Status.Succeeded += 1
+				pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
 			}
 
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpcc.Namespace, &tpcc.Status.Conditions, ParseTPCC); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 
 			break
 		}
 
-		if err := r.Status().Update(ctx, &tpcc); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
+		// update the pgbench status
+		if err := r.Status().Update(ctx, &pgbench); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
 		}
 
 		if err != nil {
@@ -140,25 +136,25 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	tpcc.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &tpcc)
+	pgbench.Status.Phase = benchmarkv1alpha1.Complete
+	r.Status().Update(ctx, &pgbench)
 	return intctrlutil.Reconciled()
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *TpccReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PgbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Tpcc{}).
+		For(&benchmarkv1alpha1.Pgbench{}).
 		Complete(r)
 }
 
-func ParseTPCC(msg string) string {
+func ParsePgbench(msg string) string {
 	result := ""
 	lines := strings.Split(msg, "\n")
 	index := len(lines)
 
 	for i, l := range lines {
-		if strings.Contains(l, "Measured tpmC (NewOrders)") {
+		if strings.Contains(l, "transaction type") {
 			index = i
 			result += fmt.Sprintf("%s\n", l)
 			break

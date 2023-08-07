@@ -20,32 +20,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SysbenchSpec defines the desired state of Sysbench
-type SysbenchSpec struct {
-	// the number of tables to use for sysbench
-	Tables int `json:"tables,omitempty"`
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-	// the data volume of tables to use for sysbench
-	Size int `json:"size,omitempty"`
-
-	// the number of threads to use for sysbench
+// TpchSpec defines the desired state of Tpch
+type TpchSpec struct {
+	// overall scale of the tpch test
 	// +kubebuilder:validation:MinItems=1
-	Threads []int `json:"threads,omitempty"`
-
-	// the sysbench test types to run
-	// +kubebuilder:validation:MinItems=1
-	Types []string `json:"types"`
-
-	// the number of seconds to run sysbench
-	// +kubebuilder:validation:Minimum=1
-	// +optional
-	Duration int `json:"duration,omitempty"`
+	// +kubebuilder:default={1}
+	// +required
+	Sizes []int `json:"sizes,omitempty"`
 
 	BenchCommon `json:",inline"`
 }
 
-// SysbenchStatus defines the observed state of Sysbench
-type SysbenchStatus struct {
+// TpchStatus defines the observed state of Tpch
+type TpchStatus struct {
 	// Phase is the current state of the test. Valid values are Disabled, Enabled, Failed, Enabling, Disabling.
 	// +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
 	Phase BenchmarkPhase `json:"phase,omitempty"`
@@ -70,24 +60,24 @@ type SysbenchStatus struct {
 // +kubebuilder:printcolumn:name="COMPLETIONS",type="string",JSONPath=".status.completions",description="completions"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 
-// Sysbench is the Schema for the sysbenches API
-type Sysbench struct {
+// Tpch is the Schema for the tpches API
+type Tpch struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SysbenchSpec   `json:"spec,omitempty"`
-	Status SysbenchStatus `json:"status,omitempty"`
+	Spec   TpchSpec   `json:"spec,omitempty"`
+	Status TpchStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// SysbenchList contains a list of Sysbench
-type SysbenchList struct {
+// TpchList contains a list of Tpch
+type TpchList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Sysbench `json:"items"`
+	Items           []Tpch `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Sysbench{}, &SysbenchList{})
+	SchemeBuilder.Register(&Tpch{}, &TpchList{})
 }

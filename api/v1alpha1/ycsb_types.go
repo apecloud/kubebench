@@ -78,15 +78,6 @@ type YcsbSpec struct {
 	// +optional
 	Threads []int `json:"threads,omitempty"`
 
-	// step is all, will exec cleanup, prepare, run
-	// step is cleanup, will exec cleanup
-	// step is prepare, will exec prepare
-	// step is run, will exec run
-	// +kubebuilder:default=all
-	// +kubebuilder:validation:Enum={all,cleanup,prepare,run}
-	// +optional
-	Step string `json:"step,omitempty"`
-
 	BenchCommon `json:",inline"`
 }
 

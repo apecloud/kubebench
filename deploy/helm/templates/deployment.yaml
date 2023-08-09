@@ -35,15 +35,15 @@ spec:
           - --metrics-bind-address=127.0.0.1:8080
           - --leader-elect
           env:
-            - name: KUBEBENCH_PGBENCH
+            - name: KUBEBENCH_PGBENCH_IMAGE
               value: "{{ .Values.kubebenchImages.pgbench }}"
-            - name: KUBEBENCH_SYSBENCH
+            - name: KUBEBENCH_SYSBENCH_IMAGE
               value: "{{ .Values.kubebenchImages.sysbench }}"
-            - name: KUBEBENCH_TPCC
+            - name: KUBEBENCH_TPCC_IMAGE
               value: "{{ .Values.kubebenchImages.tpcc }}"
-            - name: KUBEBENCH_TPCH
+            - name: KUBEBENCH_TPCH_IMAGE
               value: "{{ .Values.kubebenchImages.tpch }}"
-            - name: KUBEBENCH_YCSB
+            - name: KUBEBENCH_YCSB_IMAGE
               value: "{{ .Values.kubebenchImages.ycsb }}"
           command:
           - /manager

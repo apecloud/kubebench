@@ -3,11 +3,11 @@ package constants
 import "os"
 
 const (
-	KubebenchPgbench  = "KUBEBENCH_PGBENCH"
-	KubebenchSysbench = "KUBEBENCH_SYSBENCH"
-	KubebenchTpcc     = "KUBEBENCH_TPCC"
-	KubebenchTpch     = "KUBEBENCH_TPCH"
-	KubebenchYcsb     = "KUBEBENCH_YCSB"
+	KubebenchPgbench  = "KUBEBENCH_PGBENCH_IMAGE"
+	KubebenchSysbench = "KUBEBENCH_SYSBENCH_IMAGE"
+	KubebenchTpcc     = "KUBEBENCH_TPCC_IMAGE"
+	KubebenchTpch     = "KUBEBENCH_TPCH_IMAGE"
+	KubebenchYcsb     = "KUBEBENCH_YCSB_IMAGE"
 )
 
 // GetPgbenchImage get pgbench image from env

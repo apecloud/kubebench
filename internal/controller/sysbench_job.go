@@ -54,7 +54,7 @@ func NewSysbenchCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
 			Name:            constants.ContainerName,
-			Image:           constants.SysbenchImage,
+			Image:           constants.GetSysbenchImage(),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c"},
 			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
@@ -104,7 +104,7 @@ func NewSysbenchPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
 			Name:            constants.ContainerName,
-			Image:           constants.SysbenchImage,
+			Image:           constants.GetSysbenchImage(),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c"},
 			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
@@ -160,7 +160,7 @@ func NewSysbenchRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            constants.ContainerName,
-				Image:           constants.SysbenchImage,
+				Image:           constants.GetSysbenchImage(),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Command:         []string{"/bin/sh", "-c"},
 				Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},

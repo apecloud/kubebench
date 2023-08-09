@@ -34,6 +34,17 @@ spec:
           - --health-probe-bind-address=:8081
           - --metrics-bind-address=127.0.0.1:8080
           - --leader-elect
+          env:
+            - name: KUBEBENCH_PGBENCH
+              value: "{{ .Values.kubebenchImages.pgbench }}"
+            - name: KUBEBENCH_SYSBENCH
+              value: "{{ .Values.kubebenchImages.sysbench }}"
+            - name: KUBEBENCH_TPCC
+              value: "{{ .Values.kubebenchImages.tpcc }}"
+            - name: KUBEBENCH_TPCH
+              value: "{{ .Values.kubebenchImages.tpch }}"
+            - name: KUBEBENCH_YCSB
+              value: "{{ .Values.kubebenchImages.ycsb }}"
           command:
           - /manager
           securityContext:

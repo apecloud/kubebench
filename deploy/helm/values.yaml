@@ -81,3 +81,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+kubebenchImages:
+  pgbench: ""
+  sysbench: ""
+  tpcc: ""
+  tpch: ""
+  ycsb: ""

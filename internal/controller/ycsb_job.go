@@ -172,7 +172,8 @@ func NewYcsbPostgresParams(cr *v1alpha1.Ycsb) string {
 }
 
 func NewYcsbMongodbParams(cr *v1alpha1.Ycsb) string {
-	mongdbUri := "mongodb://%s:%s@%s:%d/admin?replicaset=test-mongo-mongodb"
+	// TODO: parse extra args make user can set mongodb.uri
+	mongdbUri := "mongodb://%s:%s@%s:%d/admin"
 	result := fmt.Sprintf("-p mongodb.url=%s", fmt.Sprintf(mongdbUri, cr.Spec.Target.User, cr.Spec.Target.Password, cr.Spec.Target.Host, cr.Spec.Target.Port))
 	return result
 }

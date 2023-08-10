@@ -30,11 +30,15 @@ type SysbenchSpec struct {
 
 	// the number of threads to use for sysbench
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:default={4}
+	// +optional
 	Threads []int `json:"threads,omitempty"`
 
 	// the sysbench test types to run
 	// +kubebuilder:validation:MinItems=1
-	Types []string `json:"types"`
+	// +kubebuilder:default={"oltp_read_write"}
+	// +optional
+	Types []string `json:"types,omitempty"`
 
 	// the number of seconds to run sysbench
 	// +kubebuilder:validation:Minimum=1

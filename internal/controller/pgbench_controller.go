@@ -131,6 +131,11 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
 		}
 
+		// if the pgbench is failed, return
+		if pgbench.Status.Phase == benchmarkv1alpha1.Failed {
+			return intctrlutil.Reconciled()
+		}
+
 		if err != nil {
 			return intctrlutil.RequeueWithError(err, l, "")
 		}

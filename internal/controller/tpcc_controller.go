@@ -135,6 +135,11 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
 		}
 
+		// if the tpcc is failed, return
+		if tpcc.Status.Phase == benchmarkv1alpha1.Failed {
+			return intctrlutil.Reconciled()
+		}
+
 		if err != nil {
 			return intctrlutil.RequeueWithError(err, l, "")
 		}

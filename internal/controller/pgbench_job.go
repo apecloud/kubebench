@@ -43,7 +43,7 @@ func NewPgbenchCleanupJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
 			Name:            constants.ContainerName,
-			Image:           constants.PgbenchImage,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvPgbench),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c", cmd},
 			Env: []corev1.EnvVar{
@@ -89,7 +89,7 @@ func NewPgbenchPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
 			Name:            constants.ContainerName,
-			Image:           constants.PgbenchImage,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvPgbench),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c", cmd},
 			Env: []corev1.EnvVar{
@@ -160,7 +160,7 @@ func NewPgbenchRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            constants.ContainerName,
-				Image:           constants.PgbenchImage,
+				Image:           constants.GetBenchmarkImage(constants.KubebenchEnvPgbench),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Command:         []string{"/bin/sh", "-c", curCmd},
 				Env: []corev1.EnvVar{

@@ -81,3 +81,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+kubebenchImages:
+  pgbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/spilo:14.8.0"
+  sysbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest"
+  tpcc: "registry.cn-hangzhou.aliyuncs.com/apecloud/benchmarksql:latest"
+  tpch: "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest"
+  ycsb: "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest"

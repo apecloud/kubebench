@@ -49,7 +49,7 @@ func NewTpccCleanupJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
 			Name:            constants.ContainerName,
-			Image:           constants.TpccImage,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvTpcc),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c", cmd},
 		},
@@ -73,7 +73,7 @@ func NewTpccPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
 			Name:            constants.ContainerName,
-			Image:           constants.TpccImage,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvTpcc),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c", cmd},
 		},
@@ -114,7 +114,7 @@ func NewTpccRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            constants.ContainerName,
-				Image:           constants.TpccImage,
+				Image:           constants.GetBenchmarkImage(constants.KubebenchEnvTpcc),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Command:         []string{"/bin/sh", "-c", curCmd},
 			},

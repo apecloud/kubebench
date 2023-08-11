@@ -52,7 +52,7 @@ func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
 			Name:            constants.ContainerName,
-			Image:           constants.YcsbImage,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvYcsb),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c", cmd},
 		},
@@ -100,7 +100,7 @@ func NewYcsbRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            constants.ContainerName,
-				Image:           constants.YcsbImage,
+				Image:           constants.GetBenchmarkImage(constants.KubebenchEnvYcsb),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Command:         []string{"/bin/sh", "-c", curCmd},
 			},

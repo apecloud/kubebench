@@ -45,6 +45,8 @@ func NewSysbenchCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value = fmt.Sprintf("%s,tables:%d", value, cr.Spec.Tables)
 	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
 	value = fmt.Sprintf("%s,times:%d", value, cr.Spec.Duration)
+	value = fmt.Sprintf("%s,threads:%d", value, cr.Spec.Threads[0])
+	value = fmt.Sprintf("%s,type:%s", value, cr.Spec.Types[0])
 
 	// TODO add func to parse extra args
 	value = fmt.Sprintf("%s,others:%s", value, strings.Join(cr.Spec.ExtraArgs, " "))
@@ -95,6 +97,8 @@ func NewSysbenchPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value = fmt.Sprintf("%s,tables:%d", value, cr.Spec.Tables)
 	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
 	value = fmt.Sprintf("%s,times:%d", value, cr.Spec.Duration)
+	value = fmt.Sprintf("%s,threads:%d", value, cr.Spec.Threads[0])
+	value = fmt.Sprintf("%s,type:%s", value, cr.Spec.Types[0])
 
 	// TODO add func to parse extra args
 	value = fmt.Sprintf("%s,others:%s", value, strings.Join(cr.Spec.ExtraArgs, " "))

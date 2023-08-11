@@ -76,6 +76,8 @@ spec:
                 - port
                 type: object
               threads:
+                default:
+                - 4
                 items:
                   type: integer
                 minItems: 1
@@ -97,13 +99,14 @@ spec:
                   type: object
                 type: array
               types:
+                default:
+                - oltp_read_write
                 items:
                   type: string
                 minItems: 1
                 type: array
             required:
             - target
-            - types
             type: object
           status:
             properties:

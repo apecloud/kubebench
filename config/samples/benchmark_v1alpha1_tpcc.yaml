@@ -9,4 +9,13 @@ metadata:
     app.kubernetes.io/created-by: kubebench
   name: tpcc-sample
 spec:
-  # TODO(user): Add fields here
+  threads:
+    - 1
+    - 2
+  target:
+    driver: mysql
+    host: "mycluster-mysql.default.svc.cluster.local"
+    port: 3306
+    user: root
+    password: "ncqsgzb7"
+    database: "mydb"

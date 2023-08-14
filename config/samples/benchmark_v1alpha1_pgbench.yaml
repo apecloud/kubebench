@@ -9,4 +9,17 @@ metadata:
     app.kubernetes.io/created-by: kubebench
   name: pgbench-sample
 spec:
-  # TODO(user): Add fields here
+  scale: 10
+  clients:
+    - 2
+    - 4
+  threads: 2
+    #transactions: 30000
+  duration: 60
+  mode: run
+  target:
+    host: "test-pg-postgresql.default.svc.cluster.local"
+    port: 5432
+    user: "postgres"
+    password: "xxx"
+    database: "postgres"

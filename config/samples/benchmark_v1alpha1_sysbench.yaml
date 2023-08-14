@@ -9,4 +9,23 @@ metadata:
     app.kubernetes.io/created-by: kubebench
   name: sysbench-sample
 spec:
-  # TODO(user): Add fields here
+  spec:
+  tables: 10
+  size: 20000
+  threads:
+    - 2
+    - 4
+  types:
+    - "oltp_read_write_pct"
+    - "oltp_read_write"
+  duration: 60
+  extraArgs: 
+    - "--read-percent=80" 
+    - "--write-percent=20"
+  target:
+    driver: "pgsql"
+    host: "test-pg-postgresql.default.svc.cluster.local"
+    port: 5432
+    user: "postgres"
+    password: "dlsmdcb6"
+    database: "postgres"

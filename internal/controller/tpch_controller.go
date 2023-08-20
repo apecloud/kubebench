@@ -65,7 +65,9 @@ func (r *TpchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// Run to one completion
-	if tpch.Status.Phase == benchmarkv1alpha1.Complete || tpch.Status.Phase == benchmarkv1alpha1.Failed {
+	if tpch.Status.Phase == benchmarkv1alpha1.Complete ||
+		tpch.Status.Phase == benchmarkv1alpha1.Failed ||
+		tpch.Status.Phase == benchmarkv1alpha1.Running {
 		return intctrlutil.Reconciled()
 	}
 
@@ -74,80 +76,78 @@ func (r *TpchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	tpch.Status.Phase = benchmarkv1alpha1.Running
 	tpch.Status.Total = len(jobs)
 	tpch.Status.Completions = fmt.Sprintf("%d/%d", tpch.Status.Succeeded, tpch.Status.Total)
+
 	if err := r.Status().Update(ctx, &tpch); err != nil {
 		return intctrlutil.RequeueWithError(err, l, "unable to update tpch status")
 	}
 
-	if err = r.Status().Update(ctx, &tpch); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update tpch status")
-	}
+	go func() {
+		for _, job := range jobs {
+			if err = controllerutil.SetOwnerReference(&tpch, job, r.Scheme); err != nil {
+				l.Info("unable to set owner reference", "job", job.Name)
+				return
+			}
 
-	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&tpch, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
-		}
+			if err = r.Create(ctx, job); err != nil {
+				l.Info("unable to create job", "job", job.Name)
+				return
+			}
 
-		if err = r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to create job")
-		}
+			l.Info("created job", "job", job.Name)
+			// wait for the job to complete, then update the tpch status
 
-		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the tpch status
+			for {
+				// sleep for a while to avoid too many requests
+				time.Sleep(time.Second)
 
-		for {
-			// sleep for a while to avoid too many requests
-			time.Sleep(time.Second)
+				status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+				if err != nil {
+					l.Error(err, "failed to get job status")
+					break
+				}
 
-			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
-			if err != nil {
-				l.Error(err, "failed to get job status")
+				// job is still running
+				if status.Active > 0 {
+					l.Info("job is still running", "job", job.Name)
+					continue
+				}
+
+				// job is failed
+				if status.Failed > 0 {
+					l.Info("job is failed", "job", job.Name)
+					tpch.Status.Phase = benchmarkv1alpha1.Failed
+				}
+
+				// job is completed
+				if status.Succeeded > 0 {
+					l.Info("job is succeeded", "jobName", job.Name)
+					tpch.Status.Succeeded += 1
+					tpch.Status.Completions = fmt.Sprintf("%d/%d", tpch.Status.Succeeded, tpch.Status.Total)
+				}
+
+				// record the result
+				if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpch.Namespace, &tpch.Status.Conditions, ParseTpch); err != nil {
+					l.Info("unable to record the log", "job", job.Name)
+				}
+
 				break
 			}
 
-			// job is still running
-			if status.Active > 0 {
-				l.Info("job is still running", "job", job.Name)
-				continue
+			// update the tpch status
+			if err := r.Status().Update(ctx, &tpch); err != nil {
+				l.Info("unable to update tpch status", "job", job.Name)
 			}
 
-			// job is failed
-			if status.Failed > 0 {
-				l.Info("job is failed", "job", job.Name)
-				tpch.Status.Phase = benchmarkv1alpha1.Failed
+			// if the tpch is failed, return
+			if tpch.Status.Phase == benchmarkv1alpha1.Failed {
+				return
 			}
-
-			// job is completed
-			if status.Succeeded > 0 {
-				l.Info("job is succeeded", "jobName", job.Name)
-				tpch.Status.Succeeded += 1
-				tpch.Status.Completions = fmt.Sprintf("%d/%d", tpch.Status.Succeeded, tpch.Status.Total)
-			}
-
-			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpch.Namespace, &tpch.Status.Conditions, ParseTpch); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
-			}
-
-			break
 		}
 
-		// update the tpch status
-		if err := r.Status().Update(ctx, &tpch); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update tpch status")
-		}
+		tpch.Status.Phase = benchmarkv1alpha1.Complete
+		r.Status().Update(ctx, &tpch)
+	}()
 
-		// if the tpch is failed, return
-		if tpch.Status.Phase == benchmarkv1alpha1.Failed {
-			return intctrlutil.Reconciled()
-		}
-
-		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "")
-		}
-	}
-
-	tpch.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &tpch)
 	return intctrlutil.Reconciled()
 }
 

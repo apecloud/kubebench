@@ -64,7 +64,9 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// run if bench completion
-	if ycsb.Status.Phase == benchmarkv1alpha1.Complete || ycsb.Status.Phase == benchmarkv1alpha1.Failed {
+	if ycsb.Status.Phase == benchmarkv1alpha1.Complete ||
+		ycsb.Status.Phase == benchmarkv1alpha1.Failed ||
+		ycsb.Status.Phase == benchmarkv1alpha1.Running {
 		return intctrlutil.Reconciled()
 	}
 
@@ -77,75 +79,73 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
 	}
 
-	if err = r.Status().Update(ctx, &ycsb); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update ycsb status")
-	}
+	go func() {
+		for _, job := range jobs {
+			if err = controllerutil.SetOwnerReference(&ycsb, job, r.Scheme); err != nil {
+				l.Info("unable to set owner reference", "job", job.Name)
+				return
+			}
 
-	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&ycsb, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
-		}
+			if err = r.Create(ctx, job); err != nil {
+				l.Info("unable to create job", "job", job.Name)
+				return
+			}
 
-		if err = r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to create job")
-		}
+			l.Info("created job", "job", job.Name)
+			// wait for the job to complete, then update the ycsb status
 
-		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the ycsb status
+			for {
+				// sleep for a while to avoid too many requests
+				time.Sleep(time.Second)
 
-		for {
-			// sleep for a while to avoid too many requests
-			time.Sleep(time.Second)
+				status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+				if err != nil {
+					l.Error(err, "failed to get job status")
+					break
+				}
 
-			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
-			if err != nil {
-				l.Error(err, "failed to get job status")
+				// job is still running
+				if status.Active > 0 {
+					l.Info("job is still running", "job", job.Name)
+					continue
+				}
+
+				// job is failed
+				if status.Failed > 0 {
+					l.Info("job is failed", "job", job.Name)
+					ycsb.Status.Phase = benchmarkv1alpha1.Failed
+				}
+
+				// job is completed
+				if status.Succeeded > 0 {
+					l.Info("job is succeeded", "jobName", job.Name)
+					ycsb.Status.Succeeded += 1
+					ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
+				}
+
+				// record the result
+				if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, ParseYcsb); err != nil {
+					l.Info("unable to record the log", "job", job.Name)
+				}
+
 				break
 			}
 
-			// job is still running
-			if status.Active > 0 {
-				l.Info("job is still running", "job", job.Name)
-				continue
+			// update the ycsb status
+			if err := r.Status().Update(ctx, &ycsb); err != nil {
+				l.Info("unable to update ycsb status", "job", job.Name)
 			}
 
-			// job is failed
-			if status.Failed > 0 {
-				l.Info("job is failed", "job", job.Name)
-				ycsb.Status.Phase = benchmarkv1alpha1.Failed
+			// if the ycsb is failed, return
+			if ycsb.Status.Phase == benchmarkv1alpha1.Failed {
+				return
 			}
-
-			// job is completed
-			if status.Succeeded > 0 {
-				l.Info("job is succeeded", "jobName", job.Name)
-				ycsb.Status.Succeeded += 1
-				ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
-			}
-
-			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, ParseYcsb); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
-			}
-
-			break
 		}
 
-		if err := r.Status().Update(ctx, &ycsb); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
-		}
+		ycsb.Status.Phase = benchmarkv1alpha1.Complete
+		r.Status().Update(ctx, &ycsb)
+	}()
 
-		// if the ycsb is failed, return
-		if ycsb.Status.Phase == benchmarkv1alpha1.Failed {
-			return intctrlutil.Reconciled()
-		}
-
-		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "")
-		}
-	}
-
-	ycsb.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &ycsb)
 	return intctrlutil.Reconciled()
 }
 

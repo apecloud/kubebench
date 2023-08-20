@@ -68,7 +68,9 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	// Run to one completion
-	if sysbench.Status.Phase == benchmarkv1alpha1.Complete || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
+	if sysbench.Status.Phase == benchmarkv1alpha1.Complete ||
+		sysbench.Status.Phase == benchmarkv1alpha1.Failed ||
+		sysbench.Status.Phase == benchmarkv1alpha1.Running {
 		return intctrlutil.Reconciled()
 	}
 
@@ -81,76 +83,73 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
 	}
 
-	if err = r.Status().Update(ctx, &sysbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update sysbench status")
-	}
+	go func() {
+		for _, job := range jobs {
+			if err = controllerutil.SetOwnerReference(&sysbench, job, r.Scheme); err != nil {
+				l.Info("unable to set owner reference", "job", job.Name)
+				return
+			}
 
-	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&sysbench, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
-		}
+			if err = r.Create(ctx, job); err != nil {
+				l.Info("unable to create job", "job", job.Name)
+				return
+			}
 
-		if err = r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to create job")
-		}
+			l.Info("created job", "job", job.Name)
+			// wait for the job to complete, then update the sysbench status
 
-		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the sysbench status
+			for {
+				// sleep for a while to avoid too many requests
+				time.Sleep(time.Second)
 
-		for {
-			// sleep for a while to avoid too many requests
-			time.Sleep(time.Second)
+				status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+				if err != nil {
+					l.Error(err, "failed to get job status")
+					break
+				}
 
-			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
-			if err != nil {
-				l.Error(err, "failed to get job status")
+				// job is still running
+				if status.Active > 0 {
+					l.Info("job is still running", "job", job.Name)
+					continue
+				}
+
+				// job is failed
+				if status.Failed > 0 {
+					l.Info("job is failed", "job", job.Name)
+					sysbench.Status.Phase = benchmarkv1alpha1.Failed
+				}
+
+				// job is completed
+				if status.Succeeded > 0 {
+					l.Info("job is succeeded", "jobName", job.Name)
+					sysbench.Status.Succeeded += 1
+					sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
+				}
+
+				// record the result
+				if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
+					l.Info("unable to record the log", "job", job.Name)
+				}
+
 				break
 			}
 
-			// job is still running
-			if status.Active > 0 {
-				l.Info("job is still running", "job", job.Name)
-				continue
+			// update the sysbench status
+			if err := r.Status().Update(ctx, &sysbench); err != nil {
+				l.Info("unable to update sysbench status", "job", job.Name)
 			}
 
-			// job is failed
-			if status.Failed > 0 {
-				l.Info("job is failed", "job", job.Name)
-				sysbench.Status.Phase = benchmarkv1alpha1.Failed
+			// if the sysbench is failed, return
+			if sysbench.Status.Phase == benchmarkv1alpha1.Failed {
+				return
 			}
-
-			// job is completed
-			if status.Succeeded > 0 {
-				l.Info("job is succeeded", "jobName", job.Name)
-				sysbench.Status.Succeeded += 1
-				sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
-			}
-
-			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
-			}
-
-			break
 		}
 
-		// update the sysbench status
-		if err := r.Status().Update(ctx, &sysbench); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
-		}
+		sysbench.Status.Phase = benchmarkv1alpha1.Complete
+		r.Status().Update(ctx, &sysbench)
+	}()
 
-		// if the sysbench is failed, return
-		if sysbench.Status.Phase == benchmarkv1alpha1.Failed {
-			return intctrlutil.RequeueWithError(err, l, "sysbench is failed")
-		}
-
-		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "")
-		}
-	}
-
-	sysbench.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &sysbench)
 	return intctrlutil.Reconciled()
 }
 

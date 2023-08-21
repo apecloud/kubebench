@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -40,6 +39,8 @@ type SysbenchReconciler struct {
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
+
+var sysbenchToJobController = make(map[string]JobsController)
 
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=sysbenches/status,verbs=get;update;patch
@@ -62,8 +63,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	l := log.FromContext(ctx)
 
 	var sysbench benchmarkv1alpha1.Sysbench
-	var err error
-	if err = r.Get(ctx, req.NamespacedName, &sysbench); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &sysbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -74,84 +74,66 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	jobs := NewSysbenchJobs(&sysbench)
 
-	sysbench.Status.Phase = benchmarkv1alpha1.Running
-	sysbench.Status.Total = len(jobs)
+	if sysbench.Status.Phase == "" {
+		l.Info("start sysbench", "sysbench", sysbench.Name)
+		sysbench.Status.Phase = benchmarkv1alpha1.Running
+		sysbench.Status.Total = len(jobs)
+	}
+
+	if _, ok := sysbenchToJobController[sysbench.Name]; !ok {
+		sysbenchToJobController[sysbench.Name] = NewJobsController(r.Client, jobs)
+	}
+	jc := sysbenchToJobController[sysbench.Name]
+
+	if jc.Completed() {
+		sysbench.Status.Phase = benchmarkv1alpha1.Complete
+	} else {
+		job := jc.GetCurJob()
+
+		existed, err := utils.IsJobExisted(r.Client, ctx, job.Name, sysbench.Namespace)
+		if err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to check if job exists")
+		}
+
+		if !existed {
+			if err = controllerutil.SetOwnerReference(&sysbench, job, r.Scheme); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
+			}
+
+			if err := jc.StartJob(); err != nil {
+				l.Error(err, "failed to start job")
+				return intctrlutil.RequeueWithError(err, l, "failed to start job")
+			}
+
+			// wait for the job to be created
+			l.Info("created job", "job", job.Name)
+			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
+		}
+
+		if status, err := jc.CurJobStatus(); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to get job status")
+		} else {
+			switch status {
+			case Complete:
+				sysbench.Status.Succeeded++
+				// record the result
+				if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
+					return intctrlutil.RequeueWithError(err, l, "unable to record the log")
+				}
+
+				jc.NextJob()
+			case Failed:
+				sysbench.Status.Phase = benchmarkv1alpha1.Failed
+			}
+		}
+	}
+
 	sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
 	if err := r.Status().Update(ctx, &sysbench); err != nil {
 		return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
 	}
 
-	if err = r.Status().Update(ctx, &sysbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update sysbench status")
-	}
-
-	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&sysbench, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
-		}
-
-		if err = r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to create job")
-		}
-
-		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the sysbench status
-
-		for {
-			// sleep for a while to avoid too many requests
-			time.Sleep(time.Second)
-
-			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
-			if err != nil {
-				l.Error(err, "failed to get job status")
-				break
-			}
-
-			// job is still running
-			if status.Active > 0 {
-				l.Info("job is still running", "job", job.Name)
-				continue
-			}
-
-			// job is failed
-			if status.Failed > 0 {
-				l.Info("job is failed", "job", job.Name)
-				sysbench.Status.Phase = benchmarkv1alpha1.Failed
-			}
-
-			// job is completed
-			if status.Succeeded > 0 {
-				l.Info("job is succeeded", "jobName", job.Name)
-				sysbench.Status.Succeeded += 1
-				sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
-			}
-
-			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, sysbench.Namespace, &sysbench.Status.Conditions, ParseSysBench); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
-			}
-
-			break
-		}
-
-		// update the sysbench status
-		if err := r.Status().Update(ctx, &sysbench); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
-		}
-
-		// if the sysbench is failed, return
-		if sysbench.Status.Phase == benchmarkv1alpha1.Failed {
-			return intctrlutil.RequeueWithError(err, l, "sysbench is failed")
-		}
-
-		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "")
-		}
-	}
-
-	sysbench.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &sysbench)
-	return intctrlutil.Reconciled()
+	return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 }
 
 // SetupWithManager sets up the controller with the Manager.

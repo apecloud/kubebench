@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -41,6 +40,8 @@ type YcsbReconciler struct {
 	RestConfig *rest.Config
 }
 
+var ycsbToJobController = make(map[string]JobsController)
+
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=ycsbs/finalizers,verbs=update
@@ -58,7 +59,6 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	l := log.FromContext(ctx)
 
 	var ycsb benchmarkv1alpha1.Ycsb
-	var err error
 	if err := r.Get(ctx, req.NamespacedName, &ycsb); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -70,83 +70,66 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	jobs := NewYcsbJobs(&ycsb)
 
-	ycsb.Status.Phase = benchmarkv1alpha1.Running
-	ycsb.Status.Total = len(jobs)
+	if ycsb.Status.Phase == "" {
+		l.Info("start ycsb", "ycsb", ycsb.Name)
+		ycsb.Status.Phase = benchmarkv1alpha1.Running
+		ycsb.Status.Total = len(jobs)
+	}
+
+	if _, ok := ycsbToJobController[ycsb.Name]; !ok {
+		ycsbToJobController[ycsb.Name] = NewJobsController(r.Client, jobs)
+	}
+	jc := ycsbToJobController[ycsb.Name]
+
+	if jc.Completed() {
+		ycsb.Status.Phase = benchmarkv1alpha1.Complete
+	} else {
+		job := jc.GetCurJob()
+
+		existed, err := utils.IsJobExisted(r.Client, ctx, job.Name, ycsb.Namespace)
+		if err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to check if job exists")
+		}
+
+		if !existed {
+			if err = controllerutil.SetOwnerReference(&ycsb, job, r.Scheme); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
+			}
+
+			if err := jc.StartJob(); err != nil {
+				l.Error(err, "failed to start job")
+				return intctrlutil.RequeueWithError(err, l, "failed to start job")
+			}
+
+			// wait for the job to be created
+			l.Info("created job", "job", job.Name)
+			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
+		}
+
+		if status, err := jc.CurJobStatus(); err != nil {
+			return intctrlutil.RequeueWithError(err, l, "failed to get job status")
+		} else {
+			switch status {
+			case Complete:
+				ycsb.Status.Succeeded++
+				// record the result
+				if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, ParseYcsb); err != nil {
+					return intctrlutil.RequeueWithError(err, l, "unable to record the log")
+				}
+
+				jc.NextJob()
+			case Failed:
+				ycsb.Status.Phase = benchmarkv1alpha1.Failed
+			}
+		}
+	}
+
 	ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
 	if err := r.Status().Update(ctx, &ycsb); err != nil {
 		return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
 	}
 
-	if err = r.Status().Update(ctx, &ycsb); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update ycsb status")
-	}
-
-	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&ycsb, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
-		}
-
-		if err = r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to create job")
-		}
-
-		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the ycsb status
-
-		for {
-			// sleep for a while to avoid too many requests
-			time.Sleep(time.Second)
-
-			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
-			if err != nil {
-				l.Error(err, "failed to get job status")
-				break
-			}
-
-			// job is still running
-			if status.Active > 0 {
-				l.Info("job is still running", "job", job.Name)
-				continue
-			}
-
-			// job is failed
-			if status.Failed > 0 {
-				l.Info("job is failed", "job", job.Name)
-				ycsb.Status.Phase = benchmarkv1alpha1.Failed
-			}
-
-			// job is completed
-			if status.Succeeded > 0 {
-				l.Info("job is succeeded", "jobName", job.Name)
-				ycsb.Status.Succeeded += 1
-				ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
-			}
-
-			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, ParseYcsb); err != nil {
-				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
-			}
-
-			break
-		}
-
-		if err := r.Status().Update(ctx, &ycsb); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
-		}
-
-		// if the ycsb is failed, return
-		if ycsb.Status.Phase == benchmarkv1alpha1.Failed {
-			return intctrlutil.Reconciled()
-		}
-
-		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "")
-		}
-	}
-
-	ycsb.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &ycsb)
-	return intctrlutil.Reconciled()
+	return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 }
 
 // SetupWithManager sets up the controller with the Manager.

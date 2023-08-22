@@ -40,8 +40,6 @@ type PgbenchReconciler struct {
 	RestConfig *rest.Config
 }
 
-var pgbenchToJobController = make(map[string]JobsController)
-
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/finalizers,verbs=update
@@ -64,8 +62,6 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
-		delete(pgbenchToJobController, pgbench.Name)
-
 		return intctrlutil.Reconciled()
 	}
 
@@ -77,29 +73,26 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		pgbench.Status.Total = len(jobs)
 	}
 
-	if _, ok := pgbenchToJobController[pgbench.Name]; !ok {
-		pgbenchToJobController[pgbench.Name] = NewJobsController(r.Client, jobs)
-	}
-	jc := pgbenchToJobController[pgbench.Name]
-
-	if jc.Completed() {
+	if pgbench.Status.Succeeded >= pgbench.Status.Total {
 		pgbench.Status.Phase = benchmarkv1alpha1.Complete
 	} else {
-		job := jc.GetCurJob()
+		job := jobs[pgbench.Status.Succeeded]
 
 		existed, err := utils.IsJobExisted(r.Client, ctx, job.Name, pgbench.Namespace)
 		if err != nil {
+			l.Error(err, "failed to check if job exists", "job", job.Name)
 			return intctrlutil.RequeueWithError(err, l, "failed to check if job exists")
 		}
 
 		if !existed {
 			if err = controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
+				l.Error(err, "failed to set owner reference for job", "job", job.Name)
 				return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
 			}
 
-			if err := jc.StartJob(); err != nil {
-				l.Error(err, "failed to start job")
-				return intctrlutil.RequeueWithError(err, l, "failed to start job")
+			if err = r.Create(ctx, job); err != nil {
+				l.Error(err, "failed to create job", "job", job.Name)
+				return intctrlutil.RequeueWithError(err, l, "failed to create job")
 			}
 
 			// wait for the job to be created
@@ -107,21 +100,25 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 		}
 
-		if status, err := jc.CurJobStatus(); err != nil {
+		// check if the job is completed
+		status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+		if err != nil {
+			l.Error(err, "failed to get job status", "job", job.Name)
 			return intctrlutil.RequeueWithError(err, l, "failed to get job status")
-		} else {
-			switch status {
-			case Complete:
-				pgbench.Status.Succeeded++
-				// record the result
-				if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
-					return intctrlutil.RequeueWithError(err, l, "unable to record the log")
-				}
+		}
 
-				jc.NextJob()
-			case Failed:
-				pgbench.Status.Phase = benchmarkv1alpha1.Failed
+		if status.Succeeded > 0 {
+			l.Info("job completed", "job", job.Name)
+			pgbench.Status.Succeeded++
+			// record the result
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
+		} else if status.Failed > 0 {
+			l.Info("job failed", "job", job.Name)
+			pgbench.Status.Phase = benchmarkv1alpha1.Failed
+		} else {
+			l.Info("job is running", "job", job.Name)
 		}
 	}
 

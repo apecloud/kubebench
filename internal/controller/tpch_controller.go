@@ -40,8 +40,6 @@ type TpchReconciler struct {
 	RestConfig *rest.Config
 }
 
-var tpchToJobController = make(map[string]JobsController)
-
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpches,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpches/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=tpches/finalizers,verbs=update
@@ -77,29 +75,26 @@ func (r *TpchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		tpch.Status.Total = len(jobs)
 	}
 
-	if _, ok := tpchToJobController[tpch.Name]; !ok {
-		tpchToJobController[tpch.Name] = NewJobsController(r.Client, jobs)
-	}
-	jc := tpchToJobController[tpch.Name]
-
-	if jc.Completed() {
+	if tpch.Status.Succeeded >= tpch.Status.Total {
 		tpch.Status.Phase = benchmarkv1alpha1.Complete
 	} else {
-		job := jc.GetCurJob()
+		job := jobs[tpch.Status.Succeeded]
 
 		existed, err := utils.IsJobExisted(r.Client, ctx, job.Name, tpch.Namespace)
 		if err != nil {
+			l.Error(err, "failed to check if job exists", "job", job.Name)
 			return intctrlutil.RequeueWithError(err, l, "failed to check if job exists")
 		}
 
 		if !existed {
 			if err = controllerutil.SetOwnerReference(&tpch, job, r.Scheme); err != nil {
+				l.Error(err, "failed to set owner reference for job", "job", job.Name)
 				return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
 			}
 
-			if err := jc.StartJob(); err != nil {
-				l.Error(err, "failed to start job")
-				return intctrlutil.RequeueWithError(err, l, "failed to start job")
+			if err = r.Create(ctx, job); err != nil {
+				l.Error(err, "failed to create job", "job", job.Name)
+				return intctrlutil.RequeueWithError(err, l, "failed to create job")
 			}
 
 			// wait for the job to be created
@@ -107,21 +102,25 @@ func (r *TpchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 		}
 
-		if status, err := jc.CurJobStatus(); err != nil {
+		// check if the job is completed
+		status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+		if err != nil {
+			l.Error(err, "failed to get job status", "job", job.Name)
 			return intctrlutil.RequeueWithError(err, l, "failed to get job status")
-		} else {
-			switch status {
-			case Complete:
-				tpch.Status.Succeeded++
-				// record the result
-				if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpch.Namespace, &tpch.Status.Conditions, ParseTpch); err != nil {
-					return intctrlutil.RequeueWithError(err, l, "unable to record the log")
-				}
+		}
 
-				jc.NextJob()
-			case Failed:
-				tpch.Status.Phase = benchmarkv1alpha1.Failed
+		if status.Succeeded > 0 {
+			l.Info("job completed", "job", job.Name)
+			tpch.Status.Succeeded++
+			// record the result
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, tpch.Namespace, &tpch.Status.Conditions, ParseTpch); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
+		} else if status.Failed > 0 {
+			l.Info("job failed", "job", job.Name)
+			tpch.Status.Phase = benchmarkv1alpha1.Failed
+		} else {
+			l.Info("job is running", "job", job.Name)
 		}
 	}
 

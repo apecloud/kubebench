@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -58,8 +57,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	l := log.FromContext(ctx)
 
 	var pgbench benchmarkv1alpha1.Pgbench
-	var err error
-	if err = r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -69,81 +67,67 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	jobs := NewPgbenchJobs(&pgbench)
 
-	pgbench.Status.Phase = benchmarkv1alpha1.Running
-	pgbench.Status.Total = len(jobs)
-	pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
-
-	if err = r.Status().Update(ctx, &pgbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "update to update pgbench status")
+	if pgbench.Status.Phase == "" {
+		l.Info("start pgbench", "pgbench", pgbench.Name)
+		pgbench.Status.Phase = benchmarkv1alpha1.Running
+		pgbench.Status.Total = len(jobs)
 	}
 
-	for _, job := range jobs {
-		if err = controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
+	if pgbench.Status.Succeeded >= pgbench.Status.Total {
+		pgbench.Status.Phase = benchmarkv1alpha1.Complete
+	} else {
+		job := jobs[pgbench.Status.Succeeded]
+
+		existed, err := utils.IsJobExisted(r.Client, ctx, job.Name, pgbench.Namespace)
+		if err != nil {
+			l.Error(err, "failed to check if job exists", "job", job.Name)
+			return intctrlutil.RequeueWithError(err, l, "failed to check if job exists")
 		}
 
-		if err = r.Create(ctx, job); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "failed to create job")
+		if !existed {
+			if err = controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
+				l.Error(err, "failed to set owner reference for job", "job", job.Name)
+				return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
+			}
+
+			if err = r.Create(ctx, job); err != nil {
+				l.Error(err, "failed to create job", "job", job.Name)
+				return intctrlutil.RequeueWithError(err, l, "failed to create job")
+			}
+
+			// wait for the job to be created
+			l.Info("created job", "job", job.Name)
+			return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 		}
 
-		l.Info("created job", "job", job.Name)
-		// wait for the job to complete, then update the pgbench status
+		// check if the job is completed
+		status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
+		if err != nil {
+			l.Error(err, "failed to get job status", "job", job.Name)
+			return intctrlutil.RequeueWithError(err, l, "failed to get job status")
+		}
 
-		for {
-			// sleep for a while to avoid too many requests
-			time.Sleep(time.Second)
-
-			status, err := utils.GetJobStatus(r.Client, ctx, job.Name, job.Namespace)
-			if err != nil {
-				l.Error(err, "failed to get job status")
-				break
-			}
-
-			// job is still running
-			if status.Active > 0 {
-				l.Info("job is still running", "job", job.Name)
-				continue
-			}
-
-			// job is failed
-			if status.Failed > 0 {
-				l.Info("job is failed", "job", job.Name)
-				pgbench.Status.Phase = benchmarkv1alpha1.Failed
-			}
-
-			// job is completed
-			if status.Succeeded > 0 {
-				l.Info("job is succeeded", "jobName", job.Name)
-				pgbench.Status.Succeeded += 1
-				pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
-			}
-
+		if status.Succeeded > 0 {
+			l.Info("job completed", "job", job.Name)
+			pgbench.Status.Succeeded++
 			// record the result
 			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
-
-			break
-		}
-
-		// update the pgbench status
-		if err := r.Status().Update(ctx, &pgbench); err != nil {
-			return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
-		}
-
-		// if the pgbench is failed, return
-		if pgbench.Status.Phase == benchmarkv1alpha1.Failed {
-			return intctrlutil.Reconciled()
-		}
-
-		if err != nil {
-			return intctrlutil.RequeueWithError(err, l, "")
+		} else if status.Failed > 0 {
+			l.Info("job failed", "job", job.Name)
+			pgbench.Status.Phase = benchmarkv1alpha1.Failed
+		} else {
+			l.Info("job is running", "job", job.Name)
 		}
 	}
 
-	pgbench.Status.Phase = benchmarkv1alpha1.Complete
-	r.Status().Update(ctx, &pgbench)
-	return intctrlutil.Reconciled()
+	pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
+	if err := r.Status().Update(ctx, &pgbench); err != nil {
+		return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
+	}
+
+	return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 }
 
 // SetupWithManager sets up the controller with the Manager.

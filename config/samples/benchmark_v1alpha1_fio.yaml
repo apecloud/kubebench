@@ -1,0 +1,12 @@
+apiVersion: benchmark.apecloud.io/v1alpha1
+kind: Fio
+metadata:
+  labels:
+    app.kubernetes.io/name: fio
+    app.kubernetes.io/instance: fio-sample
+    app.kubernetes.io/part-of: kubebench
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubebench
+  name: fio-sample
+spec:
+  # TODO(user): Add fields here

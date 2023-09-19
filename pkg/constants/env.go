@@ -12,6 +12,7 @@ const (
 	KubebenchEnvTpcc     = "KUBEBENCH_TPCC_IMAGE"
 	KubebenchEnvTpch     = "KUBEBENCH_TPCH_IMAGE"
 	KubebenchEnvYcsb     = "KUBEBENCH_YCSB_IMAGE"
+	KubebenchEnvFio      = "KUBEBENCH_FIO_IMAGE"
 )
 
 func init() {
@@ -20,6 +21,7 @@ func init() {
 	viper.SetDefault(KubebenchEnvTpcc, "registry.cn-hangzhou.aliyuncs.com/apecloud/benchmarksql:latest")
 	viper.SetDefault(KubebenchEnvTpch, "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest")
 	viper.SetDefault(KubebenchEnvYcsb, "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest")
+	viper.SetDefault(KubebenchEnvFio, "registry.cn-hangzhou.aliyuncs.com/apecloud/fio:latest")
 }
 
 // GetBenchmarkImage get benchmark image

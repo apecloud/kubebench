@@ -155,7 +155,7 @@ func NewSysbenchRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 
 	jobs := make([]*batchv1.Job, 0)
 	for i := 0; i < len(cr.Spec.Threads)*len(cr.Spec.Types); i++ {
-		curValue := fmt.Sprintf("%s,threads:%d", value, cr.Spec.Threads[i/len(cr.Spec.Threads)])
+		curValue := fmt.Sprintf("%s,threads:%d", value, cr.Spec.Threads[i/len(cr.Spec.Types)])
 		curValue = fmt.Sprintf("%s,type:%s", curValue, cr.Spec.Types[i%len(cr.Spec.Types)])
 		jobName := fmt.Sprintf("%s-run-%d", cr.Name, i)
 		curJob := utils.JobTemplate(jobName, cr.Namespace)

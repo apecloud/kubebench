@@ -32,7 +32,7 @@ jobs:
 
   release-chart:
     needs: chart-version
-    uses: apecloud/apecloud-cd/.github/workflows/release-charts.yml@v0.1.8
+    uses: apecloud/apecloud-cd/.github/workflows/release-charts.yml@v0.1.24
     with:
       VERSION: "${{ needs.chart-version.outputs.chart-version }}"
       CHART_NAME: "kubebench"

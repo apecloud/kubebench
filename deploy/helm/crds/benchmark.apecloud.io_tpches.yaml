@@ -12,6 +12,8 @@ spec:
     listKind: TpchList
     plural: tpches
     singular: tpch
+    shortNames:
+      - tpch
   scope: Namespaced
   versions:
   - additionalPrinterColumns:

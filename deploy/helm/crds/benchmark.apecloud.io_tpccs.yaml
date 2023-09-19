@@ -12,6 +12,8 @@ spec:
     listKind: TpccList
     plural: tpccs
     singular: tpcc
+    shortNames:
+      - tpcc
   scope: Namespaced
   versions:
   - additionalPrinterColumns:

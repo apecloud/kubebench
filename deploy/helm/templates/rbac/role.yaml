@@ -20,6 +20,32 @@ rules:
 - apiGroups:
   - benchmark.apecloud.io
   resources:
+  - fios
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - fios/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - fios/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
   - pgbenches
   verbs:
   - create

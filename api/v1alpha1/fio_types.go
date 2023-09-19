@@ -27,7 +27,7 @@ type FioSpec struct {
 	// The total size of file I/O for each thread of the test.
 	// Please refer to https://fio.readthedocs.io/en/latest/fio_doc.html#i-o-size
 	// +kubebuilder:validation:Pattern=^[0-9]+[kKmMgG]?$
-	// +kubebuilder:default="256M"
+	// +kubebuilder:default="1G"
 	// +optional
 	Size string `json:"size,omitempty"`
 

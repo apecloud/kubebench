@@ -12,6 +12,8 @@ spec:
     listKind: SysbenchList
     plural: sysbenches
     singular: sysbench
+    shortNames:
+      - sysbench
   scope: Namespaced
   versions:
   - additionalPrinterColumns:

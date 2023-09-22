@@ -1,0 +1,31 @@
+# permissions for end users to edit fios.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: fio-editor-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubebench
+    app.kubernetes.io/part-of: kubebench
+    app.kubernetes.io/managed-by: kustomize
+  name: fio-editor-role
+rules:
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - fios
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - fios/status
+  verbs:
+  - get

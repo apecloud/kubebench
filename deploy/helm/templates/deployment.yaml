@@ -45,6 +45,8 @@ spec:
               value: "{{ .Values.kubebenchImages.tpch }}"
             - name: KUBEBENCH_YCSB_IMAGE
               value: "{{ .Values.kubebenchImages.ycsb }}"
+            - name: KUBEBENCH_FIO_IMAGE
+              value: "{{ .Values.kubebenchImages.fio }}"
           command:
           - /manager
           securityContext:

@@ -12,6 +12,8 @@ spec:
     listKind: YcsbList
     plural: ycsbs
     singular: ycsb
+    shortNames:
+      - ycsb
   scope: Namespaced
   versions:
   - additionalPrinterColumns:

@@ -5,4 +5,5 @@ resources:
 - benchmark_v1alpha1_ycsb.yaml
 - benchmark_v1alpha1_tpcc.yaml
 - benchmark_v1alpha1_tpch.yaml
+- benchmark_v1alpha1_fio.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

@@ -4,31 +4,17 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.12.0
-  name: sysbenches.benchmark.apecloud.io
+  name: fios.benchmark.apecloud.io
 spec:
   group: benchmark.apecloud.io
   names:
-    kind: Sysbench
-    listKind: SysbenchList
-    plural: sysbenches
-    singular: sysbench
-    shortNames:
-      - sysbench
+    kind: Fio
+    listKind: FioList
+    plural: fios
+    singular: fio
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - description: status phase
-      jsonPath: .status.phase
-      name: STATUS
-      type: string
-    - description: completions
-      jsonPath: .status.completions
-      name: COMPLETIONS
-      type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: AGE
-      type: date
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -40,50 +26,45 @@ spec:
             type: object
           spec:
             properties:
-              duration:
-                minimum: 1
-                type: integer
+              bs:
+                default: 4k
+                pattern: ^[0-9]+[kKmMgG]?$
+                type: string
+              direct:
+                default: true
+                type: boolean
               extraArgs:
                 items:
                   type: string
                 type: array
-              size:
+              iodepth:
+                default: 1
+                minimum: 1
                 type: integer
-              step:
-                default: all
-                enum:
-                - all
-                - cleanup
-                - prepare
-                - run
+              ioengine:
+                default: psync
                 type: string
-              tables:
-                type: integer
-              target:
-                properties:
-                  database:
-                    type: string
-                  driver:
-                    type: string
-                  host:
-                    type: string
-                  password:
-                    type: string
-                  port:
-                    type: integer
-                  user:
-                    type: string
-                required:
-                - host
-                - port
-                type: object
-              threads:
+              numjobs:
                 default:
-                - 4
+                - 1
                 items:
                   type: integer
                 minItems: 1
                 type: array
+              runtime:
+                minimum: 0
+                type: integer
+              rws:
+                default:
+                - read
+                items:
+                  type: string
+                minItems: 1
+                type: array
+              size:
+                default: 1G
+                pattern: ^[0-9]+[kKmMgG]?$
+                type: string
               tolerations:
                 items:
                   properties:
@@ -100,15 +81,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              types:
-                default:
-                - oltp_read_write
-                items:
-                  type: string
-                minItems: 1
-                type: array
-            required:
-            - target
             type: object
           status:
             properties:

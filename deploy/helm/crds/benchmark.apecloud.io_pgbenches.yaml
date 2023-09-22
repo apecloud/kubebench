@@ -12,6 +12,8 @@ spec:
     listKind: PgbenchList
     plural: pgbenches
     singular: pgbench
+    shortNames:
+      - pgbench
   scope: Namespaced
   versions:
   - additionalPrinterColumns:

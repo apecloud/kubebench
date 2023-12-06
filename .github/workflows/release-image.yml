@@ -38,5 +38,4 @@ jobs:
       IMG: "apecloud/kubebench"
       VERSION: "${{ needs.image-tag.outputs.tag-name }}"
       GO_VERSION: "1.20"
-      APECD_REF: "v0.1.424"
     secrets: inherit

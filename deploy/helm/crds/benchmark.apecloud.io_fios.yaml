@@ -30,6 +30,8 @@ spec:
                 default: 4k
                 pattern: ^[0-9]+[kKmMgG]?$
                 type: string
+              cpu:
+                type: string
               direct:
                 default: true
                 type: boolean
@@ -43,6 +45,8 @@ spec:
                 type: integer
               ioengine:
                 default: psync
+                type: string
+              memory:
                 type: string
               numjobs:
                 default:

@@ -12,8 +12,6 @@ spec:
     listKind: YcsbList
     plural: ycsbs
     singular: ycsb
-    shortNames:
-      - ycsb
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -40,6 +38,8 @@ spec:
             type: object
           spec:
             properties:
+              cpu:
+                type: string
               extraArgs:
                 items:
                   type: string
@@ -49,6 +49,8 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
+              memory:
+                type: string
               operationCount:
                 default: 10000
                 minimum: 1

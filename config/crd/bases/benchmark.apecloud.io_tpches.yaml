@@ -38,10 +38,14 @@ spec:
             type: object
           spec:
             properties:
+              cpu:
+                type: string
               extraArgs:
                 items:
                   type: string
                 type: array
+              memory:
+                type: string
               sizes:
                 default:
                 - 1

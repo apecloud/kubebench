@@ -12,8 +12,6 @@ spec:
     listKind: SysbenchList
     plural: sysbenches
     singular: sysbench
-    shortNames:
-      - sysbench
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -40,6 +38,8 @@ spec:
             type: object
           spec:
             properties:
+              cpu:
+                type: string
               duration:
                 minimum: 1
                 type: integer
@@ -47,6 +47,8 @@ spec:
                 items:
                   type: string
                 type: array
+              memory:
+                type: string
               size:
                 type: integer
               step:

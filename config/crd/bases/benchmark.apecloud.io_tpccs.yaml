@@ -38,6 +38,8 @@ spec:
             type: object
           spec:
             properties:
+              cpu:
+                type: string
               delivery:
                 default: 4
                 maximum: 100
@@ -55,6 +57,8 @@ spec:
                 default: 0
                 minimum: 0
                 type: integer
+              memory:
+                type: string
               newOrder:
                 default: 45
                 maximum: 100

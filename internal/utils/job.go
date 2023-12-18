@@ -24,6 +24,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,7 +74,7 @@ func GetPodListFromJob(cli client.Client, reqCtx context.Context, jobName string
 	return &pods, nil
 }
 
-func DelteJob(cli client.Client, reqCtx context.Context, jobName string, namespace string) error {
+func DeleteJob(cli client.Client, reqCtx context.Context, jobName string, namespace string) error {
 	var job batchv1.Job
 	if err := cli.Get(reqCtx, client.ObjectKey{Name: jobName, Namespace: namespace}, &job); err != nil {
 		return err
@@ -173,4 +174,59 @@ func JobTemplate(name, namespace string) *batchv1.Job {
 	}
 
 	return job
+}
+
+func AddTolerationToJobs(jobs []*batchv1.Job, tolerations []corev1.Toleration) {
+	for _, job := range jobs {
+		job.Spec.Template.Spec.Tolerations = append(job.Spec.Template.Spec.Tolerations, tolerations...)
+	}
+}
+
+func AddCpuAndMemoryToJobs(jobs []*batchv1.Job, cpu string, memory string) {
+	for _, job := range jobs {
+		addCpuAndMemoryToJob(job, cpu, memory)
+	}
+}
+
+func addCpuAndMemoryToJob(job *batchv1.Job, cpu string, memory string) {
+	// if job is nil, return
+	if job == nil {
+		return
+	}
+
+	// if parse cpu or memory failed, return
+	if _, err := resource.ParseQuantity(cpu); err != nil {
+		return
+	}
+	if _, err := resource.ParseQuantity(memory); err != nil {
+		return
+	}
+
+	// add cpu and memory to the container
+	for i, container := range job.Spec.Template.Spec.Containers {
+		container.Resources = corev1.ResourceRequirements{
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse(cpu),
+				corev1.ResourceMemory: resource.MustParse(memory),
+			},
+		}
+		job.Spec.Template.Spec.Containers[i] = container
+	}
+}
+
+func AddLabelsToJobs(jobs []*batchv1.Job, labels map[string]string) {
+	for _, job := range jobs {
+		// add label to the job and pod template
+		if job.Labels == nil {
+			job.Labels = make(map[string]string)
+		}
+		if job.Spec.Template.Labels == nil {
+			job.Spec.Template.Labels = make(map[string]string)
+		}
+
+		for k, v := range labels {
+			job.Labels[k] = v
+			job.Spec.Template.Labels[k] = v
+		}
+	}
 }

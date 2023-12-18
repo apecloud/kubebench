@@ -12,8 +12,6 @@ spec:
     listKind: TpchList
     plural: tpches
     singular: tpch
-    shortNames:
-      - tpch
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -40,10 +38,16 @@ spec:
             type: object
           spec:
             properties:
+              cpu:
+                default: "1"
+                type: string
               extraArgs:
                 items:
                   type: string
                 type: array
+              memory:
+                default: 1Gi
+                type: string
               sizes:
                 default:
                 - 1

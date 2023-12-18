@@ -38,6 +38,9 @@ spec:
             type: object
           spec:
             properties:
+              cpu:
+                default: "1"
+                type: string
               duration:
                 minimum: 1
                 type: integer
@@ -45,6 +48,9 @@ spec:
                 items:
                   type: string
                 type: array
+              memory:
+                default: 1Gi
+                type: string
               size:
                 type: integer
               step:

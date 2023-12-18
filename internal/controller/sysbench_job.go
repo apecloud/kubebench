@@ -27,9 +27,17 @@ func NewSysbenchJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	}
 
 	// set tolerations for all jobs
-	for _, job := range jobs {
-		job.Spec.Template.Spec.Tolerations = cr.Spec.Tolerations
-	}
+	utils.AddTolerationToJobs(jobs, cr.Spec.Tolerations)
+
+	// add cr labels to all jobs
+	utils.AddLabelsToJobs(jobs, cr.Labels)
+	utils.AddLabelsToJobs(jobs, map[string]string{
+		constants.KubeBenchNameLabel: cr.Name,
+		constants.KubeBenchTypeLabel: constants.SysbenchType,
+	})
+
+	// add cpu and memory to all jobs
+	utils.AddCpuAndMemoryToJobs(jobs, cr.Spec.Cpu, cr.Spec.Memory)
 
 	return jobs
 }

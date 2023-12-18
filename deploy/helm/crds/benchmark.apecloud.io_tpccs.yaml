@@ -39,7 +39,6 @@ spec:
           spec:
             properties:
               cpu:
-                default: "1"
                 type: string
               delivery:
                 default: 4
@@ -59,7 +58,6 @@ spec:
                 minimum: 0
                 type: integer
               memory:
-                default: 1Gi
                 type: string
               newOrder:
                 default: 45

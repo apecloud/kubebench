@@ -39,7 +39,6 @@ spec:
           spec:
             properties:
               cpu:
-                default: "1"
                 type: string
               extraArgs:
                 items:
@@ -51,7 +50,6 @@ spec:
                 minimum: 0
                 type: integer
               memory:
-                default: 1Gi
                 type: string
               operationCount:
                 default: 10000

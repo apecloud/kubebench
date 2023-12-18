@@ -39,7 +39,6 @@ spec:
           spec:
             properties:
               cpu:
-                default: "1"
                 type: string
               duration:
                 minimum: 1
@@ -49,7 +48,6 @@ spec:
                   type: string
                 type: array
               memory:
-                default: 1Gi
                 type: string
               size:
                 type: integer

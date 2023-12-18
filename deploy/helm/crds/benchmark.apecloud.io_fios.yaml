@@ -31,7 +31,6 @@ spec:
                 pattern: ^[0-9]+[kKmMgG]?$
                 type: string
               cpu:
-                default: "1"
                 type: string
               direct:
                 default: true
@@ -48,7 +47,6 @@ spec:
                 default: psync
                 type: string
               memory:
-                default: 1Gi
                 type: string
               numjobs:
                 default:

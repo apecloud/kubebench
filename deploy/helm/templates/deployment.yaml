@@ -47,6 +47,8 @@ spec:
               value: "{{ .Values.kubebenchImages.ycsb }}"
             - name: KUBEBENCH_FIO_IMAGE
               value: "{{ .Values.kubebenchImages.fio }}"
+            - name: KUBEBENCH_REDISBENCH_IMAGE
+              value: "{{ .Values.kubebenchImages.redisbench }}"
           command:
           - /manager
           securityContext:

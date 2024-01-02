@@ -7,12 +7,13 @@ import (
 )
 
 const (
-	KubebenchEnvPgbench  = "KUBEBENCH_PGBENCH_IMAGE"
-	KubebenchEnvSysbench = "KUBEBENCH_SYSBENCH_IMAGE"
-	KubebenchEnvTpcc     = "KUBEBENCH_TPCC_IMAGE"
-	KubebenchEnvTpch     = "KUBEBENCH_TPCH_IMAGE"
-	KubebenchEnvYcsb     = "KUBEBENCH_YCSB_IMAGE"
-	KubebenchEnvFio      = "KUBEBENCH_FIO_IMAGE"
+	KubebenchEnvPgbench    = "KUBEBENCH_PGBENCH_IMAGE"
+	KubebenchEnvSysbench   = "KUBEBENCH_SYSBENCH_IMAGE"
+	KubebenchEnvTpcc       = "KUBEBENCH_TPCC_IMAGE"
+	KubebenchEnvTpch       = "KUBEBENCH_TPCH_IMAGE"
+	KubebenchEnvYcsb       = "KUBEBENCH_YCSB_IMAGE"
+	KubebenchEnvFio        = "KUBEBENCH_FIO_IMAGE"
+	KubebenchEnvRedisBench = "KUBEBENCH_REDISBENCH_IMAGE"
 )
 
 func init() {
@@ -22,6 +23,7 @@ func init() {
 	viper.SetDefault(KubebenchEnvTpch, "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest")
 	viper.SetDefault(KubebenchEnvYcsb, "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest")
 	viper.SetDefault(KubebenchEnvFio, "registry.cn-hangzhou.aliyuncs.com/apecloud/fio:latest")
+	viper.SetDefault(KubebenchEnvRedisBench, "registry.cn-hangzhou.aliyuncs.com/apecloud/redis:7.0.5")
 }
 
 // GetBenchmarkImage get benchmark image

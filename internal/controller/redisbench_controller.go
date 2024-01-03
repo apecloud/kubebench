@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -112,7 +113,7 @@ func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			l.Info("job completed", "job", job.Name)
 			redisbench.Status.Succeeded++
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, redisbench.Namespace, &redisbench.Status.Conditions, nil); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, redisbench.Namespace, &redisbench.Status.Conditions, ParseRedisBench); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 		} else if status.Failed > 0 {
@@ -137,4 +138,20 @@ func (r *RedisbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&benchmarkv1alpha1.Redisbench{}).
 		Complete(r)
+}
+
+func ParseRedisBench(msg string) string {
+	result := ""
+
+	lines := strings.Split(msg, "\r")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// save the result query/sev value
+		if strings.Contains(line, "per second") {
+			result += fmt.Sprintf("%s\n", line)
+		}
+	}
+
+	return strings.TrimSpace(result)
 }

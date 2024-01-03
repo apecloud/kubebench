@@ -60,6 +60,7 @@ func (r *FioReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	if err := r.Get(ctx, req.NamespacedName, &fio); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	old := fio.DeepCopy()
 
 	if fio.Status.Phase == benchmarkv1alpha1.Complete || fio.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
@@ -123,7 +124,7 @@ func (r *FioReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 
 	fio.Status.Completions = fmt.Sprintf("%d/%d", fio.Status.Succeeded, fio.Status.Total)
-	if err := r.Status().Update(ctx, &fio); err != nil {
+	if err := r.Status().Patch(ctx, &fio, client.MergeFrom(old)); err != nil {
 		return intctrlutil.RequeueWithError(err, l, "unable to update fio status")
 	}
 

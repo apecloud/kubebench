@@ -29,9 +29,15 @@ func GetLogFromPod(rsc *rest.Config, reqCtx context.Context, podName string, nam
 	if err != nil {
 		return "", err
 	}
-	req := clientset.Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{
+
+	// get log like kubeclt logs -f
+	logOptions := &corev1.PodLogOptions{
 		Container: "kubebench",
-	})
+		Follow:    true,
+	}
+
+	req := clientset.Pods(namespace).GetLogs(podName, logOptions)
+
 	data, err := req.DoRaw(reqCtx)
 	if err != nil {
 		return "", err

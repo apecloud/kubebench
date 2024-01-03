@@ -60,6 +60,7 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if err := r.Get(ctx, req.NamespacedName, &tpcc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	old := tpcc.DeepCopy()
 
 	if tpcc.Status.Phase == benchmarkv1alpha1.Complete || tpcc.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
@@ -123,8 +124,9 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	tpcc.Status.Completions = fmt.Sprintf("%d/%d", tpcc.Status.Succeeded, tpcc.Status.Total)
-	if err := r.Status().Update(ctx, &tpcc); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to update tpcc status")
+	if err := r.Status().Patch(ctx, &tpcc, client.MergeFrom(old)); err != nil {
+		l.Error(err, "failed to patch tpcc status")
+		return intctrlutil.RequeueWithError(err, l, "failed to patch tpcc status")
 	}
 
 	return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)

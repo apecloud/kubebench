@@ -61,6 +61,7 @@ func (r *TpchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if err := r.Get(ctx, req.NamespacedName, &tpch); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	old := tpch.DeepCopy()
 
 	// Run to one completion
 	if tpch.Status.Phase == benchmarkv1alpha1.Complete || tpch.Status.Phase == benchmarkv1alpha1.Failed {
@@ -125,7 +126,7 @@ func (r *TpchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	tpch.Status.Completions = fmt.Sprintf("%d/%d", tpch.Status.Succeeded, tpch.Status.Total)
-	if err := r.Status().Update(ctx, &tpch); err != nil {
+	if err := r.Status().Patch(ctx, &tpch, client.MergeFrom(old)); err != nil {
 		return intctrlutil.RequeueWithError(err, l, "unable to update tpch status")
 	}
 

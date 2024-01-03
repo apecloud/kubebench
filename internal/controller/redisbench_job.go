@@ -21,6 +21,19 @@ func NewRedisBenchJobs(cr *v1alpha1.Redisbench) []*batchv1.Job {
 		jobs = append(jobs, NewRedisBenchRunJobs(cr)...)
 	}
 
+	// set tolerations for all jobs
+	utils.AddTolerationToJobs(jobs, cr.Spec.Tolerations)
+
+	// add cr labels to all jobs
+	utils.AddLabelsToJobs(jobs, cr.Labels)
+	utils.AddLabelsToJobs(jobs, map[string]string{
+		constants.KubeBenchNameLabel: cr.Name,
+		constants.KubeBenchTypeLabel: constants.PgbenchType,
+	})
+
+	// add cpu and memory to all jobs
+	utils.AddCpuAndMemoryToJobs(jobs, cr.Spec.Cpu, cr.Spec.Memory)
+
 	return jobs
 }
 
@@ -48,7 +61,7 @@ func NewRedisBenchRunJobs(cr *v1alpha1.Redisbench) []*batchv1.Job {
 	for client := range cr.Spec.Clients {
 		curCmd := fmt.Sprintf("%s -c %d", cmd, client)
 		jobName := fmt.Sprintf("%s-%d", cr.Name, client)
-		curJob := utils.JobTemplate(jobName, cr.Namespace)
+		curJob := utils.JobTemplate(fmt.Sprintf("%s-run", jobName), cr.Namespace)
 
 		curJob.Spec.Template.Spec.Containers = append(
 			curJob.Spec.Template.Spec.Containers,
@@ -56,7 +69,14 @@ func NewRedisBenchRunJobs(cr *v1alpha1.Redisbench) []*batchv1.Job {
 				Name:            constants.ContainerName,
 				Image:           constants.GetBenchmarkImage(constants.KubebenchEnvRedisBench),
 				ImagePullPolicy: corev1.PullIfNotPresent,
-				Command:         []string{"/bin/sh", "-c", curCmd},
+				Command:         []string{"/bin/sh", "-c"},
+				Args:            []string{fmt.Sprintf("%s | tee /var/log/redisbench.log", curCmd)},
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      "log",
+						MountPath: "/var/log",
+					},
+				},
 			},
 		)
 

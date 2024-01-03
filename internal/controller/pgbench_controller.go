@@ -60,6 +60,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	old := pgbench.DeepCopy()
 
 	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
@@ -123,8 +124,9 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
-	if err := r.Status().Update(ctx, &pgbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to update pgbench status")
+	if err := r.Status().Patch(ctx, &pgbench, client.MergeFrom(old)); err != nil {
+		l.Error(err, "failed to patch pgbench status")
+		return intctrlutil.RequeueWithError(err, l, "failed to patch pgbench status")
 	}
 
 	return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)

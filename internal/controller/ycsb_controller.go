@@ -60,6 +60,7 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if err := r.Get(ctx, req.NamespacedName, &ycsb); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	old := ycsb.DeepCopy()
 
 	// run if bench completion
 	if ycsb.Status.Phase == benchmarkv1alpha1.Complete || ycsb.Status.Phase == benchmarkv1alpha1.Failed {
@@ -124,7 +125,7 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	ycsb.Status.Completions = fmt.Sprintf("%d/%d", ycsb.Status.Succeeded, ycsb.Status.Total)
-	if err := r.Status().Update(ctx, &ycsb); err != nil {
+	if err := r.Status().Patch(ctx, &ycsb, client.MergeFrom(old)); err != nil {
 		return intctrlutil.RequeueWithError(err, l, "unable to update ycsb status")
 	}
 

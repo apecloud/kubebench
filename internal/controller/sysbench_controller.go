@@ -64,6 +64,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	if err := r.Get(ctx, req.NamespacedName, &sysbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	old := sysbench.DeepCopy()
 
 	// Run to one completion
 	if sysbench.Status.Phase == benchmarkv1alpha1.Complete || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
@@ -128,8 +129,9 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	sysbench.Status.Completions = fmt.Sprintf("%d/%d", sysbench.Status.Succeeded, sysbench.Status.Total)
-	if err := r.Status().Update(ctx, &sysbench); err != nil {
-		return intctrlutil.RequeueWithError(err, l, "unable to update sysbench status")
+	if err := r.Status().Patch(ctx, &sysbench, client.MergeFrom(old)); err != nil {
+		l.Error(err, "failed to patch sysbench status")
+		return intctrlutil.RequeueWithError(err, l, "failed to patch sysbench status")
 	}
 
 	return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)

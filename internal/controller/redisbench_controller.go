@@ -33,62 +33,63 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 )
 
-// PgbenchReconciler reconciles a Pgbench object
-type PgbenchReconciler struct {
+// RedisbenchReconciler reconciles a Redisbench object
+type RedisbenchReconciler struct {
 	client.Client
 	Scheme     *runtime.Scheme
 	RestConfig *rest.Config
 }
 
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=pgbenches/finalizers,verbs=update
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=redisbenches,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=redisbenches/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=benchmark.apecloud.io,resources=redisbenches/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Pgbench object against the actual cluster state, and then
+// the Redisbench object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var pgbench benchmarkv1alpha1.Pgbench
-	if err := r.Get(ctx, req.NamespacedName, &pgbench); err != nil {
+	var redisbench benchmarkv1alpha1.RedisBench
+	if err := r.Get(ctx, req.NamespacedName, &redisbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	old := pgbench.DeepCopy()
+	old := redisbench.DeepCopy()
 
-	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
+	if redisbench.Status.Phase == benchmarkv1alpha1.Complete || redisbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
-	jobs := NewPgbenchJobs(&pgbench)
+	jobs := NewRedisBenchJobs(&redisbench)
 
-	if pgbench.Status.Phase == "" {
-		l.Info("start pgbench", "pgbench", pgbench.Name)
-		pgbench.Status.Phase = benchmarkv1alpha1.Running
-		pgbench.Status.Total = len(jobs)
+	if redisbench.Status.Phase == "" {
+		l.Info("start redisbench", "redisbench", redisbench.Name)
+		redisbench.Status.Phase = benchmarkv1alpha1.Running
+		redisbench.Status.Total = len(jobs)
 	}
 
-	if pgbench.Status.Succeeded >= pgbench.Status.Total {
-		pgbench.Status.Phase = benchmarkv1alpha1.Complete
+	if redisbench.Status.Succeeded >= redisbench.Status.Total {
+		l.Info("redisbench complete", "redisbench", redisbench.Name)
+		redisbench.Status.Phase = benchmarkv1alpha1.Complete
 	} else {
-		job := jobs[pgbench.Status.Succeeded]
+		job := jobs[redisbench.Status.Succeeded]
 
-		existed, err := utils.IsJobExisted(r.Client, ctx, job.Name, pgbench.Namespace)
+		existed, err := utils.IsJobExisted(r.Client, ctx, job.Name, redisbench.Namespace)
 		if err != nil {
-			l.Error(err, "failed to check if job exists", "job", job.Name)
-			return intctrlutil.RequeueWithError(err, l, "failed to check if job exists")
+			l.Error(err, "failed to check job existence", "job", job.Name)
+			return intctrlutil.RequeueWithError(err, l, "failed to check job existence")
 		}
 
 		if !existed {
-			if err = controllerutil.SetOwnerReference(&pgbench, job, r.Scheme); err != nil {
-				l.Error(err, "failed to set owner reference for job", "job", job.Name)
-				return intctrlutil.RequeueWithError(err, l, "failed to set owner reference for job")
+			if err = controllerutil.SetOwnerReference(&redisbench, job, r.Scheme); err != nil {
+				l.Error(err, "failed to set owner reference", "job", job.Name)
+				return intctrlutil.RequeueWithError(err, l, "failed to set owner reference")
 			}
 
 			if err = r.Create(ctx, job); err != nil {
@@ -110,55 +111,47 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 		if status.Succeeded > 0 {
 			l.Info("job completed", "job", job.Name)
-			pgbench.Status.Succeeded++
+			redisbench.Status.Succeeded++
 			// record the result
-			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, pgbench.Namespace, &pgbench.Status.Conditions, ParsePgbench); err != nil {
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, redisbench.Namespace, &redisbench.Status.Conditions, ParseRedisBench); err != nil {
 				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
 			}
 		} else if status.Failed > 0 {
 			l.Info("job failed", "job", job.Name)
-			pgbench.Status.Phase = benchmarkv1alpha1.Failed
+			redisbench.Status.Phase = benchmarkv1alpha1.Failed
 		} else {
-			l.Info("job is running", "job", job.Name)
+			l.Info("job running", "job", job.Name)
 		}
 	}
 
-	pgbench.Status.Completions = fmt.Sprintf("%d/%d", pgbench.Status.Succeeded, pgbench.Status.Total)
-	if err := r.Status().Patch(ctx, &pgbench, client.MergeFrom(old)); err != nil {
-		l.Error(err, "failed to patch pgbench status")
-		return intctrlutil.RequeueWithError(err, l, "failed to patch pgbench status")
+	redisbench.Status.Completions = fmt.Sprintf("%d/%d", redisbench.Status.Succeeded, redisbench.Status.Total)
+	if err := r.Status().Patch(ctx, &redisbench, client.MergeFrom(old)); err != nil {
+		l.Error(err, "failed to patch redisbench status")
+		return intctrlutil.RequeueWithError(err, l, "failed to patch redisbench status")
 	}
 
 	return intctrlutil.RequeueAfter(intctrlutil.RequeueDuration)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PgbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *RedisbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Pgbench{}).
+		For(&benchmarkv1alpha1.RedisBench{}).
 		Complete(r)
 }
 
-func ParsePgbench(msg string) string {
+func ParseRedisBench(msg string) string {
 	result := ""
-	lines := strings.Split(msg, "\n")
-	index := len(lines)
 
-	for i, l := range lines {
-		if strings.Contains(l, "transaction type") {
-			index = i
-			result += fmt.Sprintf("%s\n", l)
-			break
+	lines := strings.Split(msg, "\r")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// save the result query/sev value
+		if strings.Contains(line, "per second") {
+			result += fmt.Sprintf("%s\n", line)
 		}
 	}
 
-	for i := index + 1; i < len(lines); i++ {
-		if lines[i] != "" {
-			// align the output
-			result += fmt.Sprintf("%*s\n", len(lines[i])+27, lines[i])
-		}
-	}
-
-	// delete the last \n
 	return strings.TrimSpace(result)
 }

@@ -129,9 +129,12 @@ func LogJobPodToCond(cli client.Client, restConfig *rest.Config, reqCtx context.
 }
 
 func trimTooLongLog(log string) string {
+	// spit the log by line
 	lines := strings.Split(log, "\n")
 	reuslt := ""
 	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
 		if len(reuslt)+len(line) > 32768 {
 			// delete from the start
 			reuslt = reuslt[len(line)+1:]

@@ -56,7 +56,7 @@ type RedisbenchReconciler struct {
 func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	l := log.FromContext(ctx)
 
-	var redisbench benchmarkv1alpha1.Redisbench
+	var redisbench benchmarkv1alpha1.RedisBench
 	if err := r.Get(ctx, req.NamespacedName, &redisbench); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -136,7 +136,7 @@ func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 // SetupWithManager sets up the controller with the Manager.
 func (r *RedisbenchReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&benchmarkv1alpha1.Redisbench{}).
+		For(&benchmarkv1alpha1.RedisBench{}).
 		Complete(r)
 }
 

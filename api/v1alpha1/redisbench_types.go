@@ -23,8 +23,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// RedisbenchSpec defines the desired state of Redisbench
-type RedisbenchSpec struct {
+// RedisBenchSpec defines the desired state of RedisBench
+type RedisBenchSpec struct {
 	// clients provides a list of client counts to run redis-benchmark with multiple times.
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:default={1}
@@ -61,8 +61,8 @@ type RedisbenchSpec struct {
 	BenchCommon `json:",inline"`
 }
 
-// RedisbenchStatus defines the observed state of Redisbench
-type RedisbenchStatus struct {
+// RedisBenchStatus defines the observed state of RedisBench
+type RedisBenchStatus struct {
 	// Phase is the current state of the test. Valid values are Disabled, Enabled, Failed, Enabling, Disabling.
 	// +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
 	Phase BenchmarkPhase `json:"phase,omitempty"`
@@ -87,24 +87,24 @@ type RedisbenchStatus struct {
 // +kubebuilder:printcolumn:name="COMPLETIONS",type="string",JSONPath=".status.completions",description="completions"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 
-// Redisbench is the Schema for the redisbenches API
-type Redisbench struct {
+// RedisBench is the Schema for the RedisBenches API
+type RedisBench struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RedisbenchSpec   `json:"spec,omitempty"`
-	Status RedisbenchStatus `json:"status,omitempty"`
+	Spec   RedisBenchSpec   `json:"spec,omitempty"`
+	Status RedisBenchStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// RedisbenchList contains a list of Redisbench
-type RedisbenchList struct {
+// RedisBenchList contains a list of RedisBench
+type RedisBenchList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Redisbench `json:"items"`
+	Items           []RedisBench `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Redisbench{}, &RedisbenchList{})
+	SchemeBuilder.Register(&RedisBench{}, &RedisBenchList{})
 }

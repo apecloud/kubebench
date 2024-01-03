@@ -8,8 +8,8 @@ metadata:
 spec:
   group: benchmark.apecloud.io
   names:
-    kind: Redisbench
-    listKind: RedisbenchList
+    kind: RedisBench
+    listKind: RedisBenchList
     plural: redisbenches
     singular: redisbench
   scope: Namespaced

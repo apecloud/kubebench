@@ -12,7 +12,7 @@ import (
 	"github.com/apecloud/kubebench/pkg/constants"
 )
 
-func NewRedisBenchJobs(cr *v1alpha1.Redisbench) []*batchv1.Job {
+func NewRedisBenchJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
@@ -37,7 +37,7 @@ func NewRedisBenchJobs(cr *v1alpha1.Redisbench) []*batchv1.Job {
 	return jobs
 }
 
-func NewRedisBenchRunJobs(cr *v1alpha1.Redisbench) []*batchv1.Job {
+func NewRedisBenchRunJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
 	cmd := "redis-benchmark"
 	cmd = fmt.Sprintf("%s -h %s", cmd, cr.Spec.Target.Host)
 	cmd = fmt.Sprintf("%s -p %d", cmd, cr.Spec.Target.Port)

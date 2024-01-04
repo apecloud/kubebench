@@ -41,7 +41,6 @@ func NewRedisBenchRunJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
 	cmd := "redis-benchmark"
 	cmd = fmt.Sprintf("%s -h %s", cmd, cr.Spec.Target.Host)
 	cmd = fmt.Sprintf("%s -p %d", cmd, cr.Spec.Target.Port)
-	cmd = fmt.Sprintf("%s -a %s", cmd, cr.Spec.Target.Password)
 	cmd = fmt.Sprintf("%s -n %d", cmd, cr.Spec.Requests)
 	cmd = fmt.Sprintf("%s -d %d", cmd, cr.Spec.DataSize)
 	cmd = fmt.Sprintf("%s -P %d", cmd, cr.Spec.Pipeline)
@@ -55,6 +54,9 @@ func NewRedisBenchRunJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
 	}
 	if cr.Spec.Quiet {
 		cmd = fmt.Sprintf("%s -q", cmd)
+	}
+	if cr.Spec.Target.Password != "" {
+		cmd = fmt.Sprintf("%s -a %s", cmd, cr.Spec.Target.Password)
 	}
 
 	jobs := make([]*batchv1.Job, 0)

@@ -301,13 +301,13 @@ func YcsbInitContainers(cr *v1alpha1.Ycsb) []corev1.Container {
 		if database == "" {
 			database = "test"
 		}
-		return []corev1.Container{utils.InitMysqlDatabase(cr.Spec.Target, database)}
+		return []corev1.Container{utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)}
 	case "postgresql":
 		// test if default database for ycsb
 		if database == "" {
 			database = "test"
 		}
-		return []corev1.Container{utils.InitPGDatabase(cr.Spec.Target, database)}
+		return []corev1.Container{utils.InitPGDatabaseContainer(cr.Spec.Target, database)}
 	default:
 		return nil
 	}

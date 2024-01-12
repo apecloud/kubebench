@@ -238,8 +238,8 @@ func AddLabelsToJobs(jobs []*batchv1.Job, labels map[string]string) {
 	}
 }
 
-// InitPGDatabase will create a database in postgresql
-func InitPGDatabase(target v1alpha1.Target, database string) corev1.Container {
+// InitPGDatabaseContainer will create a database in postgresql
+func InitPGDatabaseContainer(target v1alpha1.Target, database string) corev1.Container {
 	args := []string{
 		"postgresql",
 		"create",
@@ -259,8 +259,8 @@ func InitPGDatabase(target v1alpha1.Target, database string) corev1.Container {
 	}
 }
 
-// InitMysqlDatabase will create a database in mysql
-func InitMysqlDatabase(target v1alpha1.Target, database string) corev1.Container {
+// InitMysqlDatabaseContainer will create a database in mysql
+func InitMysqlDatabaseContainer(target v1alpha1.Target, database string) corev1.Container {
 	args := []string{
 		"mysql",
 		"create",

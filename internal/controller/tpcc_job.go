@@ -164,9 +164,9 @@ func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 func TpccInitContainers(cr *v1alpha1.Tpcc) []corev1.Container {
 	switch cr.Spec.Target.Driver {
 	case "mysql":
-		return []corev1.Container{utils.InitMysqlDatabase(cr.Spec.Target, cr.Spec.Target.Database)}
+		return []corev1.Container{utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)}
 	case "postgres":
-		return []corev1.Container{utils.InitPGDatabase(cr.Spec.Target, cr.Spec.Target.Database)}
+		return []corev1.Container{utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)}
 	default:
 		return nil
 	}

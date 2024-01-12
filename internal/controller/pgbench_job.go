@@ -132,7 +132,7 @@ func NewPgbenchPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	)
 
 	// add init containers to create database for prepare job
-	job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, utils.InitPGDatabase(cr.Spec.Target, cr.Spec.Target.Database))
+	job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database))
 
 	return []*batchv1.Job{job}
 }

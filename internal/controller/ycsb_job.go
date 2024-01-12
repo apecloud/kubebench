@@ -17,7 +17,9 @@ func NewYcsbJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
-	// TODO: add cleanup
+	if step == "cleanup" || step == "all" {
+		jobs = append(jobs, NewYscbCleanupJobs(cr)...)
+	}
 	if step == "prepare" || step == "all" {
 		jobs = append(jobs, NewYcsbPrepareJobs(cr)...)
 	}
@@ -41,9 +43,108 @@ func NewYcsbJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	return jobs
 }
 
-// TODO
 func NewYscbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	switch cr.Spec.Target.Driver {
+	case "mysql":
+		return NewYcsbMysqlCleanupJobs(cr)
+	case "postgresql":
+		return NewYcsbPostgresCleanupJobs(cr)
+	case "mongodb":
+		return NewYcsbMongoCleanupJobs(cr)
+	}
+
 	return nil
+}
+
+func NewYcsbMysqlCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	// if database is not set, ycsb use test as mysql default database
+	database := "test"
+	if cr.Spec.Target.Database != "" {
+		database = cr.Spec.Target.Database
+	}
+
+	args := []string{
+		"mysql",
+		"drop",
+		database,
+		"--host", cr.Spec.Target.Host,
+		"--port", strconv.Itoa(cr.Spec.Target.Port),
+		"--user", cr.Spec.Target.User,
+		"--password", cr.Spec.Target.Password,
+	}
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args:            args,
+		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewYcsbPostgresCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	// if database is not set, ycsb use test as postgres default database
+	database := "test"
+	if cr.Spec.Target.Database != "" {
+		database = cr.Spec.Target.Database
+	}
+
+	args := []string{
+		"postgresql",
+		"drop",
+		database,
+		"--host", cr.Spec.Target.Host,
+		"--port", strconv.Itoa(cr.Spec.Target.Port),
+		"--user", cr.Spec.Target.User,
+		"--password", cr.Spec.Target.Password,
+	}
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args:            args,
+		},
+	)
+
+	return []*batchv1.Job{job}
+}
+
+func NewYcsbMongoCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	// ycsb use ycsb as mongodb default database
+	args := []string{
+		"mongodb",
+		"drop",
+		"ycsb",
+		"--host", cr.Spec.Target.Host,
+		"--port", strconv.Itoa(cr.Spec.Target.Port),
+		"--user", cr.Spec.Target.User,
+		"--password", cr.Spec.Target.Password,
+	}
+
+	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args:            args,
+		},
+	)
+
+	return []*batchv1.Job{job}
 }
 
 func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {

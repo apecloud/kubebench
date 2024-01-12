@@ -87,6 +87,9 @@ func NewTpccPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 		},
 	)
 
+	// add init containers to create database for prepare job
+	job.Spec.Template.Spec.InitContainers = TpccInitContainers(cr)
+
 	return []*batchv1.Job{job}
 }
 
@@ -154,4 +157,34 @@ func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "org.postgresql.Driver")
 	result = fmt.Sprintf("%s --conn jdbc:postgresql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
+}
+
+// TpccInitContainers returns the init containers for tpcc
+// tpcc will fail if database not exists, so we need to create database first
+func TpccInitContainers(cr *v1alpha1.Tpcc) []corev1.Container {
+	args := make([]string, 0)
+	switch cr.Spec.Target.Driver {
+	case "mysql":
+		args = append(args, "mysql")
+	case "postgres":
+		args = append(args, "postgresql")
+	default:
+		return nil
+	}
+
+	args = append(args, "create")
+	args = append(args, "--host", cr.Spec.Target.Host)
+	args = append(args, "--port", fmt.Sprintf("%d", cr.Spec.Target.Port))
+	args = append(args, "--user", cr.Spec.Target.User)
+	args = append(args, "--password", cr.Spec.Target.Password)
+
+	return []corev1.Container{
+		{
+			Name:            "init",
+			Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args:            args,
+		},
+	}
 }

@@ -233,3 +233,9 @@ func AddLabelsToJobs(jobs []*batchv1.Job, labels map[string]string) {
 		}
 	}
 }
+
+func AddInitContainersToJobs(jobs []*batchv1.Job, initContainers []corev1.Container) {
+	for _, job := range jobs {
+		job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, initContainers...)
+	}
+}

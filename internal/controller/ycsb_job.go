@@ -168,6 +168,10 @@ func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 		},
 	)
 
+	// add init containers to create database for prepare job
+	// only mysql and postgresql need init containers
+	job.Spec.Template.Spec.InitContainers = YcsbInitContainers(cr)
+
 	return []*batchv1.Job{job}
 }
 
@@ -286,4 +290,25 @@ func NewYcsbMongodbParams(cr *v1alpha1.Ycsb) string {
 	mongdbUri := "mongodb://%s:%s@%s:%d/admin"
 	result := fmt.Sprintf("-p mongodb.url=%s", fmt.Sprintf(mongdbUri, cr.Spec.Target.User, cr.Spec.Target.Password, cr.Spec.Target.Host, cr.Spec.Target.Port))
 	return result
+}
+
+func YcsbInitContainers(cr *v1alpha1.Ycsb) []corev1.Container {
+	database := cr.Spec.Target.Database
+
+	switch cr.Spec.Target.Driver {
+	case "mysql":
+		// test if default database for ycsb
+		if database == "" {
+			database = "test"
+		}
+		return []corev1.Container{utils.InitMysqlDatabase(cr.Spec.Target, database)}
+	case "postgresql":
+		// test if default database for ycsb
+		if database == "" {
+			database = "test"
+		}
+		return []corev1.Container{utils.InitPGDatabase(cr.Spec.Target, database)}
+	default:
+		return nil
+	}
 }

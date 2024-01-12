@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -133,7 +132,7 @@ func NewPgbenchPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	)
 
 	// add init containers to create database for prepare job
-	job.Spec.Template.Spec.InitContainers = PgbenchInitContainers(cr)
+	job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, utils.InitPGDatabase(cr.Spec.Target, cr.Spec.Target.Database))
 
 	return []*batchv1.Job{job}
 }
@@ -233,28 +232,4 @@ func NewPgbenchRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	}
 
 	return jobs
-}
-
-// PgbenchInitContainers init database for pgbench
-// pgbench will fail if database not exists, so we need to init database
-func PgbenchInitContainers(cr *v1alpha1.Pgbench) []corev1.Container {
-	args := []string{
-		"postgresql",
-		"create",
-		cr.Spec.Target.Database,
-		"--host", cr.Spec.Target.Host,
-		"--port", strconv.Itoa(cr.Spec.Target.Port),
-		"--user", cr.Spec.Target.User,
-		"--password", cr.Spec.Target.Password,
-	}
-
-	return []corev1.Container{
-		{
-			Name:            "init",
-			Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
-			ImagePullPolicy: corev1.PullIfNotPresent,
-			Command:         []string{"/tools"},
-			Args:            args,
-		},
-	}
 }

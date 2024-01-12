@@ -162,29 +162,12 @@ func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 // TpccInitContainers returns the init containers for tpcc
 // tpcc will fail if database not exists, so we need to create database first
 func TpccInitContainers(cr *v1alpha1.Tpcc) []corev1.Container {
-	args := make([]string, 0)
 	switch cr.Spec.Target.Driver {
 	case "mysql":
-		args = append(args, "mysql")
+		return []corev1.Container{utils.InitMysqlDatabase(cr.Spec.Target, cr.Spec.Target.Database)}
 	case "postgres":
-		args = append(args, "postgresql")
+		return []corev1.Container{utils.InitPGDatabase(cr.Spec.Target, cr.Spec.Target.Database)}
 	default:
 		return nil
-	}
-
-	args = append(args, "create")
-	args = append(args, "--host", cr.Spec.Target.Host)
-	args = append(args, "--port", fmt.Sprintf("%d", cr.Spec.Target.Port))
-	args = append(args, "--user", cr.Spec.Target.User)
-	args = append(args, "--password", cr.Spec.Target.Password)
-
-	return []corev1.Container{
-		{
-			Name:            "init",
-			Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
-			ImagePullPolicy: corev1.PullIfNotPresent,
-			Command:         []string{"/tools"},
-			Args:            args,
-		},
 	}
 }

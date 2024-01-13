@@ -49,6 +49,10 @@ spec:
               value: "{{ .Values.kubebenchImages.fio }}"
             - name: KUBEBENCH_REDISBENCH_IMAGE
               value: "{{ .Values.kubebenchImages.redisbench }}"
+            - name: KUBEBENCH_EXPORTER_IMAGE
+              value: "{{ .Values.kubebenchImages.exporter }}"
+            - name: KUBEBENCH_TOOLS_IMAGE
+              value: "{{ .Values.kubebenchImages.tools }}"
           command:
           - /manager
           securityContext:

@@ -85,6 +85,11 @@ func NewPgbenchCleanupJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 		},
 	)
 
+	// add init containers to create database for cleanup job
+	if initContainer := utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database); initContainer != nil {
+		job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, *initContainer)
+	}
+
 	return []*batchv1.Job{job}
 }
 
@@ -132,7 +137,9 @@ func NewPgbenchPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	)
 
 	// add init containers to create database for prepare job
-	job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database))
+	if initContainer := utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database); initContainer != nil {
+		job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, *initContainer)
+	}
 
 	return []*batchv1.Job{job}
 }
@@ -209,7 +216,7 @@ func NewPgbenchRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            "metrics",
-				Image:           constants.PrometheusExporterImage,
+				Image:           constants.GetBenchmarkImage(constants.KubebenchExporter),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Ports: []corev1.ContainerPort{
 					{

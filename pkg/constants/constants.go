@@ -1,9 +1,7 @@
 package constants
 
 const (
-	ContainerName           = "kubebench"
-	PrometheusExporterImage = "registry.cn-hangzhou.aliyuncs.com/apecloud/kubebench:0.0.1"
-	BenchToolsImage         = "guang/kubebench:latest"
+	ContainerName = "kubebench"
 )
 
 const (

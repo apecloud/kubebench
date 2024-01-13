@@ -3,6 +3,8 @@ package tools
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"strings"
 
 	_ "github.com/lib/pq"
 	"github.com/spf13/cobra"
@@ -40,15 +42,13 @@ func newCreatePgDatabaseCmd() *cobra.Command {
 		Short: "Create a new database",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("Failed to init client: %v", err)
 			}
 			defer client.Close()
 
 			for _, name := range args {
 				if err := client.CreateDatabase(name); err != nil {
-					fmt.Println(err)
-					return
+					log.Fatalf("Failed to create database: %v", err)
 				}
 				fmt.Printf("Database %s created\n", name)
 			}
@@ -67,18 +67,14 @@ func newDropPgDatabaseCmd() *cobra.Command {
 		Use:   "drop",
 		Short: "Drop PostgreSQL Server",
 		Run: func(cmd *cobra.Command, args []string) {
-			client := &PostgreSQLClient{}
-
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("Failed to init client: %v", err)
 			}
 			defer client.Close()
 
 			for _, name := range args {
 				if err := client.DropDatabase(name); err != nil {
-					fmt.Println(err)
-					return
+					log.Fatalf("Failed to drop database: %v", err)
 				}
 				fmt.Printf("Database %s dropped\n", name)
 			}
@@ -98,8 +94,7 @@ func newPingPgDatabaseCmd() *cobra.Command {
 		Short: "Ping a database",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("Failed to init client: %v", err)
 			}
 			defer client.Close()
 
@@ -132,9 +127,18 @@ func (c *PostgreSQLClient) Close() error {
 }
 
 func (c *PostgreSQLClient) CreateDatabase(name string) error {
-	// create database if not exists for postgresql
-	query := fmt.Sprintf("CREATE DATABASE %s IF NOT EXISTS", name)
-	return c.Exec(query)
+	// create database
+	query := fmt.Sprintf("CREATE DATABASE %s ", name)
+	if err := c.Exec(query); err != nil {
+		// if database already exists, ignore error
+		if strings.Contains(err.Error(), "already exists") {
+			fmt.Printf("Database %s already exists\n", name)
+			return nil
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (c *PostgreSQLClient) DropDatabase(name string) error {

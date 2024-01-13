@@ -19,7 +19,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -30,9 +29,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/apecloud/kubebench/api/v1alpha1"
-	"github.com/apecloud/kubebench/pkg/constants"
 )
 
 func IsJobExisted(cli client.Client, reqCtx context.Context, jobName string, namespace string) (bool, error) {
@@ -235,47 +231,5 @@ func AddLabelsToJobs(jobs []*batchv1.Job, labels map[string]string) {
 			job.Labels[k] = v
 			job.Spec.Template.Labels[k] = v
 		}
-	}
-}
-
-// InitPGDatabaseContainer will create a database in postgresql
-func InitPGDatabaseContainer(target v1alpha1.Target, database string) corev1.Container {
-	args := []string{
-		"postgresql",
-		"create",
-		database,
-		"--host", target.Host,
-		"--port", strconv.Itoa(target.Port),
-		"--user", target.User,
-		"--password", target.Password,
-	}
-
-	return corev1.Container{
-		Name:            "init",
-		Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
-		ImagePullPolicy: corev1.PullIfNotPresent,
-		Command:         []string{"/tools"},
-		Args:            args,
-	}
-}
-
-// InitMysqlDatabaseContainer will create a database in mysql
-func InitMysqlDatabaseContainer(target v1alpha1.Target, database string) corev1.Container {
-	args := []string{
-		"mysql",
-		"create",
-		database,
-		"--host", target.Host,
-		"--port", strconv.Itoa(target.Port),
-		"--user", target.User,
-		"--password", target.Password,
-	}
-
-	return corev1.Container{
-		Name:            "init",
-		Image:           constants.GetBenchmarkImage(constants.BenchToolsImage),
-		ImagePullPolicy: corev1.PullIfNotPresent,
-		Command:         []string{"/tools"},
-		Args:            args,
 	}
 }

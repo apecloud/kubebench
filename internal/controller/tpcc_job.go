@@ -88,7 +88,9 @@ func NewTpccPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	)
 
 	// add init containers to create database for prepare job
-	job.Spec.Template.Spec.InitContainers = TpccInitContainers(cr)
+	if initContainer := TpccInitContainers(cr); initContainer != nil {
+		job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, *initContainer)
+	}
 
 	return []*batchv1.Job{job}
 }
@@ -161,12 +163,12 @@ func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 
 // TpccInitContainers returns the init containers for tpcc
 // tpcc will fail if database not exists, so we need to create database first
-func TpccInitContainers(cr *v1alpha1.Tpcc) []corev1.Container {
+func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 	switch cr.Spec.Target.Driver {
 	case "mysql":
-		return []corev1.Container{utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)}
+		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case "postgres":
-		return []corev1.Container{utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)}
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	default:
 		return nil
 	}

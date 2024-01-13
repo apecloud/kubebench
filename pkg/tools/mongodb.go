@@ -3,6 +3,8 @@ package tools
 import (
 	"context"
 	"fmt"
+	"log"
+
 	"github.com/spf13/cobra"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -40,15 +42,13 @@ func newCreateMongoDBCmd() *cobra.Command {
 		Short: "Create new databases",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to init client: %v", err)
 			}
 			defer client.Close()
 
 			for _, name := range args {
 				if err := client.CreateDatabase(name); err != nil {
-					fmt.Println(err)
-					return
+					log.Fatalf("failed to create database %s: %v", name, err)
 				}
 				fmt.Printf("Database %s created\n", name)
 			}
@@ -68,15 +68,13 @@ func newDropMongoDBCmd() *cobra.Command {
 		Short: "Drop databases",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to init client: %v", err)
 			}
 			defer client.Close()
 
 			for _, name := range args {
 				if err := client.DropDatabase(name); err != nil {
-					fmt.Println(err)
-					return
+					log.Fatalf("failed to drop database %s: %v", name, err)
 				}
 				fmt.Printf("Database %s dropped\n", name)
 			}
@@ -96,14 +94,12 @@ func newPingMongoDBCmd() *cobra.Command {
 		Short: "Ping a MongoDB server",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to init client: %v", err)
 			}
 			defer client.Close()
 
 			if err := client.CheckConnection(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to ping MongoDB server: %v", err)
 			}
 			fmt.Println("MongoDB server is up and running")
 		},

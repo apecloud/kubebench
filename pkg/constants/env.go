@@ -14,6 +14,8 @@ const (
 	KubebenchEnvYcsb       = "KUBEBENCH_YCSB_IMAGE"
 	KubebenchEnvFio        = "KUBEBENCH_FIO_IMAGE"
 	KubebenchEnvRedisBench = "KUBEBENCH_REDISBENCH_IMAGE"
+	KubebenchExporter      = "KUBEBENCH_EXPORTER_IMAGE"
+	KubebenchTools         = "KUBEBENCH_TOOLS_IMAGE"
 )
 
 func init() {
@@ -24,6 +26,8 @@ func init() {
 	viper.SetDefault(KubebenchEnvYcsb, "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest")
 	viper.SetDefault(KubebenchEnvFio, "registry.cn-hangzhou.aliyuncs.com/apecloud/fio:latest")
 	viper.SetDefault(KubebenchEnvRedisBench, "registry.cn-hangzhou.aliyuncs.com/apecloud/redis:7.0.5")
+	viper.SetDefault(KubebenchExporter, "registry.cn-hangzhou.aliyuncs.com/apecloud/kubebench:0.0.6")
+	viper.SetDefault(KubebenchTools, "registry.cn-hangzhou.aliyuncs.com/apecloud/kubebench:0.0.6")
 }
 
 // GetBenchmarkImage get benchmark image

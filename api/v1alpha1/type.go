@@ -67,6 +67,7 @@ type Target struct {
 	Password string `json:"password,omitempty"`
 
 	// The database name of the target
-	// +required
+	// +optional
+	// +kubebuilder:default=kubebench
 	Database string `json:"database,omitempty"`
 }

@@ -3,6 +3,7 @@ package tools
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/spf13/cobra"
@@ -39,15 +40,13 @@ func newCreateMysqlDatabaseCmd() *cobra.Command {
 		Short: "Create new databases",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to connect to MySQL server: %v", err)
 			}
 			defer client.Close()
 
 			for _, name := range args {
 				if err := client.CreateDatabase(name); err != nil {
-					fmt.Println(err)
-					return
+					log.Fatalf("failed to create database %s: %v", name, err)
 				}
 				fmt.Printf("Database %s created\n", name)
 			}
@@ -67,15 +66,13 @@ func newDropMysqlDatabaseCmd() *cobra.Command {
 		Short: "Drop databases",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to connect to MySQL server: %v", err)
 			}
 			defer client.Close()
 
 			for _, name := range args {
 				if err := client.DropDatabase(name); err != nil {
-					fmt.Println(err)
-					return
+					log.Fatalf("failed to drop database %s: %v", name, err)
 				}
 				fmt.Printf("Database %s dropped\n", name)
 			}
@@ -95,14 +92,12 @@ func newPingMysqlCmd() *cobra.Command {
 		Short: "Ping MySQL server",
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := client.InitClient(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to connect to MySQL server: %v", err)
 			}
 			defer client.Close()
 
 			if err := client.CheckConnection(); err != nil {
-				fmt.Println(err)
-				return
+				log.Fatalf("failed to ping MySQL server: %v", err)
 			}
 			fmt.Println("Pong")
 		},

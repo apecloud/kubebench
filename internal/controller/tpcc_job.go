@@ -87,6 +87,11 @@ func NewTpccPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 		},
 	)
 
+	// add init containers to create database for prepare job
+	if initContainer := TpccInitContainers(cr); initContainer != nil {
+		job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, *initContainer)
+	}
+
 	return []*batchv1.Job{job}
 }
 
@@ -154,4 +159,17 @@ func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "org.postgresql.Driver")
 	result = fmt.Sprintf("%s --conn jdbc:postgresql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
+}
+
+// TpccInitContainers returns the init containers for tpcc
+// tpcc will fail if database not exists, so we need to create database first
+func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
+	switch cr.Spec.Target.Driver {
+	case "mysql":
+		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case "postgres":
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	default:
+		return nil
+	}
 }

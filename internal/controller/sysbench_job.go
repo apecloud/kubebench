@@ -203,7 +203,7 @@ func NewSysbenchRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 			curJob.Spec.Template.Spec.Containers,
 			corev1.Container{
 				Name:            "metrics",
-				Image:           constants.PrometheusExporterImage,
+				Image:           constants.GetBenchmarkImage(constants.KubebenchExporter),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Ports: []corev1.ContainerPort{
 					{

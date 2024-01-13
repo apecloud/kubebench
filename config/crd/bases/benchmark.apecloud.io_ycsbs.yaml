@@ -85,6 +85,7 @@ spec:
               target:
                 properties:
                   database:
+                    default: kubebench
                     type: string
                   driver:
                     type: string

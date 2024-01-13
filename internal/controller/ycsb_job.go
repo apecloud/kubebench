@@ -17,7 +17,9 @@ func NewYcsbJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
-	// TODO: add cleanup
+	if step == "cleanup" || step == "all" {
+		jobs = append(jobs, NewYcsbCleanupJobs(cr)...)
+	}
 	if step == "prepare" || step == "all" {
 		jobs = append(jobs, NewYcsbPrepareJobs(cr)...)
 	}
@@ -41,9 +43,30 @@ func NewYcsbJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	return jobs
 }
 
-// TODO
-func NewYscbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
-	return nil
+func NewYcsbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
+	var container *corev1.Container
+	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
+
+	switch cr.Spec.Target.Driver {
+	case "mysql":
+		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case "postgresql":
+		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case "mongodb":
+		// 'ycsb' is the default database name when running ycsb on mongodb
+		container = utils.CleanMongoDatabaseContainer(cr.Spec.Target, "ycsb")
+	}
+
+	if container == nil {
+		return nil
+	}
+
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		*container,
+	)
+
+	return []*batchv1.Job{job}
 }
 
 func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
@@ -66,6 +89,16 @@ func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 			Command:         []string{"/bin/sh", "-c", cmd},
 		},
 	)
+
+	// add init containers to create database for prepare job
+	// only mysql and postgresql need init containers
+	initContainer := YcsbInitContainers(cr)
+	if initContainer != nil {
+		job.Spec.Template.Spec.InitContainers = append(
+			job.Spec.Template.Spec.InitContainers,
+			*initContainer,
+		)
+	}
 
 	return []*batchv1.Job{job}
 }
@@ -185,4 +218,17 @@ func NewYcsbMongodbParams(cr *v1alpha1.Ycsb) string {
 	mongdbUri := "mongodb://%s:%s@%s:%d/admin"
 	result := fmt.Sprintf("-p mongodb.url=%s", fmt.Sprintf(mongdbUri, cr.Spec.Target.User, cr.Spec.Target.Password, cr.Spec.Target.Host, cr.Spec.Target.Port))
 	return result
+}
+
+func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
+	database := cr.Spec.Target.Database
+
+	switch cr.Spec.Target.Driver {
+	case "mysql":
+		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
+	case "postgresql":
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, database)
+	default:
+		return nil
+	}
 }

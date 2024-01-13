@@ -18,6 +18,7 @@ package utils
 
 import (
 	"context"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -32,8 +33,22 @@ func GetLogFromPod(rsc *rest.Config, reqCtx context.Context, podName string, nam
 
 	// get log like kubeclt logs -f
 	logOptions := &corev1.PodLogOptions{
-		Container: "kubebench",
-		Follow:    true,
+		Follow: true,
+	}
+
+	// if don't have container name, get log from first container
+	pod, err := clientset.Pods(namespace).Get(reqCtx, podName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	for _, container := range pod.Spec.Containers {
+		if container.Name == "kubebench" {
+			logOptions.Container = container.Name
+			break
+		}
+	}
+	if logOptions.Container == "" {
+		logOptions.Container = pod.Spec.Containers[0].Name
 	}
 
 	req := clientset.Pods(namespace).GetLogs(podName, logOptions)

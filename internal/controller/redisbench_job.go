@@ -13,13 +13,7 @@ import (
 )
 
 func NewRedisBenchJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
-	jobs := make([]*batchv1.Job, 0)
-
-	step := cr.Spec.Step
-
-	if step == "run" || step == "all" {
-		jobs = append(jobs, NewRedisBenchRunJobs(cr)...)
-	}
+	jobs := NewRedisBenchRunJobs(cr)
 
 	// set tolerations for all jobs
 	utils.AddTolerationToJobs(jobs, cr.Spec.Tolerations)

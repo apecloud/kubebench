@@ -17,13 +17,13 @@ func NewYcsbJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
-	if step == "cleanup" || step == "all" {
+	if step == constants.CleanupStep || step == constants.AllStep {
 		jobs = append(jobs, NewYcsbCleanupJobs(cr)...)
 	}
-	if step == "prepare" || step == "all" {
+	if step == constants.PrepareStep || step == constants.AllStep {
 		jobs = append(jobs, NewYcsbPrepareJobs(cr)...)
 	}
-	if step == "run" || step == "all" {
+	if step == constants.RunStep || step == constants.AllStep {
 		jobs = append(jobs, NewYcsbRunJobs(cr)...)
 	}
 
@@ -48,11 +48,11 @@ func NewYcsbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
 
 	switch cr.Spec.Target.Driver {
-	case "mysql":
+	case constants.MySqlDriver:
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	case "postgresql":
+	case constants.PostgreSqlDriver:
 		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	case "mongodb":
+	case constants.MongoDbDriver:
 		// 'ycsb' is the default database name when running ycsb on mongodb
 		container = utils.CleanMongoDatabaseContainer(cr.Spec.Target, "ycsb")
 	}
@@ -71,7 +71,7 @@ func NewYcsbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 
 func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd := "/go-ycsb"
-	cmd = fmt.Sprintf("%s load %s --interval 1", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s load %s --interval 1", cmd, getYcsbDriver(cr.Spec.Target.Driver))
 	cmd = fmt.Sprintf("%s %s", cmd, NewYcsbWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
@@ -105,7 +105,7 @@ func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 
 func NewYcsbRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd := "/go-ycsb"
-	cmd = fmt.Sprintf("%s run %s --interval 1", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s run %s --interval 1", cmd, getYcsbDriver(cr.Spec.Target.Driver))
 	cmd = fmt.Sprintf("%s %s", cmd, NewYcsbWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
@@ -155,13 +155,13 @@ func NewYcsbRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 
 func NewYcsbWorkloadParams(cr *v1alpha1.Ycsb) string {
 	switch cr.Spec.Target.Driver {
-	case "mysql":
+	case constants.MySqlDriver:
 		return NewYcsbMysqlParams(cr)
-	case "redis":
+	case constants.RedisDriver:
 		return NewYcsbRedisParams(cr)
-	case "postgresql":
+	case constants.PostgreSqlDriver:
 		return NewYcsbPostgresParams(cr)
-	case "mongodb":
+	case constants.MongoDbDriver:
 		return NewYcsbMongodbParams(cr)
 	default:
 		return ""
@@ -224,11 +224,26 @@ func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
 	database := cr.Spec.Target.Database
 
 	switch cr.Spec.Target.Driver {
-	case "mysql":
+	case constants.MySqlDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
-	case "postgresql":
+	case constants.PostgreSqlDriver:
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, database)
 	default:
 		return nil
+	}
+}
+
+func getYcsbDriver(driver string) string {
+	switch driver {
+	case constants.MySqlDriver:
+		return "mysql"
+	case constants.PostgreSqlDriver:
+		return "postgresql"
+	case constants.MongoDbDriver:
+		return "mongodb"
+	case constants.RedisDriver:
+		return "redis"
+	default:
+		return driver
 	}
 }

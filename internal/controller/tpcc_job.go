@@ -17,13 +17,13 @@ func NewTpccJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
-	if step == "cleanup" || step == "all" {
+	if step == constants.CleanupStep || step == constants.AllStep {
 		jobs = append(jobs, NewTpccCleanupJobs(cr)...)
 	}
-	if step == "prepare" || step == "all" {
+	if step == constants.PrepareStep || step == constants.AllStep {
 		jobs = append(jobs, NewTpccPrepareJobs(cr)...)
 	}
-	if step == "run" || step == "all" {
+	if step == constants.RunStep || step == constants.AllStep {
 		jobs = append(jobs, NewTpccRunJobs(cr)...)
 	}
 
@@ -46,7 +46,7 @@ func NewTpccJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 func NewTpccCleanupJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	cmd := "python3 main.py"
 	cmd = fmt.Sprintf("%s --mode %s", cmd, "cleanup")
-	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s --db %s", cmd, getTpccDriver(cr.Spec.Target.Driver))
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
 	cmd = fmt.Sprintf("%s %s", cmd, NewTpccWorkLoadParams(cr))
@@ -69,7 +69,7 @@ func NewTpccCleanupJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 func NewTpccPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	cmd := "python3 main.py"
 	cmd = fmt.Sprintf("%s --mode %s", cmd, "prepare")
-	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s --db %s", cmd, getTpccDriver(cr.Spec.Target.Driver))
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
 	cmd = fmt.Sprintf("%s %s", cmd, NewTpccWorkLoadParams(cr))
@@ -98,7 +98,7 @@ func NewTpccPrepareJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 func NewTpccRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 	cmd := "python3 main.py"
 	cmd = fmt.Sprintf("%s --mode %s", cmd, "run")
-	cmd = fmt.Sprintf("%s --db %s", cmd, cr.Spec.Target.Driver)
+	cmd = fmt.Sprintf("%s --db %s", cmd, getTpccDriver(cr.Spec.Target.Driver))
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
 	cmd = fmt.Sprintf("%s %s", cmd, NewTpccWorkLoadParams(cr))
@@ -140,9 +140,9 @@ func NewTpccRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 
 func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 	switch cr.Spec.Target.Driver {
-	case "mysql":
+	case constants.MySqlDriver:
 		return NewTpccMysqlParams(cr)
-	case "postgres":
+	case constants.PostgreSqlDriver:
 		return NewTpccPostgresParams(cr)
 	default:
 		return ""
@@ -165,11 +165,23 @@ func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 // tpcc will fail if database not exists, so we need to create database first
 func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 	switch cr.Spec.Target.Driver {
-	case "mysql":
+	case constants.MySqlDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	case "postgres":
+	case constants.PostgreSqlDriver:
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	default:
 		return nil
+	}
+}
+
+// getTpccDriver returns the database type required by tpcc
+func getTpccDriver(driver string) string {
+	switch driver {
+	case constants.MySqlDriver:
+		return "mysql"
+	case constants.PostgreSqlDriver:
+		return "postgres"
+	default:
+		return driver
 	}
 }

@@ -7,10 +7,10 @@ import corev1 "k8s.io/api/core/v1"
 type BenchmarkPhase string
 
 const (
-	Pending  BenchmarkPhase = "Pending"
-	Running  BenchmarkPhase = "Running"
-	Complete BenchmarkPhase = "Complete"
-	Failed   BenchmarkPhase = "Failed"
+	Pending   BenchmarkPhase = "Pending"
+	Running   BenchmarkPhase = "Running"
+	Completed BenchmarkPhase = "Completed"
+	Failed    BenchmarkPhase = "Failed"
 )
 
 // BenchCommon defines common attributes for all benchmarks.
@@ -46,8 +46,9 @@ type BenchCommon struct {
 }
 
 type Target struct {
-	// the driver of the sysbench target
+	// the driver represents the database type
 	// +optional
+	// +kubebuilder:validation:Enum={mysql,postgresql,mongodb,redis}
 	Driver string `json:"driver,omitempty"`
 
 	// The database server's host name

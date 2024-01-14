@@ -17,3 +17,17 @@ const (
 	YcsbType     = "ycsb"
 	FioType      = "fio"
 )
+
+const (
+	MySqlDriver      = "mysql"
+	PostgreSqlDriver = "postgresql"
+	MongoDbDriver    = "mongodb"
+	RedisDriver      = "redis"
+)
+
+const (
+	CleanupStep = "cleanup"
+	PrepareStep = "prepare"
+	RunStep     = "run"
+	AllStep     = "all"
+)

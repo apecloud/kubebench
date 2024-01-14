@@ -62,7 +62,7 @@ func (r *FioReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 	old := fio.DeepCopy()
 
-	if fio.Status.Phase == benchmarkv1alpha1.Complete || fio.Status.Phase == benchmarkv1alpha1.Failed {
+	if fio.Status.Phase == benchmarkv1alpha1.Completed || fio.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
@@ -75,7 +75,7 @@ func (r *FioReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 	}
 
 	if fio.Status.Succeeded >= fio.Status.Total {
-		fio.Status.Phase = benchmarkv1alpha1.Complete
+		fio.Status.Phase = benchmarkv1alpha1.Completed
 	} else {
 		job := jobs[fio.Status.Succeeded]
 

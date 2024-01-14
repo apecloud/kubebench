@@ -63,7 +63,7 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	old := ycsb.DeepCopy()
 
 	// run if bench completion
-	if ycsb.Status.Phase == benchmarkv1alpha1.Complete || ycsb.Status.Phase == benchmarkv1alpha1.Failed {
+	if ycsb.Status.Phase == benchmarkv1alpha1.Completed || ycsb.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
@@ -76,7 +76,7 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if ycsb.Status.Succeeded >= ycsb.Status.Total {
-		ycsb.Status.Phase = benchmarkv1alpha1.Complete
+		ycsb.Status.Phase = benchmarkv1alpha1.Completed
 	} else {
 		job := jobs[ycsb.Status.Succeeded]
 

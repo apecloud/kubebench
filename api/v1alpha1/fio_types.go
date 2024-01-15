@@ -98,7 +98,7 @@ type FioSpec struct {
 // FioStatus defines the observed state of Fio
 type FioStatus struct {
 	// Phase is the current state of the test. Valid values are Disabled, Enabled, Failed, Enabling, Disabling.
-	// +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
+	// +kubebuilder:validation:Enum={Pending,Running,Completed,Failed}
 	Phase BenchmarkPhase `json:"phase,omitempty"`
 
 	// completions is the completed/total number of pgbench runs

@@ -16,13 +16,13 @@ func NewSysbenchJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
-	if step == "cleanup" || step == "all" {
+	if step == constants.CleanupStep || step == constants.AllStep {
 		jobs = append(jobs, NewSysbenchCleanupJobs(cr)...)
 	}
-	if step == "prepare" || step == "all" {
+	if step == constants.PrepareStep || step == constants.AllStep {
 		jobs = append(jobs, NewSysbenchPrepareJobs(cr)...)
 	}
-	if step == "run" || step == "all" {
+	if step == constants.RunStep || step == constants.AllStep {
 		jobs = append(jobs, NewSysbenchRunJobs(cr)...)
 	}
 
@@ -44,7 +44,7 @@ func NewSysbenchJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 
 func NewSysbenchCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value := fmt.Sprintf("mode:%s", "cleanup")
-	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
+	value = fmt.Sprintf("%s,driver:%s", value, getSysbenchDriver(cr.Spec.Target.Driver))
 	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
 	value = fmt.Sprintf("%s,port:%d", value, cr.Spec.Target.Port)
 	value = fmt.Sprintf("%s,user:%s", value, cr.Spec.Target.User)
@@ -96,7 +96,7 @@ func NewSysbenchCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 
 func NewSysbenchPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value := fmt.Sprintf("mode:%s", "prepare")
-	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
+	value = fmt.Sprintf("%s,driver:%s", value, getSysbenchDriver(cr.Spec.Target.Driver))
 	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
 	value = fmt.Sprintf("%s,port:%d", value, cr.Spec.Target.Port)
 	value = fmt.Sprintf("%s,user:%s", value, cr.Spec.Target.User)
@@ -148,7 +148,7 @@ func NewSysbenchPrepareJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 
 func NewSysbenchRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	value := fmt.Sprintf("mode:%s", "run")
-	value = fmt.Sprintf("%s,driver:%s", value, cr.Spec.Target.Driver)
+	value = fmt.Sprintf("%s,driver:%s", value, getSysbenchDriver(cr.Spec.Target.Driver))
 	value = fmt.Sprintf("%s,host:%s", value, cr.Spec.Target.Host)
 	value = fmt.Sprintf("%s,port:%d", value, cr.Spec.Target.Port)
 	value = fmt.Sprintf("%s,user:%s", value, cr.Spec.Target.User)
@@ -227,4 +227,16 @@ func NewSysbenchRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 	}
 
 	return jobs
+}
+
+// getSysbenchDriver returns the database type required by sysbench
+func getSysbenchDriver(driver string) string {
+	switch driver {
+	case constants.MySqlDriver:
+		return "mysql"
+	case constants.PostgreSqlDriver:
+		return "pgsql"
+	default:
+		return driver
+	}
 }

@@ -62,7 +62,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	old := pgbench.DeepCopy()
 
-	if pgbench.Status.Phase == benchmarkv1alpha1.Complete || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
+	if pgbench.Status.Phase == benchmarkv1alpha1.Completed || pgbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
@@ -75,7 +75,7 @@ func (r *PgbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if pgbench.Status.Succeeded >= pgbench.Status.Total {
-		pgbench.Status.Phase = benchmarkv1alpha1.Complete
+		pgbench.Status.Phase = benchmarkv1alpha1.Completed
 	} else {
 		job := jobs[pgbench.Status.Succeeded]
 

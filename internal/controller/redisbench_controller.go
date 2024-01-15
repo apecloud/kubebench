@@ -62,7 +62,7 @@ func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 	old := redisbench.DeepCopy()
 
-	if redisbench.Status.Phase == benchmarkv1alpha1.Complete || redisbench.Status.Phase == benchmarkv1alpha1.Failed {
+	if redisbench.Status.Phase == benchmarkv1alpha1.Completed || redisbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
@@ -76,7 +76,7 @@ func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if redisbench.Status.Succeeded >= redisbench.Status.Total {
 		l.Info("redisbench complete", "redisbench", redisbench.Name)
-		redisbench.Status.Phase = benchmarkv1alpha1.Complete
+		redisbench.Status.Phase = benchmarkv1alpha1.Completed
 	} else {
 		job := jobs[redisbench.Status.Succeeded]
 

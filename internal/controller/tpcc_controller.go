@@ -62,7 +62,7 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 	old := tpcc.DeepCopy()
 
-	if tpcc.Status.Phase == benchmarkv1alpha1.Complete || tpcc.Status.Phase == benchmarkv1alpha1.Failed {
+	if tpcc.Status.Phase == benchmarkv1alpha1.Completed || tpcc.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
@@ -75,7 +75,7 @@ func (r *TpccReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if tpcc.Status.Succeeded >= tpcc.Status.Total {
-		tpcc.Status.Phase = benchmarkv1alpha1.Complete
+		tpcc.Status.Phase = benchmarkv1alpha1.Completed
 	} else {
 		job := jobs[tpcc.Status.Succeeded]
 

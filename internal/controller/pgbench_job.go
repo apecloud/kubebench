@@ -16,13 +16,13 @@ func NewPgbenchJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	step := cr.Spec.Step
-	if step == "cleanup" || step == "all" {
+	if step == constants.CleanupStep || step == constants.AllStep {
 		jobs = append(jobs, NewPgbenchCleanupJobs(cr)...)
 	}
-	if step == "prepare" || step == "all" {
+	if step == constants.PrepareStep || step == constants.AllStep {
 		jobs = append(jobs, NewPgbenchPrepareJobs(cr)...)
 	}
-	if step == "run" || step == "all" {
+	if step == constants.RunStep || step == constants.AllStep {
 		jobs = append(jobs, NewPgbenchRunJobs(cr)...)
 	}
 

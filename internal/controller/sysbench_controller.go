@@ -67,7 +67,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	old := sysbench.DeepCopy()
 
 	// Run to one completion
-	if sysbench.Status.Phase == benchmarkv1alpha1.Complete || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
+	if sysbench.Status.Phase == benchmarkv1alpha1.Completed || sysbench.Status.Phase == benchmarkv1alpha1.Failed {
 		return intctrlutil.Reconciled()
 	}
 
@@ -80,7 +80,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	}
 
 	if sysbench.Status.Succeeded >= sysbench.Status.Total {
-		sysbench.Status.Phase = benchmarkv1alpha1.Complete
+		sysbench.Status.Phase = benchmarkv1alpha1.Completed
 	} else {
 		job := jobs[sysbench.Status.Succeeded]
 

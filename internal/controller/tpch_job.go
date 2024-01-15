@@ -16,10 +16,10 @@ func NewTpchJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 
 	step := cr.Spec.Step
 
-	if step == "all" {
+	if step == constants.AllStep {
 		jobs = append(jobs, NewTpchAllJobs(cr)...)
 	}
-	if step == "run" {
+	if step == constants.RunStep {
 		jobs = append(jobs, NewTpchRunJobs(cr)...)
 	}
 

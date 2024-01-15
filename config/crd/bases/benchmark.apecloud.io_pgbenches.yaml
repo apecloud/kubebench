@@ -80,6 +80,11 @@ spec:
                     default: kubebench
                     type: string
                   driver:
+                    enum:
+                    - mysql
+                    - postgresql
+                    - mongodb
+                    - redis
                     type: string
                   host:
                     type: string

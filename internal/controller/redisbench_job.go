@@ -52,6 +52,9 @@ func NewRedisBenchRunJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
 	if cr.Spec.Target.Password != "" {
 		cmd = fmt.Sprintf("%s -a %s", cmd, cr.Spec.Target.Password)
 	}
+	if cr.Spec.Target.User != "" {
+		cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
+	}
 
 	jobs := make([]*batchv1.Job, 0)
 	for client := range cr.Spec.Clients {

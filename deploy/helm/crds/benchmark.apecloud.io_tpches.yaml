@@ -149,12 +149,12 @@ spec:
                 - enum:
                   - Pending
                   - Running
-                  - Complete
+                  - Completed
                   - Failed
                 - enum:
                   - Pending
                   - Running
-                  - Complete
+                  - Completed
                   - Failed
                 type: string
               succeeded:

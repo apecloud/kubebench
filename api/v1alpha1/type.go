@@ -3,7 +3,7 @@ package v1alpha1
 import corev1 "k8s.io/api/core/v1"
 
 // BenchmarkPhase is the current state of the test.
-// +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
+// +kubebuilder:validation:Enum={Pending,Running,Completed,Failed}
 type BenchmarkPhase string
 
 const (

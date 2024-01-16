@@ -51,7 +51,7 @@ type SysbenchSpec struct {
 // SysbenchStatus defines the observed state of Sysbench
 type SysbenchStatus struct {
 	// Phase is the current state of the test. Valid values are Disabled, Enabled, Failed, Enabling, Disabling.
-	// +kubebuilder:validation:Enum={Pending,Running,Complete,Failed}
+	// +kubebuilder:validation:Enum={Pending,Running,Completed,Failed}
 	Phase BenchmarkPhase `json:"phase,omitempty"`
 
 	// completions is the completed/total number of sysbench runs

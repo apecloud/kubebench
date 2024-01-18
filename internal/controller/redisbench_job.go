@@ -13,7 +13,11 @@ import (
 )
 
 func NewRedisBenchJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
-	jobs := NewRedisBenchRunJobs(cr)
+	jobs := make([]*batchv1.Job, 0)
+
+	// add pre-check job
+	jobs = append(jobs, utils.NewPreCheckJob(cr.Name, cr.Namespace, constants.RedisDriver, &cr.Spec.Target))
+	jobs = append(jobs, NewRedisBenchRunJobs(cr)...)
 
 	// set tolerations for all jobs
 	utils.AddTolerationToJobs(jobs, cr.Spec.Tolerations)

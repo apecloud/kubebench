@@ -19,6 +19,8 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/apecloud/kubebench/api/v1alpha1"
+	"github.com/apecloud/kubebench/pkg/constants"
 	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -114,18 +116,35 @@ func LogJobPodToCond(cli client.Client, restConfig *rest.Config, reqCtx context.
 
 		msg = trimTooLongLog(msg)
 
-		// record the log to the conditions
-		meta.SetStatusCondition(conditions, metav1.Condition{
-			Type:               fmt.Sprintf("%s-%s", pod.Name, pod.Status.Phase),
-			Status:             metav1.ConditionTrue,
-			ObservedGeneration: pod.Generation,
-			Reason:             "RecordLog",
-			Message:            msg,
-			LastTransitionTime: metav1.Now(),
-		})
+		switch pod.Status.Phase {
+		case corev1.PodSucceeded:
+			RecordSuccessfulLogToCond(conditions, msg)
+		case corev1.PodFailed:
+			RecordFailedLogToCond(conditions, msg)
+		}
 	}
 
 	return nil
+}
+
+func RecordSuccessfulLogToCond(conditions *[]metav1.Condition, msg string) {
+	meta.SetStatusCondition(conditions, metav1.Condition{
+		Type:               "Successful",
+		Status:             metav1.ConditionTrue,
+		Reason:             "RecordSuccessfulLog",
+		Message:            msg,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func RecordFailedLogToCond(conditions *[]metav1.Condition, msg string) {
+	meta.SetStatusCondition(conditions, metav1.Condition{
+		Type:               "Failed",
+		Status:             metav1.ConditionFalse,
+		Reason:             "RecordFailedLog",
+		Message:            msg,
+		LastTransitionTime: metav1.Now(),
+	})
 }
 
 func trimTooLongLog(log string) string {
@@ -231,5 +250,107 @@ func AddLabelsToJobs(jobs []*batchv1.Job, labels map[string]string) {
 			job.Labels[k] = v
 			job.Spec.Template.Labels[k] = v
 		}
+	}
+}
+
+// NewMysqlPreCheckJob create a job to check the mysql connection
+func NewMysqlPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv1.Job {
+	job := JobTemplate(fmt.Sprintf("%s-precheck", name), namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchTools),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args: []string{"mysql", "ping",
+				"--user", target.User,
+				"--password", target.Password,
+				"--host", target.Host,
+				"--port", fmt.Sprintf("%d", target.Port),
+			},
+		},
+	)
+
+	return job
+}
+
+// NewPgbenchPreCheckJob create a job to check the pgbench connection
+func NewPgbenchPreCheckJob(name string, namespace string, target v1alpha1.Target) *batchv1.Job {
+	job := JobTemplate(fmt.Sprintf("%s-precheck", name), namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchTools),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args: []string{"postgresql", "ping",
+				"--user", target.User,
+				"--password", target.Password,
+				"--host", target.Host,
+				"--port", fmt.Sprintf("%d", target.Port),
+			},
+		},
+	)
+
+	return job
+}
+
+func NewMongodbPreCheckJob(name string, namespace string, target v1alpha1.Target) *batchv1.Job {
+	job := JobTemplate(fmt.Sprintf("%s-precheck", name), namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchTools),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args: []string{"mongodb", "ping",
+				"--user", target.User,
+				"--password", target.Password,
+				"--host", target.Host,
+				"--port", fmt.Sprintf("%d", target.Port),
+			},
+		},
+	)
+
+	return job
+}
+
+func NewRedisPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv1.Job {
+	job := JobTemplate(fmt.Sprintf("%s-precheck", name), namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchTools),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args: []string{"redis", "ping",
+				"--user", target.User,
+				"--password", target.Password,
+				"--host", target.Host,
+				"--port", fmt.Sprintf("%d", target.Port),
+			},
+		},
+	)
+
+	return job
+}
+
+// NewPreCheckJob create a job to check the connection
+func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Target) *batchv1.Job {
+	switch driver {
+	case constants.MySqlDriver:
+		return NewMysqlPreCheckJob(name, namespace, *target)
+	case constants.PostgreSqlDriver:
+		return NewPgbenchPreCheckJob(name, namespace, *target)
+	case constants.MongoDbDriver:
+		return NewMongodbPreCheckJob(name, namespace, *target)
+	case constants.RedisDriver:
+		return NewRedisPreCheckJob(name, namespace, *target)
+	default:
+		return nil
 	}
 }

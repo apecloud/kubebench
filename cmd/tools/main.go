@@ -12,6 +12,7 @@ func main() {
 	rootCmd.AddCommand(tools.NewMongoDBCmd())
 	rootCmd.AddCommand(tools.NewMySQLCmd())
 	rootCmd.AddCommand(tools.NewPostgreSQLCmd())
+	rootCmd.AddCommand(tools.NewRedisCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)

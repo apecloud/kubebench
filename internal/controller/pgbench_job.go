@@ -15,6 +15,9 @@ import (
 func NewPgbenchJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
+	// add pre-check job
+	jobs = append(jobs, utils.NewPreCheckJob(cr.Name, cr.Namespace, constants.PostgreSqlDriver, &cr.Spec.Target))
+
 	step := cr.Spec.Step
 	if step == constants.CleanupStep || step == constants.AllStep {
 		jobs = append(jobs, NewPgbenchCleanupJobs(cr)...)

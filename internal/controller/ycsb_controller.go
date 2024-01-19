@@ -119,6 +119,9 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		} else if status.Failed > 0 {
 			l.Info("job failed", "job", job.Name)
 			ycsb.Status.Phase = benchmarkv1alpha1.Failed
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, ycsb.Namespace, &ycsb.Status.Conditions, nil); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
+			}
 		} else {
 			l.Info("job is running", "job", job.Name)
 		}

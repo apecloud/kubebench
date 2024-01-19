@@ -119,6 +119,9 @@ func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		} else if status.Failed > 0 {
 			l.Info("job failed", "job", job.Name)
 			redisbench.Status.Phase = benchmarkv1alpha1.Failed
+			if err := utils.LogJobPodToCond(r.Client, r.RestConfig, ctx, job.Name, redisbench.Namespace, &redisbench.Status.Conditions, nil); err != nil {
+				return intctrlutil.RequeueWithError(err, l, "unable to record the log")
+			}
 		} else {
 			l.Info("job running", "job", job.Name)
 		}

@@ -98,6 +98,10 @@ func newPingPgDatabaseCmd() *cobra.Command {
 			}
 			defer client.Close()
 
+			if err := client.CheckConnection(); err != nil {
+				log.Fatalf("Failed to ping postgresql server: %v", err)
+			}
+
 			fmt.Println("Ping database success")
 		},
 	}
@@ -154,6 +158,14 @@ func (c *PostgreSQLClient) Exec(query string) error {
 
 	_, err := c.db.Exec(query)
 	return err
+}
+
+func (c *PostgreSQLClient) CheckConnection() error {
+	if c.db == nil {
+		return fmt.Errorf("database connection is not initialized")
+	}
+
+	return c.db.Ping()
 }
 
 func addPostgreSQLFlags(cmd *cobra.Command, client *PostgreSQLClient) {

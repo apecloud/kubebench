@@ -204,33 +204,57 @@ func AddTolerationToJobs(jobs []*batchv1.Job, tolerations []corev1.Toleration) {
 	}
 }
 
-func AddCpuAndMemoryToJobs(jobs []*batchv1.Job, cpu string, memory string) {
+func AddResourceLimitsToJobs(jobs []*batchv1.Job, limits *v1alpha1.ResourceList) {
 	for _, job := range jobs {
-		addCpuAndMemoryToJob(job, cpu, memory)
+		addResourceLimitsToJob(job, limits)
 	}
 }
 
-func addCpuAndMemoryToJob(job *batchv1.Job, cpu string, memory string) {
-	// if job is nil, return
-	if job == nil {
+func addResourceLimitsToJob(job *batchv1.Job, limits *v1alpha1.ResourceList) {
+	if job == nil || limits == nil {
 		return
 	}
 
-	// if parse cpu or memory failed, return
-	if _, err := resource.ParseQuantity(cpu); err != nil {
+	// validate the limits parameters
+	if _, err := resource.ParseQuantity(limits.Cpu); err != nil {
 		return
 	}
-	if _, err := resource.ParseQuantity(memory); err != nil {
+	if _, err := resource.ParseQuantity(limits.Memory); err != nil {
 		return
 	}
 
-	// add cpu and memory to the container
 	for i, container := range job.Spec.Template.Spec.Containers {
-		container.Resources = corev1.ResourceRequirements{
-			Limits: corev1.ResourceList{
-				corev1.ResourceCPU:    resource.MustParse(cpu),
-				corev1.ResourceMemory: resource.MustParse(memory),
-			},
+		container.Resources.Limits = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse(limits.Cpu),
+			corev1.ResourceMemory: resource.MustParse(limits.Memory),
+		}
+		job.Spec.Template.Spec.Containers[i] = container
+	}
+}
+
+func AddResourceRequestsToJobs(jobs []*batchv1.Job, requests *v1alpha1.ResourceList) {
+	for _, job := range jobs {
+		addResourceRequestsToJob(job, requests)
+	}
+}
+
+func addResourceRequestsToJob(job *batchv1.Job, requests *v1alpha1.ResourceList) {
+	if job == nil || requests == nil {
+		return
+	}
+
+	// validate the requests parameters
+	if _, err := resource.ParseQuantity(requests.Cpu); err != nil {
+		return
+	}
+	if _, err := resource.ParseQuantity(requests.Memory); err != nil {
+		return
+	}
+
+	for i, container := range job.Spec.Template.Spec.Containers {
+		container.Resources.Requests = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse(requests.Cpu),
+			corev1.ResourceMemory: resource.MustParse(requests.Memory),
 		}
 		job.Spec.Template.Spec.Containers[i] = container
 	}

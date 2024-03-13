@@ -30,8 +30,6 @@ spec:
                 default: 4k
                 pattern: ^[0-9]+[kKmMgG]?$
                 type: string
-              cpu:
-                type: string
               direct:
                 default: true
                 type: boolean
@@ -46,8 +44,6 @@ spec:
               ioengine:
                 default: psync
                 type: string
-              memory:
-                type: string
               numjobs:
                 default:
                 - 1
@@ -55,6 +51,20 @@ spec:
                   type: integer
                 minItems: 1
                 type: array
+              resourceLimits:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
+              resourceRequests:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
               runtime:
                 minimum: 0
                 type: integer

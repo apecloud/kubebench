@@ -38,8 +38,6 @@ spec:
             type: object
           spec:
             properties:
-              cpu:
-                type: string
               extraArgs:
                 items:
                   type: string
@@ -49,8 +47,6 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
-              memory:
-                type: string
               operationCount:
                 default: 10000
                 minimum: 1
@@ -69,6 +65,20 @@ spec:
                 default: 10000
                 minimum: 1
                 type: integer
+              resourceLimits:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
+              resourceRequests:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
               scanProportion:
                 default: 0
                 maximum: 100

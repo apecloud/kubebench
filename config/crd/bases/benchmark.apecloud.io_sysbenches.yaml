@@ -38,8 +38,6 @@ spec:
             type: object
           spec:
             properties:
-              cpu:
-                type: string
               duration:
                 minimum: 1
                 type: integer
@@ -47,8 +45,20 @@ spec:
                 items:
                   type: string
                 type: array
-              memory:
-                type: string
+              resourceLimits:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
+              resourceRequests:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
               size:
                 type: integer
               step:

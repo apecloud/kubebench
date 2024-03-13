@@ -86,13 +86,9 @@ type FioSpec struct {
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty" protobuf:"bytes,22,opt,name=tolerations"`
 
-	// If specified, the pod's cpu.
-	// +optional
-	Cpu string `json:"cpu,omitempty" protobuf:"bytes,23,opt,name=cpu"`
-
-	// If specified, the pod's memory.
-	// +optional
-	Memory string `json:"memory,omitempty" protobuf:"bytes,24,opt,name=memory"`
+	// the resource requirements for the benchmark
+	ResourceLimits   *ResourceList `json:"resourceLimits,omitempty"`
+	ResourceRequests *ResourceList `json:"resourceRequests,omitempty"`
 }
 
 // FioStatus defines the observed state of Fio

@@ -48,8 +48,6 @@ spec:
               connect:
                 default: false
                 type: boolean
-              cpu:
-                type: string
               duration:
                 default: 60
                 minimum: 0
@@ -58,8 +56,20 @@ spec:
                 items:
                   type: string
                 type: array
-              memory:
-                type: string
+              resourceLimits:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
+              resourceRequests:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
               scale:
                 default: 1
                 minimum: 1

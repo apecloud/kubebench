@@ -36,8 +36,9 @@ func NewTpchJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 		constants.KubeBenchTypeLabel: constants.TpchType,
 	})
 
-	// add cpu and memory to all jobs
-	utils.AddCpuAndMemoryToJobs(jobs, cr.Spec.Cpu, cr.Spec.Memory)
+	// add resource requirements for all jobs
+	utils.AddResourceLimitsToJobs(jobs, cr.Spec.ResourceLimits)
+	utils.AddResourceRequestsToJobs(jobs, cr.Spec.ResourceRequests)
 
 	return jobs
 }

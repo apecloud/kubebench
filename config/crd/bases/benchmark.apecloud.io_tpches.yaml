@@ -38,14 +38,24 @@ spec:
             type: object
           spec:
             properties:
-              cpu:
-                type: string
               extraArgs:
                 items:
                   type: string
                 type: array
-              memory:
-                type: string
+              resourceLimits:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
+              resourceRequests:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
               sizes:
                 default:
                 - 1

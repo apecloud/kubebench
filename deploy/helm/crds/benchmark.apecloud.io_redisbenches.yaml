@@ -45,8 +45,6 @@ spec:
                   type: integer
                 minItems: 1
                 type: array
-              cpu:
-                type: string
               dataSize:
                 default: 3
                 minimum: 1
@@ -57,8 +55,6 @@ spec:
                 type: array
               keySpace:
                 type: integer
-              memory:
-                type: string
               pipeline:
                 default: 1
                 minimum: 1
@@ -70,6 +66,20 @@ spec:
                 default: 100000
                 minimum: 1
                 type: integer
+              resourceLimits:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
+              resourceRequests:
+                properties:
+                  cpu:
+                    type: string
+                  memory:
+                    type: string
+                type: object
               step:
                 default: all
                 enum:

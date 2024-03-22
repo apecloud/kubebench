@@ -20,14 +20,15 @@ helm uninstall kubebench
 
 ## Benchmarks
 
-| Benchmark Name | Use                  | Status    |
-| -------------- | -------------------- | --------- |
-| [Pgbench](docs/pgbench.md)        | Postgres Performance | Supported |
+| Benchmark Name                     | Use                  | Status    |
+|------------------------------------| -------------------- |-----------|
+| [Pgbench](docs/pgbench.md)         | Postgres Performance | Supported |
 | [Sysbench](docs/sysbench.md)       | Database Performance | Supported |
-| [TPCC](docs/tpcc.md)           | OLTP Performance     | Supported |
-| [TPCH](docs/tpch.md)           | DS Performance       | Supported |
-| [YCSB](docs/ycsb.md)           | Database Performance | Supported |
-| ClickBench     | Database Performance | Planned   |
+| [TPCC](docs/tpcc.md)               | OLTP Performance     | Supported |
+| [TPCH](docs/tpch.md)               | DS Performance       | Supported |
+| [YCSB](docs/ycsb.md)               | Database Performance | Supported |
+| [Redis Benchmark](docs/redisbench) | Database Performance | Supported |
+| ClickBench                         | Database Performance | Planned   |
 
 ## License
 kubebench is under the Apache License v2.0. See the [LICENSE](LICENSE) file for details.

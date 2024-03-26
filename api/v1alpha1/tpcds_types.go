@@ -23,19 +23,24 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// TpchSpec defines the desired state of Tpch
-type TpchSpec struct {
-	// overall scale of the tpch test
+// TpcdsSpec defines the desired state of Tpcds
+type TpcdsSpec struct {
+	// overall scale of the tpcds test
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:default=1
 	// +required
-	Size int `json:"sizes,omitempty"`
+	Size int `json:"size,omitempty"`
+
+	// create pk and fk for tpcds test, it will cost extra time
+	// +kubebuilder:default=false
+	// +optional
+	UseKey bool `json:"useKey,omitempty"`
 
 	BenchCommon `json:",inline"`
 }
 
-// TpchStatus defines the observed state of Tpch
-type TpchStatus struct {
+// TpcdsStatus defines the observed state of Tpcds
+type TpcdsStatus struct {
 	// Phase is the current state of the test. Valid values are Disabled, Enabled, Failed, Enabling, Disabling.
 	// +kubebuilder:validation:Enum={Pending,Running,Completed,Failed}
 	Phase BenchmarkPhase `json:"phase,omitempty"`
@@ -56,28 +61,25 @@ type TpchStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.phase",description="status phase"
-// +kubebuilder:printcolumn:name="COMPLETIONS",type="string",JSONPath=".status.completions",description="completions"
-// +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 
-// Tpch is the Schema for the tpches API
-type Tpch struct {
+// Tpcds is the Schema for the tpcds API
+type Tpcds struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TpchSpec   `json:"spec,omitempty"`
-	Status TpchStatus `json:"status,omitempty"`
+	Spec   TpcdsSpec   `json:"spec,omitempty"`
+	Status TpcdsStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// TpchList contains a list of Tpch
-type TpchList struct {
+// TpcdsList contains a list of Tpcds
+type TpcdsList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Tpch `json:"items"`
+	Items           []Tpcds `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Tpch{}, &TpchList{})
+	SchemeBuilder.Register(&Tpcds{}, &TpcdsList{})
 }

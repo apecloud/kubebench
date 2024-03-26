@@ -1,0 +1,27 @@
+# permissions for end users to view tpcds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: tpcds-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: kubebench
+    app.kubernetes.io/part-of: kubebench
+    app.kubernetes.io/managed-by: kustomize
+  name: tpcds-viewer-role
+rules:
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - tpcds
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - tpcds/status
+  verbs:
+  - get

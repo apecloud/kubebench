@@ -13,6 +13,7 @@ const (
 	PgbenchType  = "pgbench"
 	SysbenchType = "sysbench"
 	TpccType     = "tpcc"
+	TpcdsType    = "tpcds"
 	TpchType     = "tpch"
 	YcsbType     = "ycsb"
 	FioType      = "fio"

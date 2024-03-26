@@ -7,4 +7,5 @@ resources:
 - benchmark_v1alpha1_tpch.yaml
 - benchmark_v1alpha1_fio.yaml
 - benchmark_v1alpha1_redisbench.yaml
+- benchmark_v1alpha1_tpcds.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

@@ -15,7 +15,9 @@ func NewTpchJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	// add pre-check job
-	jobs = append(jobs, utils.NewPreCheckJob(cr.Name, cr.Namespace, cr.Spec.Target.Driver, &cr.Spec.Target))
+	if utils.NewPreCheckJob(cr.Name, cr.Namespace, cr.Spec.Target.Driver, &cr.Spec.Target) != nil {
+		jobs = append(jobs, utils.NewPreCheckJob(cr.Name, cr.Namespace, cr.Spec.Target.Driver, &cr.Spec.Target))
+	}
 
 	step := cr.Spec.Step
 

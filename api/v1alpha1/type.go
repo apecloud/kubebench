@@ -49,9 +49,9 @@ type ResourceList struct {
 
 type Target struct {
 	// the driver represents the database type
-	// +optional
+	// +required
 	// +kubebuilder:validation:Enum={mysql,postgresql,mongodb,redis}
-	Driver string `json:"driver,omitempty"`
+	Driver string `json:"driver"`
 
 	// The database server's host name
 	// +required

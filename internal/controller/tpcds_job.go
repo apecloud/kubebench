@@ -2,11 +2,13 @@ package controller
 
 import (
 	"fmt"
+
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/apecloud/kubebench/api/v1alpha1"
 	"github.com/apecloud/kubebench/internal/utils"
 	"github.com/apecloud/kubebench/pkg/constants"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func NewTpcdsJobs(cr v1alpha1.Tpcds) []*batchv1.Job {

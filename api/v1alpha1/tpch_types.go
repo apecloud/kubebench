@@ -29,7 +29,7 @@ type TpchSpec struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:default=1
 	// +required
-	Size int `json:"sizes,omitempty"`
+	Size int `json:"size,omitempty"`
 
 	BenchCommon `json:",inline"`
 }

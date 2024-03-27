@@ -15,7 +15,9 @@ func NewTpchJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	// add pre-check job
-	jobs = append(jobs, utils.NewPreCheckJob(cr.Name, cr.Namespace, cr.Spec.Target.Driver, &cr.Spec.Target))
+	if utils.NewPreCheckJob(cr.Name, cr.Namespace, cr.Spec.Target.Driver, &cr.Spec.Target) != nil {
+		jobs = append(jobs, utils.NewPreCheckJob(cr.Name, cr.Namespace, cr.Spec.Target.Driver, &cr.Spec.Target))
+	}
 
 	step := cr.Spec.Step
 
@@ -59,6 +61,7 @@ func NewTpchRunJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 	value = fmt.Sprintf("%s,password:%s", value, cr.Spec.Target.Password)
 	value = fmt.Sprintf("%s,db:%s", value, cr.Spec.Target.Database)
 	value = fmt.Sprintf("%s,local:%s", value, "True")
+	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
 
 	job := utils.JobTemplate(fmt.Sprintf("%s-run", cr.Name), cr.Namespace)
 	job.Spec.Template.Spec.Containers = append(
@@ -68,7 +71,7 @@ func NewTpchRunJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvTpch),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c"},
-			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
+			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/tpch.log"},
 			Env: []corev1.EnvVar{
 				{
 					Name:  "TYPE",
@@ -102,6 +105,7 @@ func NewTpchAllJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 	value = fmt.Sprintf("%s,password:%s", value, cr.Spec.Target.Password)
 	value = fmt.Sprintf("%s,db:%s", value, cr.Spec.Target.Database)
 	value = fmt.Sprintf("%s,local:%s", value, "True")
+	value = fmt.Sprintf("%s,size:%d", value, cr.Spec.Size)
 
 	job := utils.JobTemplate(fmt.Sprintf("%s-all", cr.Name), cr.Namespace)
 	job.Spec.Template.Spec.Containers = append(
@@ -111,7 +115,7 @@ func NewTpchAllJobs(cr *v1alpha1.Tpch) []*batchv1.Job {
 			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvTpch),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c"},
-			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
+			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/tpch.log"},
 			Env: []corev1.EnvVar{
 				{
 					Name:  "TYPE",

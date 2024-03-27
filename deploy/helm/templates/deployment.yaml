@@ -41,6 +41,8 @@ spec:
               value: "{{ .Values.kubebenchImages.sysbench }}"
             - name: KUBEBENCH_TPCC_IMAGE
               value: "{{ .Values.kubebenchImages.tpcc }}"
+            - name: KUBEBENCH_TPCDS_IMAGE
+              value: "{{ .Values.kubebenchImages.tpcds }}"
             - name: KUBEBENCH_TPCH_IMAGE
               value: "{{ .Values.kubebenchImages.tpch }}"
             - name: KUBEBENCH_YCSB_IMAGE

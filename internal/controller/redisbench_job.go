@@ -26,7 +26,7 @@ func NewRedisBenchJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
 	utils.AddLabelsToJobs(jobs, cr.Labels)
 	utils.AddLabelsToJobs(jobs, map[string]string{
 		constants.KubeBenchNameLabel: cr.Name,
-		constants.KubeBenchTypeLabel: constants.PgbenchType,
+		constants.KubeBenchTypeLabel: constants.RedisBenchType,
 	})
 
 	// add resource requirements for all jobs

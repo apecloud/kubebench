@@ -10,13 +10,14 @@ const (
 )
 
 const (
-	PgbenchType  = "pgbench"
-	SysbenchType = "sysbench"
-	TpccType     = "tpcc"
-	TpcdsType    = "tpcds"
-	TpchType     = "tpch"
-	YcsbType     = "ycsb"
-	FioType      = "fio"
+	PgbenchType    = "pgbench"
+	SysbenchType   = "sysbench"
+	RedisBenchType = "redisbench"
+	TpccType       = "tpcc"
+	TpcdsType      = "tpcds"
+	TpchType       = "tpch"
+	YcsbType       = "ycsb"
+	FioType        = "fio"
 )
 
 const (

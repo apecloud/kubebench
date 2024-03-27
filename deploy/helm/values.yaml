@@ -9,7 +9,7 @@ image:
   pullPolicy: IfNotPresent
   registry: registry.cn-hangzhou.aliyuncs.com
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.0.6"
+  tag: "0.0.7"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -86,6 +86,7 @@ kubebenchImages:
   pgbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/spilo:14.8.0"
   sysbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest"
   tpcc: "registry.cn-hangzhou.aliyuncs.com/apecloud/benchmarksql:latest"
+  tpcds: "infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest"
   tpch: "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest"
   ycsb: "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest"
   fio: "registry.cn-hangzhou.aliyuncs.com/apecloud/fio:latest"

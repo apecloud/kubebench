@@ -83,8 +83,10 @@ func NewTpcdsPrepareJobs(cr v1alpha1.Tpcds) []*batchv1.Job {
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
 	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
 	cmd = fmt.Sprintf("%s --database %s", cmd, cr.Spec.Target.Database)
-	cmd = fmt.Sprintf("%s --usekeys %t", cmd, cr.Spec.UseKey)
 	cmd = fmt.Sprintf("%s --step %s", cmd, "prepare")
+	if cr.Spec.UseKey {
+		cmd = fmt.Sprintf("%s --use-key", cmd)
+	}
 
 	job := utils.JobTemplate(fmt.Sprintf("%s-prepare", cr.Name), cr.Namespace)
 	job.Spec.Template.Spec.Containers = append(

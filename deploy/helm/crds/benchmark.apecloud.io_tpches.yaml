@@ -57,12 +57,9 @@ spec:
                     type: string
                 type: object
               sizes:
-                default:
-                - 1
-                items:
-                  type: integer
-                minItems: 1
-                type: array
+                default: 1
+                minimum: 1
+                type: integer
               step:
                 default: all
                 enum:

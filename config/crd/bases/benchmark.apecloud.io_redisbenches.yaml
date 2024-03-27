@@ -109,7 +109,6 @@ spec:
                   user:
                     type: string
                 required:
-                - driver
                 - host
                 - port
                 type: object

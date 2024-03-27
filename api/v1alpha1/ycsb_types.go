@@ -72,6 +72,30 @@ type YcsbSpec struct {
 	// +optional
 	ScanProportion int `json:"scanProportion,omitempty"`
 
+	// the distribution of requests accross the keyspace.
+	// uniform: each key has an equal probability of being accessed.
+	// sequential: keys are accessed in sequential order.
+	// zipfian: some keys are accessed more frequently than others.
+	// latest: the most recently inserted keys are accessed more frequently.
+	// hotspot: a small number of keys are accessed more frequently.
+	// exponential: keys are accessed in an exponential distribution.
+	// +kubebuilder:validation:Enum={uniform,sequential,zipfian,latest,hotspot,exponential}
+	// +kubebuilder:default=uniform
+	// +optional
+	RequestDistribution string `json:"requestDistribution,omitempty"`
+
+	// the distribution of scan lengths
+	// +kubebuilder:validation:Enum={uniform,zipfian}
+	// +kubebuilder:default=uniform
+	// +optional
+	ScanLengthDistribution string `json:"scanLengthDistribution,omitempty"`
+
+	// the distribution of field lengths
+	// +kubebuilder:validation:Enum={constant,uniform,zipfian,histogram}
+	// +kubebuilder:default=constant
+	// +optional
+	FieldLengthDistribution string `json:"fieldLengthDistribution,omitempty"`
+
 	// the number of threads
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:default={1}

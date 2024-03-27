@@ -80,6 +80,9 @@ func NewYcsbPrepareJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
 	cmd = fmt.Sprintf("%s -p threadcount=%d", cmd, cr.Spec.Threads[0])
+	cmd = fmt.Sprintf("%s -p requestdistribution=%s", cmd, cr.Spec.RequestDistribution)
+	cmd = fmt.Sprintf("%s -p scanlengthdistribution=%s", cmd, cr.Spec.ScanLengthDistribution)
+	cmd = fmt.Sprintf("%s -p fieldlengthdistribution=%s", cmd, cr.Spec.FieldLengthDistribution)
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 	cmd = fmt.Sprintf("%s 2>&1 | tee /var/log/ycsb.log", cmd)
 
@@ -113,6 +116,9 @@ func NewYcsbRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd = fmt.Sprintf("%s %s", cmd, NewYcsbWorkloadParams(cr))
 	cmd = fmt.Sprintf("%s -p recordcount=%d", cmd, cr.Spec.RecordCount)
 	cmd = fmt.Sprintf("%s -p operationcount=%d", cmd, cr.Spec.OperationCount)
+	cmd = fmt.Sprintf("%s -p requestdistribution=%s", cmd, cr.Spec.RequestDistribution)
+	cmd = fmt.Sprintf("%s -p scanlengthdistribution=%s", cmd, cr.Spec.ScanLengthDistribution)
+	cmd = fmt.Sprintf("%s -p fieldlengthdistribution=%s", cmd, cr.Spec.FieldLengthDistribution)
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 
 	totalProportion := cr.Spec.ReadProportion + cr.Spec.UpdateProportion + cr.Spec.InsertProportion + cr.Spec.ReadModifyWriteProportion + cr.Spec.ScanProportion

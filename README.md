@@ -20,12 +20,13 @@ helm uninstall kubebench
 
 ## Benchmarks
 
-| Benchmark Name                     | Use                  | Status    |
-|------------------------------------| -------------------- |-----------|
+| Benchmark Name                     | Use                 | Status    |
+|------------------------------------|---------------------|-----------|
 | [Pgbench](docs/pgbench.md)         | Postgres Performance | Supported |
 | [Sysbench](docs/sysbench.md)       | Database Performance | Supported |
-| [TPCC](docs/tpcc.md)               | OLTP Performance     | Supported |
-| [TPCH](docs/tpch.md)               | DS Performance       | Supported |
+| [TPCC](docs/tpcc.md)               | OLTP Performance    | Supported |
+| [TPCDs](docs/tpcds.md)             | OLAP Performance    | Supported |
+| [TPCH](docs/tpch.md)               | OLAP Performance    | Supported |
 | [YCSB](docs/ycsb.md)               | Database Performance | Supported |
 | [Redis Benchmark](docs/redisbench) | Database Performance | Supported |
 | ClickBench                         | Database Performance | Planned   |

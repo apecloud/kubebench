@@ -73,7 +73,7 @@ func NewSysbenchCleanupJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvSysbench),
 			ImagePullPolicy: corev1.PullIfNotPresent,
 			Command:         []string{"/bin/sh", "-c"},
-			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" | tee /var/log/sysbench.log"},
+			Args:            []string{"python3 -u infratest.py -t \"$TYPE\" -f \"${FLAG}\" -c \"${CONFIGS}\" -j \"${JSONS}\" 2>&1 | tee -a /var/log/sysbench.log"},
 			Env: []corev1.EnvVar{
 				{
 					Name:  "TYPE",

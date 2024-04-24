@@ -14,7 +14,19 @@ spec:
     singular: tpcds
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: status phase
+      jsonPath: .status.phase
+      name: STATUS
+      type: string
+    - description: completions
+      jsonPath: .status.completions
+      name: COMPLETIONS
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:

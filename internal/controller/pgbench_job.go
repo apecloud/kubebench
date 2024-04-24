@@ -185,7 +185,7 @@ func NewPgbenchRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 				Image:           constants.GetBenchmarkImage(constants.KubebenchEnvPgbench),
 				ImagePullPolicy: corev1.PullIfNotPresent,
 				Command:         []string{"/bin/sh", "-c"},
-				Args:            []string{fmt.Sprintf("%s | tee /var/log/pgbench.log", curCmd)},
+				Args:            []string{fmt.Sprintf("%s 2>&1 | tee -a /var/log/pgbench.log", curCmd)},
 				Env: []corev1.EnvVar{
 					{
 						Name:  "PGHOST",

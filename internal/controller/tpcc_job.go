@@ -196,7 +196,6 @@ func getTpccDriver(driver string) string {
 	case constants.PostgreSqlDriver:
 		return "postgres"
 	case constants.OceanBaseOracleTenantDriver:
-		// for oceanbase oracle tenant
 		return "oracle"
 	default:
 		return driver

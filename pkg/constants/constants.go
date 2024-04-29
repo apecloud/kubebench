@@ -25,6 +25,7 @@ const (
 	PostgreSqlDriver = "postgresql"
 	MongoDbDriver    = "mongodb"
 	RedisDriver      = "redis"
+	OceanBaseDriver  = "oceanbase"
 )
 
 const (

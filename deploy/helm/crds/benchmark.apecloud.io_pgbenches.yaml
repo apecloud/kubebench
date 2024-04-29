@@ -95,8 +95,7 @@ spec:
                     - postgresql
                     - mongodb
                     - redis
-                    - oceanbase
-                    - oracle
+                    - oceanbase-oracle
                     type: string
                   host:
                     type: string

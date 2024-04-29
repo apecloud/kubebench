@@ -150,8 +150,8 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 		return NewTpccMysqlParams(cr)
 	case constants.PostgreSqlDriver:
 		return NewTpccPostgresParams(cr)
-	case constants.OceanBaseDriver:
-		return NewOceanBaseParams(cr)
+	case constants.OceanBaseOracleTenantDriver:
+		return NewOceanBaseOracleTenantParams(cr)
 	default:
 		return ""
 	}
@@ -169,7 +169,7 @@ func NewTpccPostgresParams(cr *v1alpha1.Tpcc) string {
 	return result
 }
 
-func NewOceanBaseParams(cr *v1alpha1.Tpcc) string {
+func NewOceanBaseOracleTenantParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.alipay.oceanbase.obproxy.mysql.jdbc.Driver")
 	result = fmt.Sprintf("%s --conn \"jdbc:oceanbase://%s:%d/%s?useUnicode=true&characterEncoding=utf-8\"", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
@@ -195,7 +195,7 @@ func getTpccDriver(driver string) string {
 		return "mysql"
 	case constants.PostgreSqlDriver:
 		return "postgres"
-	case constants.OceanBaseDriver:
+	case constants.OceanBaseOracleTenantDriver:
 		// for oceanbase oracle tenant
 		return "oracle"
 	default:

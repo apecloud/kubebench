@@ -21,11 +21,11 @@ const (
 )
 
 const (
-	MySqlDriver      = "mysql"
-	PostgreSqlDriver = "postgresql"
-	MongoDbDriver    = "mongodb"
-	RedisDriver      = "redis"
-	OceanBaseDriver  = "oceanbase"
+	MySqlDriver                 = "mysql"
+	PostgreSqlDriver            = "postgresql"
+	MongoDbDriver               = "mongodb"
+	RedisDriver                 = "redis"
+	OceanBaseOracleTenantDriver = "oceanbase-oracle"
 )
 
 const (

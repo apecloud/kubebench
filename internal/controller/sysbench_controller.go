@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -81,6 +83,7 @@ func (r *SysbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	if sysbench.Status.Succeeded >= sysbench.Status.Total {
 		sysbench.Status.Phase = benchmarkv1alpha1.Completed
+		sysbench.Status.CompletionTimestamp = &metav1.Time{Time: time.Now()}
 	} else {
 		job := jobs[sysbench.Status.Succeeded]
 

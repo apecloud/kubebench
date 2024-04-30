@@ -19,7 +19,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -76,6 +78,7 @@ func (r *FioReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 
 	if fio.Status.Succeeded >= fio.Status.Total {
 		fio.Status.Phase = benchmarkv1alpha1.Completed
+		fio.Status.CompletionTimestamp = &metav1.Time{Time: time.Now()}
 	} else {
 		job := jobs[fio.Status.Succeeded]
 

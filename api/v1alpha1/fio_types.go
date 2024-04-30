@@ -106,6 +106,9 @@ type FioStatus struct {
 	// total is the number of pgbench runs
 	Total int `json:"total,omitempty"`
 
+	// the completion timestamp of the test
+	CompletionTimestamp *metav1.Time `json:"completionTimestamp,omitempty"`
+
 	// Describes the current state of benchmark conditions.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`

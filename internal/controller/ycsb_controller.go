@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -77,6 +79,7 @@ func (r *YcsbReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if ycsb.Status.Succeeded >= ycsb.Status.Total {
 		ycsb.Status.Phase = benchmarkv1alpha1.Completed
+		ycsb.Status.CompletionTimestamp = &metav1.Time{Time: time.Now()}
 	} else {
 		job := jobs[ycsb.Status.Succeeded]
 

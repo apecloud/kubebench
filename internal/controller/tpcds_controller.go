@@ -19,9 +19,11 @@ package controller
 import (
 	"context"
 	"fmt"
-	"k8s.io/client-go/rest"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -77,6 +79,7 @@ func (r *TpcdsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if tpcds.Status.Succeeded >= tpcds.Status.Total {
 		tpcds.Status.Phase = benchmarkv1alpha1.Completed
+		tpcds.Status.CompletionTimestamp = &metav1.Time{Time: time.Now()}
 	} else {
 		job := jobs[tpcds.Status.Succeeded]
 

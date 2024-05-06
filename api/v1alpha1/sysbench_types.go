@@ -66,6 +66,9 @@ type SysbenchStatus struct {
 	// Describes the current state of benchmark conditions.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// the completion timestamp of the test
+	CompletionTimestamp *metav1.Time `json:"completionTimestamp,omitempty"`
 }
 
 //+kubebuilder:object:root=true

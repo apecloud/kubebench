@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -77,6 +79,7 @@ func (r *RedisbenchReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if redisbench.Status.Succeeded >= redisbench.Status.Total {
 		l.Info("redisbench complete", "redisbench", redisbench.Name)
 		redisbench.Status.Phase = benchmarkv1alpha1.Completed
+		redisbench.Status.CompletionTimestamp = &metav1.Time{Time: time.Now()}
 	} else {
 		job := jobs[redisbench.Status.Succeeded]
 

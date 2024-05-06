@@ -138,6 +138,9 @@ spec:
             type: object
           status:
             properties:
+              completionTimestamp:
+                format: date-time
+                type: string
               completions:
                 type: string
               conditions:

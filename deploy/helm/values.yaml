@@ -9,7 +9,7 @@ image:
   pullPolicy: IfNotPresent
   registry: registry.cn-hangzhou.aliyuncs.com
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.0.7"
+  tag: "0.0.8"
 
 imagePullSecrets: []
 nameOverride: ""

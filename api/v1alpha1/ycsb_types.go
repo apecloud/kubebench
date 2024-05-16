@@ -102,6 +102,12 @@ type YcsbSpec struct {
 	// +optional
 	Threads []int `json:"threads,omitempty"`
 
+	// TODO: achieve the following fields in target
+	RedisMode             string `json:"redisMode,omitempty"`
+	MasterName            string `json:"masterName,omitempty"`
+	RedisSentinelUsername string `json:"redisSentinelUsername,omitempty"`
+	RedisSentinelPassword string `json:"redisSentinelPassword,omitempty"`
+
 	BenchCommon `json:",inline"`
 }
 

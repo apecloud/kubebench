@@ -55,6 +55,8 @@ spec:
                 maximum: 100
                 minimum: 0
                 type: integer
+              masterName:
+                type: string
               operationCount:
                 default: 10000
                 minimum: 1
@@ -73,6 +75,12 @@ spec:
                 default: 10000
                 minimum: 1
                 type: integer
+              redisMode:
+                type: string
+              redisSentinelPassword:
+                type: string
+              redisSentinelUsername:
+                type: string
               requestDistribution:
                 default: uniform
                 enum:

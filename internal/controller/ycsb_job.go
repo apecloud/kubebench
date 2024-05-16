@@ -207,6 +207,12 @@ func NewYcsbRedisParams(cr *v1alpha1.Ycsb) string {
 	if cr.Spec.Target.Database != "" {
 		result = fmt.Sprintf("%s -p redis.db=%s", result, cr.Spec.Target.Database)
 	}
+	if cr.Spec.RedisMode == "sentinel" {
+		result = fmt.Sprintf("%s -p redis.mode=sentinel", result)
+		result = fmt.Sprintf("%s -p redis.sentinel_master_name=%s", result, cr.Spec.MasterName)
+		result = fmt.Sprintf("%s -p redis.sentinel_username=%s", result, cr.Spec.RedisSentinelUsername)
+		result = fmt.Sprintf("%s -p redis.sentinel_password=%s", result, cr.Spec.RedisSentinelPassword)
+	}
 	return result
 }
 

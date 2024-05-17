@@ -372,8 +372,9 @@ func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Targ
 		return NewPgbenchPreCheckJob(name, namespace, *target)
 	case constants.MongoDbDriver:
 		return NewMongodbPreCheckJob(name, namespace, *target)
-	case constants.RedisDriver:
-		return NewRedisPreCheckJob(name, namespace, *target)
+	// TODO: achieve in next kubebench version
+	//case constants.RedisDriver:
+	//	return NewRedisPreCheckJob(name, namespace, *target)
 	default:
 		return nil
 	}

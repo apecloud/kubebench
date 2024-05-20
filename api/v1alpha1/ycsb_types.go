@@ -107,6 +107,7 @@ type YcsbSpec struct {
 	MasterName            string `json:"masterName,omitempty"`
 	RedisSentinelUsername string `json:"redisSentinelUsername,omitempty"`
 	RedisSentinelPassword string `json:"redisSentinelPassword,omitempty"`
+	RedisAddr             string `json:"redisAddr,omitempty"`
 
 	BenchCommon `json:",inline"`
 }

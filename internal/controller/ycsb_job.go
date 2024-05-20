@@ -197,7 +197,12 @@ func NewYcsbMysqlParams(cr *v1alpha1.Ycsb) string {
 }
 
 func NewYcsbRedisParams(cr *v1alpha1.Ycsb) string {
-	result := fmt.Sprintf("-p redis.addr=%s", fmt.Sprintf("%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port))
+	result := ""
+	if cr.Spec.RedisAddr != "" {
+		result = fmt.Sprintf("-p redis.addr='%s'", cr.Spec.RedisAddr)
+	} else {
+		result = fmt.Sprintf("-p redis.addr='%s'", fmt.Sprintf("%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port))
+	}
 	if cr.Spec.Target.User != "" {
 		result = fmt.Sprintf("%s -p redis.username=%s", result, cr.Spec.Target.User)
 	}

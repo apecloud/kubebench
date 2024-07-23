@@ -91,5 +91,5 @@ kubebenchImages:
   ycsb: "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest"
   fio: "registry.cn-hangzhou.aliyuncs.com/apecloud/fio:latest"
   redisbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/redis:7.0.5"
-  exporter: "registry.cn-hangzhou.aliyuncs.com/apecloud/kubebench:0.0.9"
-  tools: "registry.cn-hangzhou.aliyuncs.com/apecloud/kubebench:0.0.9"
+  exporter: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10"
+  tools: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10"

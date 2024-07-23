@@ -138,6 +138,7 @@ spec:
                     - mongodb
                     - redis
                     - oceanbase-oracle
+                    - dameng
                     type: string
                   host:
                     type: string

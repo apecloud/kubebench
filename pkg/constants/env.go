@@ -22,14 +22,14 @@ const (
 func init() {
 	viper.SetDefault(KubebenchEnvPgbench, "registry.cn-hangzhou.aliyuncs.com/apecloud/spilo:14.8.0")
 	viper.SetDefault(KubebenchEnvSysbench, "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest")
-	viper.SetDefault(KubebenchEnvTpcc, "registry.cn-hangzhou.aliyuncs.com/apecloud/benchmarksql:latest")
+	viper.SetDefault(KubebenchEnvTpcc, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:latest")
 	viper.SetDefault(KubebenchEnvTpcds, "infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest")
 	viper.SetDefault(KubebenchEnvTpch, "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest")
 	viper.SetDefault(KubebenchEnvYcsb, "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest")
 	viper.SetDefault(KubebenchEnvFio, "registry.cn-hangzhou.aliyuncs.com/apecloud/fio:latest")
 	viper.SetDefault(KubebenchEnvRedisBench, "registry.cn-hangzhou.aliyuncs.com/apecloud/redis:7.0.5")
-	viper.SetDefault(KubebenchExporter, "registry.cn-hangzhou.aliyuncs.com/apecloud/kubebench:0.0.9")
-	viper.SetDefault(KubebenchTools, "registry.cn-hangzhou.aliyuncs.com/apecloud/kubebench:0.0.9")
+	viper.SetDefault(KubebenchExporter, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
+	viper.SetDefault(KubebenchTools, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
 }
 
 // GetBenchmarkImage get benchmark image

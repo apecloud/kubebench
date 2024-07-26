@@ -179,7 +179,7 @@ func NewOceanBaseOracleTenantParams(cr *v1alpha1.Tpcc) string {
 
 func NewDamengParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "dm.jdbc.driver.DmDriver")
-	result = fmt.Sprintf("%s --conn jdbc:dm://%s:%d", result, cr.Spec.Target.Host, cr.Spec.Target.Port)
+	result = fmt.Sprintf("%s --conn jdbc:dm://%s:%d?SCHEMA=%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 

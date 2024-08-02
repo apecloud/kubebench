@@ -7,9 +7,9 @@ replicaCount: 1
 image:
   repository: apecloud/kubebench
   pullPolicy: IfNotPresent
-  registry: registry.cn-hangzhou.aliyuncs.com
+  registry: apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.0.9"
+  tag: "0.0.10"
 
 imagePullSecrets: []
 nameOverride: ""

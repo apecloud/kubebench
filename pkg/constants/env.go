@@ -19,6 +19,10 @@ const (
 	KubebenchTools         = "KUBEBENCH_TOOLS_IMAGE"
 )
 
+const (
+	CfgKeyCtrlrMgrTolerations = "CM_TOLERATIONS"
+)
+
 func init() {
 	viper.SetDefault(KubebenchEnvPgbench, "registry.cn-hangzhou.aliyuncs.com/apecloud/spilo:14.8.0")
 	viper.SetDefault(KubebenchEnvSysbench, "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest")
@@ -30,6 +34,7 @@ func init() {
 	viper.SetDefault(KubebenchEnvRedisBench, "registry.cn-hangzhou.aliyuncs.com/apecloud/redis:7.0.5")
 	viper.SetDefault(KubebenchExporter, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
 	viper.SetDefault(KubebenchTools, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
+	viper.SetDefault(CfgKeyCtrlrMgrTolerations, os.Getenv(CfgKeyCtrlrMgrTolerations))
 }
 
 // GetBenchmarkImage get benchmark image

@@ -19,6 +19,10 @@ const (
 	KubebenchTools         = "KUBEBENCH_TOOLS_IMAGE"
 )
 
+const (
+	CfgKeyCtrlrMgrTolerations = "CM_TOLERATIONS"
+)
+
 func init() {
 	viper.SetDefault(KubebenchEnvPgbench, "registry.cn-hangzhou.aliyuncs.com/apecloud/spilo:14.8.0")
 	viper.SetDefault(KubebenchEnvSysbench, "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest")

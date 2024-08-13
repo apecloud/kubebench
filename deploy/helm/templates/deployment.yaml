@@ -55,6 +55,8 @@ spec:
               value: "{{ .Values.kubebenchImages.exporter }}"
             - name: KUBEBENCH_TOOLS_IMAGE
               value: "{{ .Values.kubebenchImages.tools }}"
+            - name: CM_TOLERATIONS
+              value: "{{ .Values.cmTolerations }}"
           command:
           - /manager
           securityContext:

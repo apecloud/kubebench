@@ -18,19 +18,23 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/apecloud/kubebench/api/v1alpha1"
-	"github.com/apecloud/kubebench/pkg/constants"
 	"strings"
 
+	"github.com/spf13/viper"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/apecloud/kubebench/api/v1alpha1"
+	"github.com/apecloud/kubebench/pkg/constants"
 )
 
 func IsJobExisted(cli client.Client, reqCtx context.Context, jobName string, namespace string) (bool, error) {
@@ -200,6 +204,12 @@ func JobTemplate(name, namespace string) *batchv1.Job {
 
 func AddTolerationToJobs(jobs []*batchv1.Job, tolerations []corev1.Toleration) {
 	for _, job := range jobs {
+		if cmTolerations := viper.GetString(constants.CfgKeyCtrlrMgrTolerations); cmTolerations != "" {
+			if err := json.Unmarshal([]byte(cmTolerations), &job.Spec.Template.Spec.Tolerations); err != nil {
+				klog.Errorf("Failed to marshal CfgKeyCtrlrMgrTolerations for job, tolerations is %s ", cmTolerations)
+			}
+		}
+
 		job.Spec.Template.Spec.Tolerations = append(job.Spec.Template.Spec.Tolerations, tolerations...)
 	}
 }

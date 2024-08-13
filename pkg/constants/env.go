@@ -34,6 +34,7 @@ func init() {
 	viper.SetDefault(KubebenchEnvRedisBench, "registry.cn-hangzhou.aliyuncs.com/apecloud/redis:7.0.5")
 	viper.SetDefault(KubebenchExporter, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
 	viper.SetDefault(KubebenchTools, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
+	viper.SetDefault(CfgKeyCtrlrMgrTolerations, os.Getenv(CfgKeyCtrlrMgrTolerations))
 }
 
 // GetBenchmarkImage get benchmark image

@@ -82,8 +82,6 @@ tolerations: []
 
 affinity: {}
 
-cmTolerations: ""
-
 kubebenchImages:
   pgbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/spilo:14.8.0"
   sysbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest"

@@ -101,6 +101,7 @@ spec:
                     - redis
                     - oceanbase-oracle
                     - dameng
+                    - minio
                     type: string
                   host:
                     type: string

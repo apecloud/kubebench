@@ -27,6 +27,7 @@ const (
 	RedisDriver                 = "redis"
 	OceanBaseOracleTenantDriver = "oceanbase-oracle"
 	DamengDriver                = "dameng"
+	MinioDriver                 = "minio"
 )
 
 const (

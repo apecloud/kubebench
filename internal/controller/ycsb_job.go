@@ -124,26 +124,19 @@ func NewYcsbRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 
 	totalProportion := cr.Spec.ReadProportion + cr.Spec.UpdateProportion + cr.Spec.InsertProportion + cr.Spec.ReadModifyWriteProportion + cr.Spec.ScanProportion
-	if cr.Spec.ReadProportion > 0 {
-		readProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ReadProportion)/float64(totalProportion)), 64)
-		cmd = fmt.Sprintf("%s -p readproportion=%f", cmd, readProportion)
-	}
-	if cr.Spec.UpdateProportion > 0 {
-		updateProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.UpdateProportion)/float64(totalProportion)), 64)
-		cmd = fmt.Sprintf("%s -p updateproportion=%f", cmd, updateProportion)
-	}
-	if cr.Spec.InsertProportion > 0 {
-		insertProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.InsertProportion)/float64(totalProportion)), 64)
-		cmd = fmt.Sprintf("%s -p insertproportion=%f", cmd, insertProportion)
-	}
-	if cr.Spec.ReadModifyWriteProportion > 0 {
-		readModifyWriteProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ReadModifyWriteProportion)/float64(totalProportion)), 64)
-		cmd = fmt.Sprintf("%s -p readmodifywriteproportion=%f", cmd, readModifyWriteProportion)
-	}
-	if cr.Spec.ScanProportion > 0 {
-		scanProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ScanProportion)/float64(totalProportion)), 64)
-		cmd = fmt.Sprintf("%s -p scanproportion=%f", cmd, scanProportion)
-	}
+	readProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ReadProportion)/float64(totalProportion)), 64)
+	cmd = fmt.Sprintf("%s -p readproportion=%f", cmd, readProportion)
+
+	updateProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.UpdateProportion)/float64(totalProportion)), 64)
+	cmd = fmt.Sprintf("%s -p updateproportion=%f", cmd, updateProportion)
+
+	insertProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.InsertProportion)/float64(totalProportion)), 64)
+	cmd = fmt.Sprintf("%s -p insertproportion=%f", cmd, insertProportion)
+
+	readModifyWriteProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ReadModifyWriteProportion)/float64(totalProportion)), 64)
+	cmd = fmt.Sprintf("%s -p readmodifywriteproportion=%f", cmd, readModifyWriteProportion)
+	scanProportion, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(cr.Spec.ScanProportion)/float64(totalProportion)), 64)
+	cmd = fmt.Sprintf("%s -p scanproportion=%f", cmd, scanProportion)
 
 	jobs := make([]*batchv1.Job, 0)
 	for i, thread := range cr.Spec.Threads {
@@ -175,6 +168,8 @@ func NewYcsbWorkloadParams(cr *v1alpha1.Ycsb) string {
 		return NewYcsbPostgresParams(cr)
 	case constants.MongoDbDriver:
 		return NewYcsbMongodbParams(cr)
+	case constants.MinioDriver:
+		return NewYcsbMinioParams(cr)
 	default:
 		return ""
 	}
@@ -243,6 +238,13 @@ func NewYcsbMongodbParams(cr *v1alpha1.Ycsb) string {
 	return result
 }
 
+func NewYcsbMinioParams(cr *v1alpha1.Ycsb) string {
+	accessKey := cr.Spec.Target.User
+	secretKey := cr.Spec.Target.Password
+	endpoint := fmt.Sprintf("%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port)
+	return fmt.Sprintf("-p minio.access-key=%s -p minio.secret-key=%s -p minio.endpoint=%s -p table=%s", accessKey, secretKey, endpoint, cr.Spec.Target.Database)
+}
+
 func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
 	database := cr.Spec.Target.Database
 
@@ -266,6 +268,8 @@ func getYcsbDriver(driver string) string {
 		return "mongodb"
 	case constants.RedisDriver:
 		return "redis"
+	case constants.MinioDriver:
+		return "minio"
 	default:
 		return driver
 	}

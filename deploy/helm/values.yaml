@@ -83,13 +83,13 @@ tolerations: []
 affinity: {}
 
 kubebenchImages:
-  pgbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/spilo:14.8.0"
-  sysbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest"
-  tpcc: "registry.cn-hangzhou.aliyuncs.com/apecloud/benchmarksql:latest"
-  tpcds: "infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest"
-  tpch: "registry.cn-hangzhou.aliyuncs.com/apecloud/customsuites:latest"
-  ycsb: "registry.cn-hangzhou.aliyuncs.com/apecloud/go-ycsb:latest"
-  fio: "registry.cn-hangzhou.aliyuncs.com/apecloud/fio:latest"
-  redisbench: "registry.cn-hangzhou.aliyuncs.com/apecloud/redis:7.0.5"
+  pgbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/spilo:14.8.0"
+  sysbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest"
+  tpcc: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:latest"
+  tpcds: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest"
+  tpch: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest"
+  ycsb: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/go-ycsb:latest"
+  fio: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/fio:latest"
+  redisbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/redis:7.0.5"
   exporter: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.11"
   tools: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.11"

@@ -28,6 +28,7 @@ const (
 	OceanBaseOracleTenantDriver = "oceanbase-oracle"
 	DamengDriver                = "dameng"
 	MinioDriver                 = "minio"
+	TidbDriver                  = "tidb"
 )
 
 const (

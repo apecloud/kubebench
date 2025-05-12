@@ -140,6 +140,7 @@ spec:
                     - oceanbase-oracle
                     - dameng
                     - minio
+                    - tidb
                     type: string
                   host:
                     type: string

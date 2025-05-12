@@ -154,6 +154,8 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 		return NewOceanBaseOracleTenantParams(cr)
 	case constants.DamengDriver:
 		return NewDamengParams(cr)
+	case constants.TidbDriver:
+		return NewTidbParams(cr)
 	default:
 		return ""
 	}
@@ -180,6 +182,12 @@ func NewOceanBaseOracleTenantParams(cr *v1alpha1.Tpcc) string {
 func NewDamengParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "dm.jdbc.driver.DmDriver")
 	result = fmt.Sprintf("%s --conn jdbc:dm://%s:%d", result, cr.Spec.Target.Host, cr.Spec.Target.Port)
+	return result
+}
+
+func NewTidbParams(cr *v1alpha1.Tpcc) string {
+	result := fmt.Sprintf("--driver %s", "com.tidb.jdbc.Driver")
+	result = fmt.Sprintf("%s --conn jdbc:mysql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 

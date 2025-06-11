@@ -29,6 +29,7 @@ const (
 	DamengDriver                = "dameng"
 	MinioDriver                 = "minio"
 	TidbDriver                  = "tidb"
+	MssqlDriver                 = "mssql"
 )
 
 const (

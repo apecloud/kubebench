@@ -156,6 +156,8 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 		return NewDamengParams(cr)
 	case constants.TidbDriver:
 		return NewTidbParams(cr)
+	case constants.MssqlDriver:
+		return NewMssqlParams(cr)
 	default:
 		return ""
 	}
@@ -188,6 +190,12 @@ func NewDamengParams(cr *v1alpha1.Tpcc) string {
 func NewTidbParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.tidb.jdbc.Driver")
 	result = fmt.Sprintf("%s --conn jdbc:mysql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	return result
+}
+
+func NewMssqlParams(cr *v1alpha1.Tpcc) string {
+	result := fmt.Sprintf("--driver %s", "com.microsoft.sqlserver.jdbc.SQLServerDriver")
+	result = fmt.Sprintf("%s --conn jdbc:sqlserver://%s:%d;database=%s;integratedSecurity=false;encrypt=true;trustServerCertificate=true", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 

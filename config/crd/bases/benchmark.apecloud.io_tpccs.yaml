@@ -112,6 +112,7 @@ spec:
                     - dameng
                     - minio
                     - tidb
+                    - mssql
                     type: string
                   host:
                     type: string

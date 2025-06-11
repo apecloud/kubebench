@@ -85,6 +85,8 @@ spec:
                     - oceanbase-oracle
                     - dameng
                     - minio
+                    - tidb
+                    - mssql
                     type: string
                   host:
                     type: string

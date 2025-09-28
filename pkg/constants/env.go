@@ -26,7 +26,7 @@ const (
 func init() {
 	viper.SetDefault(KubebenchEnvPgbench, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/spilo:14.8.0")
 	viper.SetDefault(KubebenchEnvSysbench, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest")
-	viper.SetDefault(KubebenchEnvTpcc, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:latest")
+	viper.SetDefault(KubebenchEnvTpcc, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:1.0")
 	viper.SetDefault(KubebenchEnvTpcds, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest")
 	viper.SetDefault(KubebenchEnvTpch, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest")
 	viper.SetDefault(KubebenchEnvYcsb, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/go-ycsb:latest")

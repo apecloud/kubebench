@@ -85,7 +85,7 @@ affinity: {}
 kubebenchImages:
   pgbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/spilo:14.8.0"
   sysbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest"
-  tpcc: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:latest"
+  tpcc: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:1.0"
   tpcds: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest"
   tpch: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest"
   ycsb: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/go-ycsb:latest"

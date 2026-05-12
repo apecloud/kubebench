@@ -1,4 +1,0 @@
-{"file": ".trellis/spec/backend/index.md", "reason": "Backend quality checklist"}
-{"file": ".trellis/spec/backend/controller-reconcile-guidelines.md", "reason": "Verify status condition contract"}
-{"file": ".trellis/spec/backend/exporter-metrics-guidelines.md", "reason": "Verify summary parser behavior"}
-{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Verify no sensitive status/log leakage"}

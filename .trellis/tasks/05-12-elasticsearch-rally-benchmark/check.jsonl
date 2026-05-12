@@ -1,8 +1,0 @@
-{"file": ".trellis/spec/backend/index.md", "reason": "Backend quality checklist for new benchmark changes."}
-{"file": ".trellis/spec/backend/crd-api-guidelines.md", "reason": "Verify CRD API markers, defaults, status, and generated artifacts."}
-{"file": ".trellis/spec/backend/controller-reconcile-guidelines.md", "reason": "Verify reconciler status transitions, requeues, owner references, and log conditions."}
-{"file": ".trellis/spec/backend/job-construction-guidelines.md", "reason": "Verify Job shape, labels, images, resources, and log volume consistency."}
-{"file": ".trellis/spec/backend/exporter-metrics-guidelines.md", "reason": "Verify Rally exporter metrics, parser tests, and fixture coverage."}
-{"file": ".trellis/spec/backend/config-deployment-guidelines.md", "reason": "Verify generated CRD/RBAC/Helm/sample/docs consistency."}
-{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Review tests, generated files, and completion gate."}
-{"file": ".trellis/tasks/05-12-elasticsearch-rally-benchmark/research/rally-integration-notes.md", "reason": "Check implementation remains aligned with Rally Docker/CLI constraints."}

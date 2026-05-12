@@ -1,5 +1,0 @@
-{"file":".trellis/tasks/05-12-bootstrap-kubebench-specs/prd.md","reason":"Bootstrap requirements and project architecture notes for spec generation."}
-{"file":".trellis/spec/backend/index.md","reason":"Backend spec entry point and quality checklist."}
-{"file":".trellis/spec/backend/directory-structure.md","reason":"Package responsibilities and generated-file boundaries."}
-{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Reuse hotspots across benchmark kinds, Jobs, constants, parsers, and tools."}
-{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Cross-layer flow for API, controller, Job, exporter, manifests, Helm, docs, and samples."}

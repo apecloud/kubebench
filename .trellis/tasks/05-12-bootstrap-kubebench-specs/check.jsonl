@@ -1,4 +1,0 @@
-{"file":".trellis/tasks/05-12-bootstrap-kubebench-specs/prd.md","reason":"Acceptance criteria and tooling limitations for final verification."}
-{"file":".trellis/spec/backend/index.md","reason":"Spec index must match generated guideline files."}
-{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Quality gate and review expectations for Kubebench."}
-{"file":".trellis/spec/guides/index.md","reason":"Thinking guide index should reflect available cross-cutting guides."}

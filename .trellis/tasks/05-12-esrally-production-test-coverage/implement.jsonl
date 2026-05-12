@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend task index and quality checklist"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Testing expectations and required checks"}
+{"file": ".trellis/spec/backend/job-construction-guidelines.md", "reason": "Job builder test expectations"}
+{"file": ".trellis/spec/backend/exporter-metrics-guidelines.md", "reason": "Exporter parser fixture and done-file test requirements"}
+{"file": ".trellis/spec/backend/controller-reconcile-guidelines.md", "reason": "Status/reconcile behavior if controller tests are added"}
+{"file": ".trellis/tasks/05-12-elasticsearch-rally-benchmark/research/rally-integration-notes.md", "reason": "Production Rally scenario matrix"}

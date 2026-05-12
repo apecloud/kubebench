@@ -1,0 +1,32 @@
+{
+  "id": "elasticsearch-rally-benchmark",
+  "name": "elasticsearch-rally-benchmark",
+  "title": "Add Elasticsearch Rally benchmark",
+  "description": "",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": "backend",
+  "package": null,
+  "priority": "P2",
+  "creator": "kizuna-lek",
+  "assignee": "kizuna-lek",
+  "createdAt": "2026-05-12",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "05-12-esrally-precheck-auth-tls",
+    "05-12-esrally-metrics-report-contract",
+    "05-12-esrally-status-summary-safe",
+    "05-12-esrally-production-test-coverage",
+    "05-12-esrally-default-fallback-cleanup"
+  ],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

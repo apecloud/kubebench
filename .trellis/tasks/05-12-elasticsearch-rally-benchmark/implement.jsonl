@@ -1,0 +1,11 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend pre-development checklist and guide index for adding a new benchmark surface."}
+{"file": ".trellis/spec/backend/crd-api-guidelines.md", "reason": "API type, status, marker, and generated CRD rules for the new Esrally resource."}
+{"file": ".trellis/spec/backend/controller-reconcile-guidelines.md", "reason": "Sequential reconciler/status conventions for benchmark controllers."}
+{"file": ".trellis/spec/backend/job-construction-guidelines.md", "reason": "Job builder conventions for images, labels, tolerations, resources, prechecks, and log volumes."}
+{"file": ".trellis/spec/backend/exporter-metrics-guidelines.md", "reason": "Prometheus exporter/parser conventions if Rally CSV metrics are implemented."}
+{"file": ".trellis/spec/backend/config-deployment-guidelines.md", "reason": "Generated CRD, RBAC, Helm, sample, and deployment artifact expectations."}
+{"file": ".trellis/spec/backend/cli-tools-guidelines.md", "reason": "Needed if adding an Elasticsearch precheck under cmd/tools/pkg/tools."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Project-specific error propagation and retry behavior for the new reconciler."}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Controller/exporter logging conventions for new code."}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required quality checks and generated-file review rules."}
+{"file": ".trellis/tasks/05-12-elasticsearch-rally-benchmark/research/rally-integration-notes.md", "reason": "Rally command, Docker, track, and metrics research mapped to kubebench implementation decisions."}

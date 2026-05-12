@@ -43,7 +43,7 @@ func TestNewEsrallyJobs(t *testing.T) {
 	if len(jobs[1].Spec.Template.Spec.Containers) != 2 {
 		t.Fatalf("expected workload and metrics containers, got %d", len(jobs[1].Spec.Template.Spec.Containers))
 	}
-	if got := metricsContainerArg(jobs[1], "-file"); got != defaultEsrallyReportFile {
+	if got := metricsContainerArg(jobs[1], "-file"); got != benchmarkv1alpha1.DefaultEsrallyReportFile {
 		t.Fatalf("expected default exporter report file, got %s", got)
 	}
 
@@ -70,11 +70,17 @@ func TestNewEsrallyRunJobsDefaultsMetricsToCSVSharedReport(t *testing.T) {
 	if len(job.Spec.Template.Spec.Containers) != 2 {
 		t.Fatalf("expected metrics container by default, got %d containers", len(job.Spec.Template.Spec.Containers))
 	}
-	if got := metricsContainerArg(job, "-file"); got != defaultEsrallyReportFile {
+	if got := metricsContainerArg(job, "-file"); got != benchmarkv1alpha1.DefaultEsrallyReportFile {
 		t.Fatalf("expected default report file, got %s", got)
 	}
-	if got := envValue(job, "REPORT_FORMAT"); got != defaultEsrallyReportFormat {
+	if got := envValue(job, "REPORT_FORMAT"); got != benchmarkv1alpha1.DefaultEsrallyReportFormat {
 		t.Fatalf("expected default report format env, got %s", got)
+	}
+	if got := envValue(job, "TRACK"); got != benchmarkv1alpha1.DefaultEsrallyTrack {
+		t.Fatalf("expected default track env, got %s", got)
+	}
+	if got := envValue(job, "ON_ERROR"); got != benchmarkv1alpha1.DefaultEsrallyOnError {
+		t.Fatalf("expected default onError env, got %s", got)
 	}
 	if got := envValue(job, "KUBEBENCH_METRICS_UNAVAILABLE"); got != "" {
 		t.Fatalf("expected metrics to be available, got reason %q", got)
@@ -96,6 +102,12 @@ func TestNewEsrallyRunJobsDisablesMetricsExplicitly(t *testing.T) {
 	}
 	if got := envValue(job, "KUBEBENCH_METRICS_UNAVAILABLE"); got != "kubebench metrics unavailable: spec.metrics is false" {
 		t.Fatalf("expected disabled metrics reason, got %q", got)
+	}
+	if got := envValue(job, "REPORT_FORMAT"); got != benchmarkv1alpha1.DefaultEsrallyReportFormat {
+		t.Fatalf("expected default report format even when metrics disabled, got %s", got)
+	}
+	if got := envValue(job, "REPORT_FILE"); got != benchmarkv1alpha1.DefaultEsrallyReportFile {
+		t.Fatalf("expected default report file even when metrics disabled, got %s", got)
 	}
 }
 

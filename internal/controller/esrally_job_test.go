@@ -7,6 +7,7 @@ import (
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
 	"github.com/apecloud/kubebench/pkg/constants"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 func TestNewEsrallyJobs(t *testing.T) {
@@ -271,6 +272,139 @@ func TestNewEsrallyRunJobsWithTrackPathPVCAndTargetHosts(t *testing.T) {
 	}
 }
 
+func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
+	tests := []struct {
+		name            string
+		mutate          func(*benchmarkv1alpha1.Esrally)
+		wantContainers  int
+		wantEnv         map[string]string
+		wantScriptParts []string
+		wantMetricFile  string
+	}{
+		{
+			name:           "defaults keep csv metrics contract",
+			wantContainers: 2,
+			wantEnv: map[string]string{
+				"TRACK":                         benchmarkv1alpha1.DefaultEsrallyTrack,
+				"ON_ERROR":                      benchmarkv1alpha1.DefaultEsrallyOnError,
+				"REPORT_FORMAT":                 benchmarkv1alpha1.DefaultEsrallyReportFormat,
+				"REPORT_FILE":                   benchmarkv1alpha1.DefaultEsrallyReportFile,
+				"KUBEBENCH_METRICS_UNAVAILABLE": "",
+			},
+			wantScriptParts: []string{"--pipeline=benchmark-only", "--report-format", "--report-file"},
+			wantMetricFile:  benchmarkv1alpha1.DefaultEsrallyReportFile,
+		},
+		{
+			name: "telemetry telemetry params and extra args are wired through",
+			mutate: func(cr *benchmarkv1alpha1.Esrally) {
+				cr.Spec.Telemetry = []string{"node-stats", "disk-usage-stats"}
+				cr.Spec.TelemetryParams = "node-stats-sample-interval:1"
+				cr.Spec.ExtraArgs = []string{"--kill-running-processes", "--enable-driver-profiling"}
+			},
+			wantContainers: 2,
+			wantEnv: map[string]string{
+				"TELEMETRY":        "node-stats,disk-usage-stats",
+				"TELEMETRY_PARAMS": "node-stats-sample-interval:1",
+				"EXTRA_ARGS":       "--kill-running-processes --enable-driver-profiling",
+			},
+			wantScriptParts: []string{"--telemetry", "--telemetry-params", "$EXTRA_ARGS"},
+			wantMetricFile:  benchmarkv1alpha1.DefaultEsrallyReportFile,
+		},
+		{
+			name: "custom shared csv report is passed to workload and exporter",
+			mutate: func(cr *benchmarkv1alpha1.Esrally) {
+				cr.Spec.ReportFile = "/var/log/reports/rally.csv"
+			},
+			wantContainers: 2,
+			wantEnv: map[string]string{
+				"REPORT_FORMAT":                 benchmarkv1alpha1.DefaultEsrallyReportFormat,
+				"REPORT_FILE":                   "/var/log/reports/rally.csv",
+				"KUBEBENCH_METRICS_UNAVAILABLE": "",
+			},
+			wantScriptParts: []string{"Rally CSV report:", `echo "$status" > "/var/log/esrally.exit"`},
+			wantMetricFile:  "/var/log/reports/rally.csv",
+		},
+		{
+			name: "metrics false keeps report defaults but omits exporter",
+			mutate: func(cr *benchmarkv1alpha1.Esrally) {
+				cr.Spec.Metrics = boolPtr(false)
+			},
+			wantContainers: 1,
+			wantEnv: map[string]string{
+				"REPORT_FORMAT":                 benchmarkv1alpha1.DefaultEsrallyReportFormat,
+				"REPORT_FILE":                   benchmarkv1alpha1.DefaultEsrallyReportFile,
+				"KUBEBENCH_METRICS_UNAVAILABLE": "kubebench metrics unavailable: spec.metrics is false",
+			},
+			wantScriptParts: []string{"kubebench metrics unavailable", `echo "$status" > "/var/log/esrally.exit"`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cr := &benchmarkv1alpha1.Esrally{}
+			cr.Name = "rally"
+			cr.Namespace = "default"
+			cr.Spec.Target.Host = "es.default.svc"
+			cr.Spec.Target.Port = 9200
+			if tt.mutate != nil {
+				tt.mutate(cr)
+			}
+
+			job := NewEsrallyRunJobs(cr)[0]
+			if len(job.Spec.Template.Spec.Containers) != tt.wantContainers {
+				t.Fatalf("expected %d containers, got %d", tt.wantContainers, len(job.Spec.Template.Spec.Containers))
+			}
+			for name, want := range tt.wantEnv {
+				if got := envValue(job, name); got != want {
+					t.Fatalf("expected env %s=%q, got %q", name, want, got)
+				}
+			}
+			script := job.Spec.Template.Spec.Containers[0].Args[0]
+			for _, want := range tt.wantScriptParts {
+				if !strings.Contains(script, want) {
+					t.Fatalf("script missing %s:\n%s", want, script)
+				}
+			}
+			if tt.wantMetricFile != "" {
+				if got := metricsContainerArg(job, "-file"); got != tt.wantMetricFile {
+					t.Fatalf("expected exporter file %s, got %s", tt.wantMetricFile, got)
+				}
+				if got := metricsContainerArg(job, "-done-file"); got != esrallyExitFile {
+					t.Fatalf("expected exporter done file %s, got %s", esrallyExitFile, got)
+				}
+			}
+		})
+	}
+}
+
+func TestNewEsrallyRunJobsSharesReportVolumeWithExporter(t *testing.T) {
+	cr := &benchmarkv1alpha1.Esrally{}
+	cr.Name = "rally"
+	cr.Namespace = "default"
+	cr.Spec.Target.Host = "es.default.svc"
+	cr.Spec.Target.Port = 9200
+	cr.Spec.ClientOptions = "use_ssl:false"
+
+	job := NewEsrallyJobs(cr)[0]
+	workload := job.Spec.Template.Spec.Containers[0]
+	metrics := containerByName(job, "metrics")
+	if metrics == nil {
+		t.Fatal("expected metrics container")
+	}
+	if !hasVolumeMount(workload.VolumeMounts, "log", "/var/log") {
+		t.Fatalf("workload missing shared log volume mount: %#v", workload.VolumeMounts)
+	}
+	if !hasVolumeMount(metrics.VolumeMounts, "log", "/var/log") {
+		t.Fatalf("metrics container missing shared log volume mount: %#v", metrics.VolumeMounts)
+	}
+	if job.Labels[constants.KubeBenchNameLabel] != "rally" || job.Spec.Template.Labels[constants.KubeBenchNameLabel] != "rally" {
+		t.Fatalf("expected kubebench name labels on job and pod template: job=%#v template=%#v", job.Labels, job.Spec.Template.Labels)
+	}
+	if job.Labels[constants.KubeBenchTypeLabel] != constants.EsrallyType || job.Spec.Template.Labels[constants.KubeBenchTypeLabel] != constants.EsrallyType {
+		t.Fatalf("expected kubebench type labels on job and pod template: job=%#v template=%#v", job.Labels, job.Spec.Template.Labels)
+	}
+}
+
 func containsAll(values []string, wants []string) bool {
 	seen := make(map[string]bool, len(values))
 	for _, value := range values {
@@ -295,6 +429,24 @@ func envValue(job *batchv1.Job, name string) string {
 		}
 	}
 	return ""
+}
+
+func containerByName(job *batchv1.Job, name string) *corev1.Container {
+	for i := range job.Spec.Template.Spec.Containers {
+		if job.Spec.Template.Spec.Containers[i].Name == name {
+			return &job.Spec.Template.Spec.Containers[i]
+		}
+	}
+	return nil
+}
+
+func hasVolumeMount(mounts []corev1.VolumeMount, name, mountPath string) bool {
+	for _, mount := range mounts {
+		if mount.Name == name && mount.MountPath == mountPath {
+			return true
+		}
+	}
+	return false
 }
 
 func metricsContainerArg(job *batchv1.Job, name string) string {

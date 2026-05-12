@@ -1,7 +1,12 @@
-Metric,Task,Value,Unit
-Min Throughput,index-append,1000,docs/s
-Mean Throughput,index-append,1200.5,docs/s
-Median Latency,default,12.75,ms
-Error rate,default,0,%
-Service Time,default,N/A,ms
-Warnings,default,,count
+Metric,Task,Lap,Value,Unit
+Min Throughput,index-append,1,1000,docs/s
+Mean Throughput,index-append,1,1200.5,docs/s
+Median Throughput,index-append,1,1180.25,docs/s
+Median Latency,default,1,12.75,ms
+90th percentile latency,search,1,25.5,ms
+Error rate,default,1,0,%
+Total Young Gen GC Time,,1,3.4,s
+Disk usage,merge,1,2048,MB
+Service Time,default,1,N/A,ms
+Warnings,default,1,,count
+Processing time,index-append,1,not-a-number,ms

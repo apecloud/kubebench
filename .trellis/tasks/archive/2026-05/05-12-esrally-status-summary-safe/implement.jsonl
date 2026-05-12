@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend task index and quality checklist"}
+{"file": ".trellis/spec/backend/controller-reconcile-guidelines.md", "reason": "Status conditions and log recording conventions"}
+{"file": ".trellis/spec/backend/exporter-metrics-guidelines.md", "reason": "Rally CSV summary parser contract"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Sensitive data and log-volume constraints"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Failed Job status/log behavior"}
+{"file": ".trellis/tasks/05-12-elasticsearch-rally-benchmark/research/rally-integration-notes.md", "reason": "Rally summary report and status summary expectations"}

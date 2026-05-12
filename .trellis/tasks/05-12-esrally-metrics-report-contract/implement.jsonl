@@ -1,6 +1,0 @@
-{"file": ".trellis/spec/backend/index.md", "reason": "Backend task index and quality checklist"}
-{"file": ".trellis/spec/backend/crd-api-guidelines.md", "reason": "API validation/default marker contract"}
-{"file": ".trellis/spec/backend/job-construction-guidelines.md", "reason": "Exporter sidecar and shared log volume conventions"}
-{"file": ".trellis/spec/backend/exporter-metrics-guidelines.md", "reason": "End-of-run CSV report exporter contract"}
-{"file": ".trellis/spec/backend/config-deployment-guidelines.md", "reason": "Generated CRD, Helm, docs, and sample consistency"}
-{"file": ".trellis/tasks/05-12-elasticsearch-rally-benchmark/research/rally-integration-notes.md", "reason": "Rally report format and CSV metrics design"}

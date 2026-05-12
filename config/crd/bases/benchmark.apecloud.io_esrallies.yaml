@@ -167,6 +167,15 @@ spec:
             required:
             - target
             type: object
+            x-kubernetes-validations:
+            - message: metrics require reportFormat csv; set metrics to false to use
+                markdown reports
+              rule: (has(self.metrics) && self.metrics == false) || !has(self.reportFormat)
+                || self.reportFormat == 'csv'
+            - message: metrics require reportFile under /var/log so the exporter can
+                read the shared log volume
+              rule: (has(self.metrics) && self.metrics == false) || !has(self.reportFile)
+                || self.reportFile.startsWith('/var/log/')
           status:
             properties:
               completionTimestamp:

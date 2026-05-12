@@ -70,6 +70,7 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 		{Name: "TELEMETRY_PARAMS", Value: cr.Spec.TelemetryParams},
 		{Name: "REPORT_FORMAT", Value: esrallyReportFormat(cr)},
 		{Name: "REPORT_FILE", Value: esrallyReportFile(cr)},
+		{Name: "KUBEBENCH_METRICS_UNAVAILABLE", Value: esrallyMetricsUnavailableReason(cr)},
 		{Name: "EXTRA_ARGS", Value: strings.Join(cr.Spec.ExtraArgs, " ")},
 	}
 
@@ -158,7 +159,8 @@ func esrallyRunScript(cr *v1alpha1.Esrally) string {
 		`esrally "$@" > /tmp/esrally.out 2>&1`,
 		`status=$?`,
 		`cat /tmp/esrally.out | tee "`+esrallyLogFile+`"`,
-		`if [ -f "$REPORT_FILE" ]; then echo "Rally CSV report:" | tee -a "`+esrallyLogFile+`"; cat "$REPORT_FILE" | tee -a "`+esrallyLogFile+`"; fi`,
+		`if [ -f "$REPORT_FILE" ]; then if [ "$REPORT_FORMAT" = "csv" ]; then echo "Rally CSV report:" | tee -a "`+esrallyLogFile+`"; else echo "Rally $REPORT_FORMAT report (kubebench metrics unavailable):" | tee -a "`+esrallyLogFile+`"; fi; cat "$REPORT_FILE" | tee -a "`+esrallyLogFile+`"; fi`,
+		`if [ -n "$KUBEBENCH_METRICS_UNAVAILABLE" ]; then echo "$KUBEBENCH_METRICS_UNAVAILABLE" | tee -a "`+esrallyLogFile+`"; fi`,
 		`echo "$status" > "`+esrallyExitFile+`"`,
 		`exit "$status"`,
 	)
@@ -194,7 +196,30 @@ func esrallyReportFile(cr *v1alpha1.Esrally) string {
 }
 
 func esrallyMetricsEnabled(cr *v1alpha1.Esrally) bool {
-	return cr.Spec.Metrics || cr.Spec.Metrics == false && cr.Spec.ReportFormat == ""
+	return esrallyMetricsRequested(cr) &&
+		esrallyReportFormat(cr) == defaultEsrallyReportFormat &&
+		esrallyReportFileShared(esrallyReportFile(cr))
+}
+
+func esrallyMetricsRequested(cr *v1alpha1.Esrally) bool {
+	return cr.Spec.Metrics == nil || *cr.Spec.Metrics
+}
+
+func esrallyReportFileShared(reportFile string) bool {
+	return strings.HasPrefix(reportFile, "/var/log/")
+}
+
+func esrallyMetricsUnavailableReason(cr *v1alpha1.Esrally) string {
+	if !esrallyMetricsRequested(cr) {
+		return "kubebench metrics unavailable: spec.metrics is false"
+	}
+	if esrallyReportFormat(cr) != defaultEsrallyReportFormat {
+		return "kubebench metrics unavailable: the exporter only supports reportFormat csv"
+	}
+	if !esrallyReportFileShared(esrallyReportFile(cr)) {
+		return "kubebench metrics unavailable: reportFile must be under /var/log for the exporter shared volume"
+	}
+	return ""
 }
 
 func esrallyTargetHosts(cr *v1alpha1.Esrally) string {

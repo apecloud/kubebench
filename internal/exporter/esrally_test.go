@@ -45,3 +45,37 @@ func TestSummarizeEsrallyCSV(t *testing.T) {
 		t.Fatalf("summary should not include unavailable values: %s", summary)
 	}
 }
+
+func TestSummarizeEsrallyCSVKeepsMetricsUnavailableReason(t *testing.T) {
+	msg, err := os.ReadFile("testdata/esrally.csv")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	summary := SummarizeEsrallyCSV("Rally CSV report:\n"+string(msg)+"\nkubebench metrics unavailable: spec.metrics is false\n", 1)
+	if !strings.Contains(summary, "Min Throughput [index-append]: 1000 docs/s") {
+		t.Fatalf("summary missing throughput: %s", summary)
+	}
+	if !strings.Contains(summary, "kubebench metrics unavailable: spec.metrics is false") {
+		t.Fatalf("summary missing metrics unavailable reason: %s", summary)
+	}
+}
+
+func TestParseEsrallyCSVIgnoresMarkdownReport(t *testing.T) {
+	msg := `Rally markdown report (kubebench metrics unavailable):
+
+|   Metric |   Task |   Value |   Unit |
+|---------:|-------:|--------:|-------:|
+|      Min Throughput | index-append | 1000 | docs/s |
+kubebench metrics unavailable: the exporter only supports reportFormat csv`
+
+	result := ParseEsrallyCSV(msg)
+	if len(result) != 0 {
+		t.Fatalf("expected markdown report to produce no CSV metrics, got %#v", result)
+	}
+
+	summary := SummarizeEsrallyCSV(msg, 2)
+	if !strings.Contains(summary, "kubebench metrics unavailable") {
+		t.Fatalf("summary should keep explicit metrics unavailable message: %s", summary)
+	}
+}

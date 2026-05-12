@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	EsrallyMetricValueName = "kubebench_esrally_metric_value"
-	EsrallyMetricValueHelp = "Numeric Elastic Rally summary report value"
+	EsrallyMetricValueName   = "kubebench_esrally_metric_value"
+	EsrallyMetricValueHelp   = "Numeric Elastic Rally summary report value"
+	esrallyUnavailablePrefix = "kubebench metrics unavailable:"
 )
 
 var (
@@ -134,7 +135,19 @@ func SummarizeEsrallyCSV(msg string, limit int) string {
 		}
 		lines = append(lines, fmt.Sprintf("%s: %s", label, value))
 	}
+	lines = append(lines, esrallyMetricsUnavailableMessages(msg)...)
 	return strings.Join(lines, "\n")
+}
+
+func esrallyMetricsUnavailableMessages(msg string) []string {
+	messages := make([]string, 0)
+	for _, line := range strings.Split(msg, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, esrallyUnavailablePrefix) {
+			messages = append(messages, line)
+		}
+	}
+	return messages
 }
 
 func ScrapeEsrally(file, doneFile, benchName, jobName string) {

@@ -148,6 +148,11 @@ func (in *EsrallySpec) DeepCopyInto(out *EsrallySpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.Metrics != nil {
+		in, out := &in.Metrics, &out.Metrics
+		*out = new(bool)
+		**out = **in
+	}
 	in.BenchCommon.DeepCopyInto(&out.BenchCommon)
 }
 

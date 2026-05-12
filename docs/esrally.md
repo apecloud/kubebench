@@ -55,9 +55,9 @@ A track is the workload definition. It can come from Rally's default track repos
 | `testMode` | Adds Rally `--test-mode`. |
 | `telemetry` | Rally telemetry devices such as `node-stats` or `disk-usage-stats`. |
 | `telemetryParams` | Raw Rally telemetry params. |
-| `reportFormat` | `csv` or `markdown`. Defaults to `csv`; metrics require CSV. |
-| `reportFile` | Report path. Keep it under `/var/log` when metrics are enabled. |
-| `metrics` | Enables the exporter sidecar. Defaults to true. |
+| `reportFormat` | `csv` or `markdown`. Defaults to `csv`; `metrics: true` requires `csv`. |
+| `reportFile` | Report path. Defaults to `/var/log/esrally-report.csv`; `metrics: true` requires a path under `/var/log`. |
+| `metrics` | Enables the exporter sidecar. Defaults to true. Set to false for markdown reports or report files outside `/var/log`. |
 | `rallyHomePVCClaimName` | Existing PVC mounted at `/rally/.rally`; otherwise an `emptyDir` is used. |
 
 ## Auth And TLS
@@ -123,6 +123,17 @@ kubebench_esrally_metric_value{benchmark,name,metric,task,unit}
 
 Empty, unavailable, and non-numeric CSV values are ignored. Metric labels come from Rally's summary report fields and do not include raw logs or client options.
 
+Supported reporting combinations:
+
+| `metrics` | `reportFormat` | `reportFile` | Job behavior |
+|-----------|----------------|--------------|--------------|
+| omitted or `true` | omitted or `csv` | omitted or under `/var/log/` | Starts the exporter and reads the CSV report from the shared log volume. |
+| omitted or `true` | `markdown` | any path | Rejected by CRD validation. If validation is bypassed, the Job skips the exporter and writes a metrics-unavailable reason to the run log/status. |
+| omitted or `true` | `csv` | outside `/var/log/` | Rejected by CRD validation. If validation is bypassed, the Job skips the exporter and writes a metrics-unavailable reason to the run log/status. |
+| `false` | `csv` or `markdown` | any path Rally can write | Runs without the exporter. CSV reports may still be summarized in status, but Prometheus metrics are unavailable by request. |
+
+Use the default `reportFile` or another `/var/log/*.csv` path when Prometheus metrics are required. The workload container and exporter share only the `/var/log` volume, so a CSV written elsewhere cannot be read by the exporter.
+
 ## Troubleshooting
 
 If a basic HTTP target is unreachable, inspect the precheck Job logs first. It calls `tools elasticsearch ping` against `/_cluster/health`.
@@ -130,6 +141,8 @@ If a basic HTTP target is unreachable, inspect the precheck Job logs first. It c
 If auth, TLS, `targetHosts`, or other Rally client behavior fails, check Rally's run Job logs and `clientOptions` quoting. YAML quoting matters for values containing commas, quotes, or colons.
 
 If the report file is missing, keep `reportFormat: csv`, keep `reportFile` under `/var/log`, and verify Rally completed successfully.
+
+If the Job log or status says `kubebench metrics unavailable`, check whether `metrics` is false, `reportFormat` is not `csv`, or `reportFile` is outside `/var/log`.
 
 If `offline` fails with missing corpora or tracks, preload `/rally/.rally` through a PVC or custom image.
 

@@ -61,7 +61,21 @@ func TestSummarizeEsrallyCSVKeepsMetricsUnavailableReason(t *testing.T) {
 	}
 }
 
-func TestParseEsrallyCSVIgnoresMarkdownReport(t *testing.T) {
+func TestSummarizeEsrallyCSVMissingReportReturnsBoundedMessage(t *testing.T) {
+	msg := `race id: 123
+clientOptions=basic_auth_password:'super-secret',api_key:'abc123'
+benchmark completed without shared csv report`
+
+	summary := SummarizeEsrallyCSV(msg, 2)
+	if !strings.Contains(summary, "No numeric Rally CSV summary was found.") {
+		t.Fatalf("summary should explain the missing csv summary: %s", summary)
+	}
+	if strings.Contains(summary, "super-secret") || strings.Contains(summary, "abc123") {
+		t.Fatalf("summary should not leak credential-like values: %s", summary)
+	}
+}
+
+func TestSummarizeEsrallyCSVIgnoresMarkdownReport(t *testing.T) {
 	msg := `Rally markdown report (kubebench metrics unavailable):
 
 |   Metric |   Task |   Value |   Unit |
@@ -75,7 +89,41 @@ kubebench metrics unavailable: the exporter only supports reportFormat csv`
 	}
 
 	summary := SummarizeEsrallyCSV(msg, 2)
-	if !strings.Contains(summary, "kubebench metrics unavailable") {
+	if !strings.Contains(summary, "No numeric Rally CSV summary was found.") {
+		t.Fatalf("summary should explain the unsupported report summary: %s", summary)
+	}
+	if !strings.Contains(summary, "kubebench metrics unavailable: the exporter only supports reportFormat csv") {
 		t.Fatalf("summary should keep explicit metrics unavailable message: %s", summary)
+	}
+}
+
+func TestSummarizeEsrallyCSVUnparsableCSVReturnsBoundedMessage(t *testing.T) {
+	msg := `Rally CSV report:
+Metric,Task,Value,Unit
+Mean Throughput,index-append,not-a-number,docs/s
+Error rate,default,NaN?,"%"`
+
+	summary := SummarizeEsrallyCSV(msg, 2)
+	if !strings.Contains(summary, "No numeric Rally CSV summary was found.") {
+		t.Fatalf("summary should explain the unparsable csv summary: %s", summary)
+	}
+	if strings.Contains(summary, "not-a-number") {
+		t.Fatalf("summary should not echo unparsable csv values: %s", summary)
+	}
+}
+
+func TestSummarizeEsrallyCSVOnlyKeepsKnownSafeUnavailableReasons(t *testing.T) {
+	msg := `Rally CSV report:
+Metric,Task,Value,Unit
+Warnings,default,,count
+kubebench metrics unavailable: reportFile must be under /var/log for the exporter shared volume
+kubebench metrics unavailable: clientOptions basic_auth_password:'super-secret'`
+
+	summary := SummarizeEsrallyCSV(msg, 2)
+	if !strings.Contains(summary, "reportFile must be under /var/log for the exporter shared volume") {
+		t.Fatalf("summary should keep the known-safe metrics unavailable reason: %s", summary)
+	}
+	if strings.Contains(summary, "super-secret") {
+		t.Fatalf("summary should not keep unknown credential-bearing lines: %s", summary)
 	}
 }

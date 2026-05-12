@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ const (
 	EsrallyMetricValueName   = "kubebench_esrally_metric_value"
 	EsrallyMetricValueHelp   = "Numeric Elastic Rally summary report value"
 	esrallyUnavailablePrefix = "kubebench metrics unavailable:"
+	esrallySummaryFallback   = "No numeric Rally CSV summary was found. Inspect the Esrally pod logs and configured report file for full output."
 )
 
 var (
@@ -111,14 +113,22 @@ func extractEsrallyCSV(msg string) string {
 	if idx := strings.Index(msg, marker); idx >= 0 {
 		return msg[idx+len(marker):]
 	}
-	return msg
+
+	lines := strings.Split(msg, "\n")
+	for i, line := range lines {
+		if isEsrallyCSVHeader(line) {
+			return strings.Join(lines[i:], "\n")
+		}
+	}
+	return ""
 }
 
 func SummarizeEsrallyCSV(msg string, limit int) string {
 	metrics := ParseEsrallyCSV(msg)
 	if len(metrics) == 0 {
-		return strings.TrimSpace(msg)
+		return strings.Join(append([]string{esrallySummaryFallback}, esrallyMetricsUnavailableMessages(msg)...), "\n")
 	}
+	metrics = prioritizeEsrallyMetrics(metrics)
 	if limit <= 0 || limit > len(metrics) {
 		limit = len(metrics)
 	}
@@ -143,11 +153,71 @@ func esrallyMetricsUnavailableMessages(msg string) []string {
 	messages := make([]string, 0)
 	for _, line := range strings.Split(msg, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, esrallyUnavailablePrefix) {
+		if isKnownEsrallyUnavailableMessage(line) {
 			messages = append(messages, line)
 		}
 	}
 	return messages
+}
+
+func isEsrallyCSVHeader(line string) bool {
+	fields := strings.Split(strings.TrimSpace(line), ",")
+	if len(fields) < 3 {
+		return false
+	}
+
+	hasMetric := false
+	hasValue := false
+	for _, field := range fields {
+		switch strings.ToLower(strings.TrimSpace(field)) {
+		case "metric":
+			hasMetric = true
+		case "value":
+			hasValue = true
+		}
+	}
+	return hasMetric && hasValue
+}
+
+func prioritizeEsrallyMetrics(metrics []EsrallyMetric) []EsrallyMetric {
+	prioritized := append([]EsrallyMetric(nil), metrics...)
+	sort.SliceStable(prioritized, func(i, j int) bool {
+		return esrallyMetricPriority(prioritized[i]) < esrallyMetricPriority(prioritized[j])
+	})
+	return prioritized
+}
+
+func esrallyMetricPriority(metric EsrallyMetric) int {
+	name := strings.ToLower(metric.Metric)
+	switch {
+	case strings.Contains(name, "throughput"):
+		return 0
+	case strings.Contains(name, "latency"):
+		return 1
+	case strings.Contains(name, "service time"):
+		return 2
+	case strings.Contains(name, "processing time"):
+		return 3
+	case strings.Contains(name, "error rate"):
+		return 4
+	default:
+		return 5
+	}
+}
+
+func isKnownEsrallyUnavailableMessage(line string) bool {
+	if !strings.HasPrefix(line, esrallyUnavailablePrefix) {
+		return false
+	}
+
+	switch line {
+	case "kubebench metrics unavailable: spec.metrics is false",
+		"kubebench metrics unavailable: the exporter only supports reportFormat csv",
+		"kubebench metrics unavailable: reportFile must be under /var/log for the exporter shared volume":
+		return true
+	default:
+		return false
+	}
 }
 
 func ScrapeEsrally(file, doneFile, benchName, jobName string) {

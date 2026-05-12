@@ -30,6 +30,9 @@ func TestNewEsrallyJobs(t *testing.T) {
 	if jobs[0].Name != "rally-precheck" {
 		t.Fatalf("expected precheck first, got %s", jobs[0].Name)
 	}
+	if got := jobs[0].Spec.Template.Spec.Containers[0].Args; !containsAll(got, []string{"elasticsearch", "ping", "--host", "es.default.svc", "--port", "9200", "--user", "elastic", "--password", "secret"}) {
+		t.Fatalf("unexpected precheck args: %#v", got)
+	}
 	if jobs[1].Name != "rally-run" {
 		t.Fatalf("expected run job second, got %s", jobs[1].Name)
 	}
@@ -48,6 +51,46 @@ func TestNewEsrallyJobs(t *testing.T) {
 	}
 	if got := esrallyClientOptions(cr); !strings.Contains(got, "basic_auth_user:'elastic'") || !strings.Contains(got, "basic_auth_password:'secret'") {
 		t.Fatalf("unexpected synthesized client options: %s", got)
+	}
+}
+
+func TestNewEsrallyJobsSkipsPrecheckForAdvancedRallyClientOptions(t *testing.T) {
+	cr := &benchmarkv1alpha1.Esrally{}
+	cr.Name = "rally"
+	cr.Namespace = "default"
+	cr.Spec.Target.Host = "es.default.svc"
+	cr.Spec.Target.Port = 9200
+	cr.Spec.ClientOptions = "use_ssl:true,verify_certs:false,api_key:'secret'"
+
+	jobs := NewEsrallyJobs(cr)
+	if len(jobs) != 1 {
+		t.Fatalf("expected only run job, got %d", len(jobs))
+	}
+	if jobs[0].Name != "rally-run" {
+		t.Fatalf("expected run job, got %s", jobs[0].Name)
+	}
+	if got := esrallyClientOptions(cr); got != cr.Spec.ClientOptions {
+		t.Fatalf("expected explicit client options to pass through")
+	}
+}
+
+func TestNewEsrallyJobsSkipsPrecheckForTargetHosts(t *testing.T) {
+	cr := &benchmarkv1alpha1.Esrally{}
+	cr.Name = "rally"
+	cr.Namespace = "default"
+	cr.Spec.Target.Host = "ignored"
+	cr.Spec.Target.Port = 9200
+	cr.Spec.TargetHosts = []string{"es-0:9200", "es-1:9200/prefix"}
+
+	jobs := NewEsrallyJobs(cr)
+	if len(jobs) != 1 {
+		t.Fatalf("expected only run job, got %d", len(jobs))
+	}
+	if jobs[0].Name != "rally-run" {
+		t.Fatalf("expected run job, got %s", jobs[0].Name)
+	}
+	if got := esrallyTargetHosts(cr); got != "es-0:9200,es-1:9200/prefix" {
+		t.Fatalf("unexpected target hosts: %s", got)
 	}
 }
 
@@ -77,4 +120,17 @@ func TestNewEsrallyRunJobsWithTrackPathPVCAndTargetHosts(t *testing.T) {
 			t.Fatalf("script missing %s:\n%s", want, script)
 		}
 	}
+}
+
+func containsAll(values []string, wants []string) bool {
+	seen := make(map[string]bool, len(values))
+	for _, value := range values {
+		seen[value] = true
+	}
+	for _, want := range wants {
+		if !seen[want] {
+			return false
+		}
+	}
+	return true
 }

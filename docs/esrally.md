@@ -22,7 +22,7 @@ spec:
   metrics: true
 ```
 
-The controller creates an Elasticsearch precheck Job first, then one Rally run Job. The run container executes the equivalent of:
+For basic `spec.target.host:port` HTTP targets, the controller creates an Elasticsearch precheck Job first, then one Rally run Job. The run container executes the equivalent of:
 
 ```sh
 esrally race --pipeline=benchmark-only --target-hosts=<host:port> --track=<track> --report-format=csv --report-file=/var/log/esrally-report.csv
@@ -73,7 +73,9 @@ spec:
   clientOptions: "use_ssl:true,verify_certs:false,basic_auth_user:'elastic',basic_auth_password:'secret'"
 ```
 
-The precheck uses the target host, port, user, and password over HTTP. Advanced TLS and Rally-specific client options are verified by Rally itself to avoid duplicating Rally's parser in the tools binary.
+The precheck contract is intentionally narrow. When `clientOptions` is empty and `targetHosts` is not set, kubebench runs `tools elasticsearch ping` against `spec.target.host:spec.target.port` over HTTP with optional basic auth from `spec.target.user/password`.
+
+When `clientOptions` or `targetHosts` is set, kubebench skips the precheck and lets Rally validate the target during the run Job. Those fields can represent TLS, API keys, certificate paths, URL prefixes, proxies, and multi-host routing, and kubebench does not parse or log the raw Rally client options.
 
 ## Tracks And Tasks
 
@@ -123,9 +125,9 @@ Empty, unavailable, and non-numeric CSV values are ignored. Metric labels come f
 
 ## Troubleshooting
 
-If the target is unreachable, inspect the precheck Job logs first. It calls `tools elasticsearch ping` against `/_cluster/health`.
+If a basic HTTP target is unreachable, inspect the precheck Job logs first. It calls `tools elasticsearch ping` against `/_cluster/health`.
 
-If auth or TLS fails, check Rally's run Job logs and `clientOptions` quoting. YAML quoting matters for values containing commas, quotes, or colons.
+If auth, TLS, `targetHosts`, or other Rally client behavior fails, check Rally's run Job logs and `clientOptions` quoting. YAML quoting matters for values containing commas, quotes, or colons.
 
 If the report file is missing, keep `reportFormat: csv`, keep `reportFile` under `/var/log`, and verify Rally completed successfully.
 

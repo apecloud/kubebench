@@ -26,7 +26,7 @@ const (
 func NewEsrallyJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
-	if job := utils.NewPreCheckJob(cr.Name, cr.Namespace, constants.ElasticsearchDriver, &cr.Spec.Target); job != nil {
+	if job := newEsrallyPreCheckJob(cr); job != nil {
 		jobs = append(jobs, job)
 	}
 
@@ -42,6 +42,13 @@ func NewEsrallyJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 	utils.AddResourceRequestsToJobs(jobs, cr.Spec.ResourceRequests)
 
 	return jobs
+}
+
+func newEsrallyPreCheckJob(cr *v1alpha1.Esrally) *batchv1.Job {
+	if cr.Spec.ClientOptions != "" || len(cr.Spec.TargetHosts) > 0 {
+		return nil
+	}
+	return utils.NewPreCheckJob(cr.Name, cr.Namespace, constants.ElasticsearchDriver, &cr.Spec.Target)
 }
 
 func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {

@@ -50,7 +50,7 @@ type ResourceList struct {
 type Target struct {
 	// the driver represents the database type
 	// +optional
-	// +kubebuilder:validation:Enum={mysql,postgresql,mongodb,redis,oceanbase-oracle,dameng,minio,tidb,mssql}
+	// +kubebuilder:validation:Enum={mysql,postgresql,mongodb,redis,oceanbase-oracle,dameng,minio,tidb,mssql,elasticsearch}
 	Driver string `json:"driver,omitempty"`
 
 	// The database server's host name

@@ -29,6 +29,7 @@ helm uninstall kubebench
 | [TPCH](docs/tpch.md)               | OLAP Performance    | Supported |
 | [YCSB](docs/ycsb.md)               | Database Performance | Supported |
 | [Redis Benchmark](docs/redisbench) | Database Performance | Supported |
+| [Esrally](docs/esrally.md)         | Elasticsearch Performance | Supported |
 | ClickBench                         | Database Performance | Planned   |
 
 ## License

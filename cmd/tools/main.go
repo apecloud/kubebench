@@ -13,6 +13,7 @@ func main() {
 	rootCmd.AddCommand(tools.NewMySQLCmd())
 	rootCmd.AddCommand(tools.NewPostgreSQLCmd())
 	rootCmd.AddCommand(tools.NewRedisCmd())
+	rootCmd.AddCommand(tools.NewElasticsearchCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)

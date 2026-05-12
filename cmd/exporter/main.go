@@ -15,6 +15,7 @@ var (
 	benchName string
 	jobName   string
 	file      string
+	doneFile  string
 )
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 	flag.StringVar(&file, "file", "", "log file")
 	flag.StringVar(&benchName, "bench", "", "benchmark name")
 	flag.StringVar(&jobName, "job", "", "job name")
+	flag.StringVar(&doneFile, "done-file", "", "optional marker file that tells the exporter to stop waiting")
 	flag.Parse()
 
 	quit := make(chan struct{}, 1)
@@ -34,7 +36,7 @@ func main() {
 
 	exporter.InitMetrics()
 	exporter.Register()
-	exporter.Scrape(benchType, file, benchName, jobName, quit)
+	exporter.Scrape(benchType, file, benchName, jobName, doneFile, quit)
 
 	// get signal, exit
 	<-quit

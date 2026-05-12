@@ -144,6 +144,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Redisbench")
 		os.Exit(1)
 	}
+	if err = (&controller.EsrallyReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		RestConfig: mgr.GetConfig(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Esrally")
+		os.Exit(1)
+	}
 	if err = (&controller.TpcdsReconciler{
 		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),

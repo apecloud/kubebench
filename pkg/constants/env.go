@@ -15,6 +15,7 @@ const (
 	KubebenchEnvYcsb       = "KUBEBENCH_YCSB_IMAGE"
 	KubebenchEnvFio        = "KUBEBENCH_FIO_IMAGE"
 	KubebenchEnvRedisBench = "KUBEBENCH_REDISBENCH_IMAGE"
+	KubebenchEnvEsrally    = "KUBEBENCH_ESRALLY_IMAGE"
 	KubebenchExporter      = "KUBEBENCH_EXPORTER_IMAGE"
 	KubebenchTools         = "KUBEBENCH_TOOLS_IMAGE"
 )
@@ -32,6 +33,7 @@ func init() {
 	viper.SetDefault(KubebenchEnvYcsb, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/go-ycsb:latest")
 	viper.SetDefault(KubebenchEnvFio, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/fio:latest")
 	viper.SetDefault(KubebenchEnvRedisBench, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/redis:7.0.5")
+	viper.SetDefault(KubebenchEnvEsrally, "elastic/rally:2.12.0")
 	viper.SetDefault(KubebenchExporter, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
 	viper.SetDefault(KubebenchTools, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.10")
 	viper.SetDefault(CfgKeyCtrlrMgrTolerations, os.Getenv(CfgKeyCtrlrMgrTolerations))

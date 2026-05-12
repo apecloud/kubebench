@@ -13,6 +13,7 @@ const (
 	PgbenchType    = "pgbench"
 	SysbenchType   = "sysbench"
 	RedisBenchType = "redisbench"
+	EsrallyType    = "esrally"
 	TpccType       = "tpcc"
 	TpcdsType      = "tpcds"
 	TpchType       = "tpch"
@@ -30,6 +31,7 @@ const (
 	MinioDriver                 = "minio"
 	TidbDriver                  = "tidb"
 	MssqlDriver                 = "mssql"
+	ElasticsearchDriver         = "elasticsearch"
 )
 
 const (

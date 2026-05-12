@@ -9,10 +9,11 @@ import (
 const (
 	Sysbench = "sysbench"
 	Pgbench  = "pgbench"
+	Esrally  = "esrally"
 )
 
 // Scrape is a function to scrape benchmark result from log.
-func Scrape(benchType, file, benchName, jobName string, ch chan struct{}) {
+func Scrape(benchType, file, benchName, jobName, doneFile string, ch chan struct{}) {
 	defer func() {
 		// notify the channel
 		ch <- struct{}{}
@@ -25,6 +26,9 @@ func Scrape(benchType, file, benchName, jobName string, ch chan struct{}) {
 	case Sysbench:
 		klog.Info("scrape sysbench result")
 		ScrapeSysbench(file, benchName, jobName)
+	case Esrally:
+		klog.Info("scrape esrally result")
+		ScrapeEsrally(file, doneFile, benchName, jobName)
 	default:
 		fmt.Printf("not support benchmark type: %s\n", benchType)
 	}

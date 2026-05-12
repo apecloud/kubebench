@@ -5,227 +5,6 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - batch
-  resources:
-  - jobs
-  verbs:
-  - create
-  - delete
-  - deletecollection
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - fios
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - fios/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - fios/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - pgbenches
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - pgbenches/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - pgbenches/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - redisbenches
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - redisbenches/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - redisbenches/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - sysbenches
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - sysbenches/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - sysbenches/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpccs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpccs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpccs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpcds
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpcds/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpcds/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpches
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpches/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - tpches/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - ycsbs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - ycsbs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - benchmark.apecloud.io
-  resources:
-  - ycsbs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
   - ""
   resources:
   - pods
@@ -241,3 +20,66 @@ rules:
   verbs:
   - get
   - list
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - esrallies
+  - fios
+  - pgbenches
+  - redisbenches
+  - sysbenches
+  - tpccs
+  - tpcds
+  - tpches
+  - ycsbs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - esrallies/finalizers
+  - fios/finalizers
+  - pgbenches/finalizers
+  - redisbenches/finalizers
+  - sysbenches/finalizers
+  - tpccs/finalizers
+  - tpcds/finalizers
+  - tpches/finalizers
+  - ycsbs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - esrallies/status
+  - fios/status
+  - pgbenches/status
+  - redisbenches/status
+  - sysbenches/status
+  - tpccs/status
+  - tpcds/status
+  - tpches/status
+  - ycsbs/status
+  verbs:
+  - get
+  - patch
+  - update

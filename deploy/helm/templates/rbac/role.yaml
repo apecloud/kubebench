@@ -20,6 +20,32 @@ rules:
 - apiGroups:
   - benchmark.apecloud.io
   resources:
+  - esrallies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - esrallies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
+  - esrallies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - benchmark.apecloud.io
+  resources:
   - fios
   verbs:
   - create

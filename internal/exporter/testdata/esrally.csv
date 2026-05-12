@@ -1,0 +1,7 @@
+Metric,Task,Value,Unit
+Min Throughput,index-append,1000,docs/s
+Mean Throughput,index-append,1200.5,docs/s
+Median Latency,default,12.75,ms
+Error rate,default,0,%
+Service Time,default,N/A,ms
+Warnings,default,,count

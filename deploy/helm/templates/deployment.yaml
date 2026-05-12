@@ -51,6 +51,8 @@ spec:
               value: "{{ .Values.kubebenchImages.fio }}"
             - name: KUBEBENCH_REDISBENCH_IMAGE
               value: "{{ .Values.kubebenchImages.redisbench }}"
+            - name: KUBEBENCH_ESRALLY_IMAGE
+              value: "{{ .Values.kubebenchImages.esrally }}"
             - name: KUBEBENCH_EXPORTER_IMAGE
               value: "{{ .Values.kubebenchImages.exporter }}"
             - name: KUBEBENCH_TOOLS_IMAGE

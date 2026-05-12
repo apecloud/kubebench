@@ -1,4 +1,0 @@
-{"file": ".trellis/spec/backend/index.md", "reason": "Backend quality checklist"}
-{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verify test coverage and required checks"}
-{"file": ".trellis/spec/backend/job-construction-guidelines.md", "reason": "Verify Job builder coverage"}
-{"file": ".trellis/spec/backend/exporter-metrics-guidelines.md", "reason": "Verify exporter parser coverage"}

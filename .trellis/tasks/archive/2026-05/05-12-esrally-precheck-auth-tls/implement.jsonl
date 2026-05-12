@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend task index and quality checklist"}
+{"file": ".trellis/spec/backend/job-construction-guidelines.md", "reason": "Precheck jobs and benchmark job conventions"}
+{"file": ".trellis/spec/backend/cli-tools-guidelines.md", "reason": "Tools binary and precheck CLI contract"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Job failure and CLI error behavior"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Sensitive data logging constraints"}
+{"file": ".trellis/tasks/05-12-elasticsearch-rally-benchmark/research/rally-integration-notes.md", "reason": "Rally auth/TLS/clientOptions and precheck boundary research"}

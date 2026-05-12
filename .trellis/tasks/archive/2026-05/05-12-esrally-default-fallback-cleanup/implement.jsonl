@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend task index and quality checklist"}
+{"file": ".trellis/spec/backend/crd-api-guidelines.md", "reason": "CRD defaulting and API marker contract"}
+{"file": ".trellis/spec/backend/job-construction-guidelines.md", "reason": "Job builder default helper behavior"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Testing and generated output discipline"}
+{"file": ".trellis/tasks/05-12-elasticsearch-rally-benchmark/research/rally-integration-notes.md", "reason": "Original Esrally production defaults and design intent"}

@@ -42,6 +42,16 @@ spec:
                 type: string
               clientOptions:
                 type: string
+              dataProfile:
+                default: logs
+                enum:
+                - logs
+                - metrics
+                type: string
+              documentCount:
+                default: 10000
+                minimum: 1
+                type: integer
               extraArgs:
                 items:
                   type: string
@@ -50,8 +60,6 @@ spec:
                 items:
                   type: string
                 type: array
-              offline:
-                type: boolean
               onError:
                 default: abort
                 enum:
@@ -139,16 +147,11 @@ spec:
                       type: string
                   type: object
                 type: array
-              track:
-                default: geonames
-                type: string
               trackParams:
                 additionalProperties:
                   type: string
                 type: object
               trackPath:
-                type: string
-              trackRepository:
                 type: string
             required:
             - target

@@ -9,9 +9,13 @@ metadata:
     app.kubernetes.io/created-by: kubebench
   name: esrally-sample
 spec:
+  step: all
   target:
     driver: elasticsearch
     host: elasticsearch.default.svc
     port: 9200
-  track: geonames
-  challenge: append-no-conflicts
+    database: kubebench-logs
+  dataProfile: logs
+  documentCount: 10000
+  trackPath: /tracks/kubebench-generated
+  challenge: search

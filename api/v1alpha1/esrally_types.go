@@ -20,18 +20,9 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // EsrallySpec defines the desired state of Esrally.
 type EsrallySpec struct {
-	// track is the Rally track name to run from the configured track repository.
-	// It is ignored when trackPath is set.
-	// +kubebuilder:default=geonames
-	// +optional
-	Track string `json:"track,omitempty"`
-
-	// trackRepository is the Rally track repository name.
-	// +optional
-	TrackRepository string `json:"trackRepository,omitempty"`
-
 	// trackPath is a local file or directory path inside the Rally container.
-	// When set, Rally uses --track-path instead of --track.
+	// ESRally only supports generated datasets, so run steps require a local
+	// no-corpora track and never use Rally's remote track repository.
 	// +optional
 	TrackPath string `json:"trackPath,omitempty"`
 
@@ -62,10 +53,6 @@ type EsrallySpec struct {
 	// +optional
 	OnError string `json:"onError,omitempty"`
 
-	// offline runs Rally without updating remote repositories or downloading data.
-	// +optional
-	Offline bool `json:"offline,omitempty"`
-
 	// testMode enables Rally test mode for smoke checks. Results are not valid benchmark numbers.
 	// +optional
 	TestMode bool `json:"testMode,omitempty"`
@@ -77,6 +64,18 @@ type EsrallySpec struct {
 	// telemetryParams is passed to Rally --telemetry-params.
 	// +optional
 	TelemetryParams string `json:"telemetryParams,omitempty"`
+
+	// dataProfile selects the generated dataset shape for the prepare step.
+	// +kubebuilder:validation:Enum={logs,metrics}
+	// +kubebuilder:default=logs
+	// +optional
+	DataProfile string `json:"dataProfile,omitempty"`
+
+	// documentCount is the number of documents generated during the prepare step.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=10000
+	// +optional
+	DocumentCount int `json:"documentCount,omitempty"`
 
 	BenchCommon `json:",inline"`
 }

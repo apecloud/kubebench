@@ -40,3 +40,8 @@ const (
 	RunStep     = "run"
 	AllStep     = "all"
 )
+
+const (
+	EsrallyDataProfileLogs    = "logs"
+	EsrallyDataProfileMetrics = "metrics"
+)

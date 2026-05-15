@@ -15,6 +15,3 @@ spec:
     port: 9200
   track: geonames
   challenge: append-no-conflicts
-  reportFormat: csv
-  reportFile: /var/log/esrally-report.csv
-  metrics: true

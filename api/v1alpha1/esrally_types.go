@@ -19,8 +19,6 @@ package v1alpha1
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // EsrallySpec defines the desired state of Esrally.
-// +kubebuilder:validation:XValidation:rule="(has(self.metrics) && self.metrics == false) || !has(self.reportFormat) || self.reportFormat == 'csv'",message="metrics require reportFormat csv; set metrics to false to use markdown reports"
-// +kubebuilder:validation:XValidation:rule="(has(self.metrics) && self.metrics == false) || !has(self.reportFile) || self.reportFile.startsWith('/var/log/')",message="metrics require reportFile under /var/log so the exporter can read the shared log volume"
 type EsrallySpec struct {
 	// track is the Rally track name to run from the configured track repository.
 	// It is ignored when trackPath is set.
@@ -79,23 +77,6 @@ type EsrallySpec struct {
 	// telemetryParams is passed to Rally --telemetry-params.
 	// +optional
 	TelemetryParams string `json:"telemetryParams,omitempty"`
-
-	// reportFormat is the Rally summary report format.
-	// +kubebuilder:validation:Enum={csv,markdown}
-	// +kubebuilder:default=csv
-	// +optional
-	ReportFormat string `json:"reportFormat,omitempty"`
-
-	// reportFile is the Rally summary report path. Metrics require this path under /var/log.
-	// +kubebuilder:default=/var/log/esrally-report.csv
-	// +optional
-	ReportFile string `json:"reportFile,omitempty"`
-
-	// metrics enables the kubebench exporter sidecar for Rally CSV report metrics.
-	// When true, reportFormat must be csv and reportFile must be under /var/log.
-	// +kubebuilder:default=true
-	// +optional
-	Metrics *bool `json:"metrics,omitempty"`
 
 	// rallyHomePVCClaimName mounts an existing PVC at /rally/.rally for track data and Rally metadata reuse.
 	// If empty, a writable emptyDir is used.

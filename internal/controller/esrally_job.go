@@ -14,9 +14,13 @@ import (
 )
 
 const (
-	esrallyLogFile       = "/var/log/esrally.log"
-	esrallyExitFile      = "/var/log/esrally.exit"
-	esrallyHomeMountPath = "/rally/.rally"
+	esrallyLogFile        = "/var/log/esrally.log"
+	esrallyExitFile       = "/var/log/esrally.exit"
+	esrallyHomeMountPath  = "/rally/.rally"
+	esrallyDefaultTrack   = "geonames"
+	esrallyDefaultOnError = "abort"
+	esrallyReportFormat   = "csv"
+	esrallyReportFile     = "/var/log/esrally-report.csv"
 )
 
 func NewEsrallyJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
@@ -54,19 +58,18 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 
 	env := []corev1.EnvVar{
 		{Name: "TARGET_HOSTS", Value: esrallyTargetHosts(cr)},
-		{Name: "TRACK", Value: cr.Spec.EffectiveTrack()},
+		{Name: "TRACK", Value: esrallyTrack(cr)},
 		{Name: "TRACK_REPOSITORY", Value: cr.Spec.TrackRepository},
 		{Name: "TRACK_PATH", Value: cr.Spec.TrackPath},
 		{Name: "CHALLENGE", Value: cr.Spec.Challenge},
 		{Name: "INCLUDE_TASKS", Value: strings.Join(cr.Spec.IncludeTasks, ",")},
 		{Name: "TRACK_PARAMS", Value: esrallyTrackParams(cr.Spec.TrackParams)},
-		{Name: "CLIENT_OPTIONS", Value: cr.Spec.EffectiveClientOptions()},
-		{Name: "ON_ERROR", Value: cr.Spec.EffectiveOnError()},
+		{Name: "CLIENT_OPTIONS", Value: esrallyClientOptions(cr)},
+		{Name: "ON_ERROR", Value: esrallyOnError(cr)},
 		{Name: "TELEMETRY", Value: strings.Join(cr.Spec.Telemetry, ",")},
 		{Name: "TELEMETRY_PARAMS", Value: cr.Spec.TelemetryParams},
-		{Name: "REPORT_FORMAT", Value: cr.Spec.EffectiveReportFormat()},
-		{Name: "REPORT_FILE", Value: cr.Spec.EffectiveReportFile()},
-		{Name: "KUBEBENCH_METRICS_UNAVAILABLE", Value: esrallyMetricsUnavailableReason(cr)},
+		{Name: "REPORT_FORMAT", Value: esrallyReportFormat},
+		{Name: "REPORT_FILE", Value: esrallyReportFile},
 		{Name: "EXTRA_ARGS", Value: strings.Join(cr.Spec.ExtraArgs, " ")},
 	}
 
@@ -86,34 +89,32 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 		},
 	)
 
-	if esrallyMetricsEnabled(cr) {
-		job.Spec.Template.Spec.Containers = append(
-			job.Spec.Template.Spec.Containers,
-			corev1.Container{
-				Name:            "metrics",
-				Image:           constants.GetBenchmarkImage(constants.KubebenchExporter),
-				ImagePullPolicy: corev1.PullIfNotPresent,
-				Ports: []corev1.ContainerPort{
-					{
-						ContainerPort: 9187,
-						Name:          "http-metrics",
-						Protocol:      corev1.ProtocolTCP,
-					},
-				},
-				Command: []string{"/exporter"},
-				Args: []string{
-					"-type", constants.EsrallyType,
-					"-file", cr.Spec.EffectiveReportFile(),
-					"-bench", cr.Name,
-					"-job", jobName,
-					"-done-file", esrallyExitFile,
-				},
-				VolumeMounts: []corev1.VolumeMount{
-					{Name: "log", MountPath: "/var/log"},
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            "metrics",
+			Image:           constants.GetBenchmarkImage(constants.KubebenchExporter),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Ports: []corev1.ContainerPort{
+				{
+					ContainerPort: 9187,
+					Name:          "http-metrics",
+					Protocol:      corev1.ProtocolTCP,
 				},
 			},
-		)
-	}
+			Command: []string{"/exporter"},
+			Args: []string{
+				"-type", constants.EsrallyType,
+				"-file", esrallyReportFile,
+				"-bench", cr.Name,
+				"-job", jobName,
+				"-done-file", esrallyExitFile,
+			},
+			VolumeMounts: []corev1.VolumeMount{
+				{Name: "log", MountPath: "/var/log"},
+			},
+		},
+	)
 
 	return []*batchv1.Job{job}
 }
@@ -155,35 +156,11 @@ func esrallyRunScript(cr *v1alpha1.Esrally) string {
 		`esrally "$@" > /tmp/esrally.out 2>&1`,
 		`status=$?`,
 		`cat /tmp/esrally.out | tee "`+esrallyLogFile+`"`,
-		`if [ -f "$REPORT_FILE" ]; then if [ "$REPORT_FORMAT" = "csv" ]; then echo "Rally CSV report:" | tee -a "`+esrallyLogFile+`"; else echo "Rally $REPORT_FORMAT report (kubebench metrics unavailable):" | tee -a "`+esrallyLogFile+`"; fi; cat "$REPORT_FILE" | tee -a "`+esrallyLogFile+`"; fi`,
-		`if [ -n "$KUBEBENCH_METRICS_UNAVAILABLE" ]; then echo "$KUBEBENCH_METRICS_UNAVAILABLE" | tee -a "`+esrallyLogFile+`"; fi`,
+		`if [ -f "$REPORT_FILE" ]; then echo "Rally CSV report:" | tee -a "`+esrallyLogFile+`"; cat "$REPORT_FILE" | tee -a "`+esrallyLogFile+`"; fi`,
 		`echo "$status" > "`+esrallyExitFile+`"`,
 		`exit "$status"`,
 	)
 	return strings.Join(flags, "\n")
-}
-
-func esrallyMetricsEnabled(cr *v1alpha1.Esrally) bool {
-	return cr.Spec.MetricsRequested() &&
-		cr.Spec.EffectiveReportFormat() == v1alpha1.DefaultEsrallyReportFormat &&
-		esrallyReportFileShared(cr.Spec.EffectiveReportFile())
-}
-
-func esrallyReportFileShared(reportFile string) bool {
-	return strings.HasPrefix(reportFile, "/var/log/")
-}
-
-func esrallyMetricsUnavailableReason(cr *v1alpha1.Esrally) string {
-	if !cr.Spec.MetricsRequested() {
-		return "kubebench metrics unavailable: spec.metrics is false"
-	}
-	if cr.Spec.EffectiveReportFormat() != v1alpha1.DefaultEsrallyReportFormat {
-		return "kubebench metrics unavailable: the exporter only supports reportFormat csv"
-	}
-	if !esrallyReportFileShared(cr.Spec.EffectiveReportFile()) {
-		return "kubebench metrics unavailable: reportFile must be under /var/log for the exporter shared volume"
-	}
-	return ""
 }
 
 func esrallyTargetHosts(cr *v1alpha1.Esrally) string {
@@ -205,5 +182,25 @@ func esrallyTrackParams(params map[string]string) string {
 }
 
 func esrallyClientOptions(cr *v1alpha1.Esrally) string {
-	return cr.Spec.EffectiveClientOptions()
+	if cr.Spec.ClientOptions != "" {
+		return cr.Spec.ClientOptions
+	}
+	if cr.Spec.Target.User == "" && cr.Spec.Target.Password == "" {
+		return ""
+	}
+	return fmt.Sprintf("basic_auth_user:'%s',basic_auth_password:'%s'", cr.Spec.Target.User, cr.Spec.Target.Password)
+}
+
+func esrallyTrack(cr *v1alpha1.Esrally) string {
+	if cr.Spec.Track != "" {
+		return cr.Spec.Track
+	}
+	return esrallyDefaultTrack
+}
+
+func esrallyOnError(cr *v1alpha1.Esrally) string {
+	if cr.Spec.OnError != "" {
+		return cr.Spec.OnError
+	}
+	return esrallyDefaultOnError
 }

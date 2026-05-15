@@ -23,7 +23,6 @@ func TestNewEsrallyJobs(t *testing.T) {
 	cr.Spec.Challenge = "append-no-conflicts"
 	cr.Spec.IncludeTasks = []string{"index-append"}
 	cr.Spec.TrackParams = map[string]string{"number_of_shards": "3"}
-	cr.Spec.Metrics = boolPtr(true)
 
 	jobs := NewEsrallyJobs(cr)
 	if len(jobs) != 2 {
@@ -44,7 +43,7 @@ func TestNewEsrallyJobs(t *testing.T) {
 	if len(jobs[1].Spec.Template.Spec.Containers) != 2 {
 		t.Fatalf("expected workload and metrics containers, got %d", len(jobs[1].Spec.Template.Spec.Containers))
 	}
-	if got := metricsContainerArg(jobs[1], "-file"); got != benchmarkv1alpha1.DefaultEsrallyReportFile {
+	if got := metricsContainerArg(jobs[1], "-file"); got != esrallyReportFile {
 		t.Fatalf("expected default exporter report file, got %s", got)
 	}
 
@@ -71,136 +70,17 @@ func TestNewEsrallyRunJobsDefaultsMetricsToCSVSharedReport(t *testing.T) {
 	if len(job.Spec.Template.Spec.Containers) != 2 {
 		t.Fatalf("expected metrics container by default, got %d containers", len(job.Spec.Template.Spec.Containers))
 	}
-	if got := metricsContainerArg(job, "-file"); got != benchmarkv1alpha1.DefaultEsrallyReportFile {
+	if got := metricsContainerArg(job, "-file"); got != esrallyReportFile {
 		t.Fatalf("expected default report file, got %s", got)
 	}
-	if got := envValue(job, "REPORT_FORMAT"); got != benchmarkv1alpha1.DefaultEsrallyReportFormat {
+	if got := envValue(job, "REPORT_FORMAT"); got != esrallyReportFormat {
 		t.Fatalf("expected default report format env, got %s", got)
 	}
-	if got := envValue(job, "TRACK"); got != benchmarkv1alpha1.DefaultEsrallyTrack {
+	if got := envValue(job, "TRACK"); got != esrallyDefaultTrack {
 		t.Fatalf("expected default track env, got %s", got)
 	}
-	if got := envValue(job, "ON_ERROR"); got != benchmarkv1alpha1.DefaultEsrallyOnError {
+	if got := envValue(job, "ON_ERROR"); got != esrallyDefaultOnError {
 		t.Fatalf("expected default onError env, got %s", got)
-	}
-	if got := envValue(job, "KUBEBENCH_METRICS_UNAVAILABLE"); got != "" {
-		t.Fatalf("expected metrics to be available, got reason %q", got)
-	}
-}
-
-func TestNewEsrallyRunJobsDisablesMetricsExplicitly(t *testing.T) {
-	cr := &benchmarkv1alpha1.Esrally{}
-	cr.Name = "rally"
-	cr.Namespace = "default"
-	cr.Spec.Target.Host = "es.default.svc"
-	cr.Spec.Target.Port = 9200
-	cr.Spec.Metrics = boolPtr(false)
-
-	jobs := NewEsrallyRunJobs(cr)
-	job := jobs[0]
-	if len(job.Spec.Template.Spec.Containers) != 1 {
-		t.Fatalf("expected only workload container when metrics are disabled, got %d", len(job.Spec.Template.Spec.Containers))
-	}
-	if got := envValue(job, "KUBEBENCH_METRICS_UNAVAILABLE"); got != "kubebench metrics unavailable: spec.metrics is false" {
-		t.Fatalf("expected disabled metrics reason, got %q", got)
-	}
-	if got := envValue(job, "REPORT_FORMAT"); got != benchmarkv1alpha1.DefaultEsrallyReportFormat {
-		t.Fatalf("expected default report format even when metrics disabled, got %s", got)
-	}
-	if got := envValue(job, "REPORT_FILE"); got != benchmarkv1alpha1.DefaultEsrallyReportFile {
-		t.Fatalf("expected default report file even when metrics disabled, got %s", got)
-	}
-}
-
-func TestNewEsrallyRunJobsDisablesExporterForMarkdownReport(t *testing.T) {
-	cr := &benchmarkv1alpha1.Esrally{}
-	cr.Name = "rally"
-	cr.Namespace = "default"
-	cr.Spec.Target.Host = "es.default.svc"
-	cr.Spec.Target.Port = 9200
-	cr.Spec.ReportFormat = "markdown"
-	cr.Spec.ReportFile = "/var/log/esrally-report.md"
-	cr.Spec.Metrics = boolPtr(false)
-
-	jobs := NewEsrallyRunJobs(cr)
-	job := jobs[0]
-	if len(job.Spec.Template.Spec.Containers) != 1 {
-		t.Fatalf("expected no metrics container for markdown report, got %d containers", len(job.Spec.Template.Spec.Containers))
-	}
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
-	if !strings.Contains(script, "Rally $REPORT_FORMAT report (kubebench metrics unavailable):") {
-		t.Fatalf("script should make markdown metrics unavailability explicit:\n%s", script)
-	}
-	if got := envValue(job, "KUBEBENCH_METRICS_UNAVAILABLE"); got != "kubebench metrics unavailable: spec.metrics is false" {
-		t.Fatalf("expected disabled metrics reason, got %q", got)
-	}
-}
-
-func TestNewEsrallyRunJobsRequiresSharedCSVReportForMetrics(t *testing.T) {
-	tests := []struct {
-		name       string
-		reportFile string
-		wantMetric bool
-		wantReason string
-	}{
-		{
-			name:       "custom shared CSV report",
-			reportFile: "/var/log/custom-rally.csv",
-			wantMetric: true,
-		},
-		{
-			name:       "non shared CSV report",
-			reportFile: "/tmp/custom-rally.csv",
-			wantMetric: false,
-			wantReason: "kubebench metrics unavailable: reportFile must be under /var/log for the exporter shared volume",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cr := &benchmarkv1alpha1.Esrally{}
-			cr.Name = "rally"
-			cr.Namespace = "default"
-			cr.Spec.Target.Host = "es.default.svc"
-			cr.Spec.Target.Port = 9200
-			cr.Spec.ReportFormat = "csv"
-			cr.Spec.ReportFile = tt.reportFile
-			cr.Spec.Metrics = boolPtr(true)
-
-			jobs := NewEsrallyRunJobs(cr)
-			job := jobs[0]
-			if gotMetric := len(job.Spec.Template.Spec.Containers) == 2; gotMetric != tt.wantMetric {
-				t.Fatalf("expected metrics container=%t, got %t", tt.wantMetric, gotMetric)
-			}
-			if tt.wantMetric {
-				if got := metricsContainerArg(job, "-file"); got != tt.reportFile {
-					t.Fatalf("expected exporter file %s, got %s", tt.reportFile, got)
-				}
-			}
-			if got := envValue(job, "KUBEBENCH_METRICS_UNAVAILABLE"); got != tt.wantReason {
-				t.Fatalf("expected reason %q, got %q", tt.wantReason, got)
-			}
-		})
-	}
-}
-
-func TestNewEsrallyRunJobsDoesNotStartExporterForInvalidMetricsFormat(t *testing.T) {
-	cr := &benchmarkv1alpha1.Esrally{}
-	cr.Name = "rally"
-	cr.Namespace = "default"
-	cr.Spec.Target.Host = "es.default.svc"
-	cr.Spec.Target.Port = 9200
-	cr.Spec.ReportFormat = "markdown"
-	cr.Spec.ReportFile = "/var/log/esrally-report.md"
-	cr.Spec.Metrics = boolPtr(true)
-
-	jobs := NewEsrallyRunJobs(cr)
-	job := jobs[0]
-	if len(job.Spec.Template.Spec.Containers) != 1 {
-		t.Fatalf("expected no metrics container for non-csv report, got %d containers", len(job.Spec.Template.Spec.Containers))
-	}
-	if got := envValue(job, "KUBEBENCH_METRICS_UNAVAILABLE"); got != "kubebench metrics unavailable: the exporter only supports reportFormat csv" {
-		t.Fatalf("expected unsupported format reason, got %q", got)
 	}
 }
 
@@ -285,14 +165,13 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 			name:           "defaults keep csv metrics contract",
 			wantContainers: 2,
 			wantEnv: map[string]string{
-				"TRACK":                         benchmarkv1alpha1.DefaultEsrallyTrack,
-				"ON_ERROR":                      benchmarkv1alpha1.DefaultEsrallyOnError,
-				"REPORT_FORMAT":                 benchmarkv1alpha1.DefaultEsrallyReportFormat,
-				"REPORT_FILE":                   benchmarkv1alpha1.DefaultEsrallyReportFile,
-				"KUBEBENCH_METRICS_UNAVAILABLE": "",
+				"TRACK":         esrallyDefaultTrack,
+				"ON_ERROR":      esrallyDefaultOnError,
+				"REPORT_FORMAT": esrallyReportFormat,
+				"REPORT_FILE":   esrallyReportFile,
 			},
 			wantScriptParts: []string{"--pipeline=benchmark-only", "--report-format", "--report-file"},
-			wantMetricFile:  benchmarkv1alpha1.DefaultEsrallyReportFile,
+			wantMetricFile:  esrallyReportFile,
 		},
 		{
 			name: "telemetry telemetry params and extra args are wired through",
@@ -308,34 +187,7 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 				"EXTRA_ARGS":       "--kill-running-processes --enable-driver-profiling",
 			},
 			wantScriptParts: []string{"--telemetry", "--telemetry-params", "$EXTRA_ARGS"},
-			wantMetricFile:  benchmarkv1alpha1.DefaultEsrallyReportFile,
-		},
-		{
-			name: "custom shared csv report is passed to workload and exporter",
-			mutate: func(cr *benchmarkv1alpha1.Esrally) {
-				cr.Spec.ReportFile = "/var/log/reports/rally.csv"
-			},
-			wantContainers: 2,
-			wantEnv: map[string]string{
-				"REPORT_FORMAT":                 benchmarkv1alpha1.DefaultEsrallyReportFormat,
-				"REPORT_FILE":                   "/var/log/reports/rally.csv",
-				"KUBEBENCH_METRICS_UNAVAILABLE": "",
-			},
-			wantScriptParts: []string{"Rally CSV report:", `echo "$status" > "/var/log/esrally.exit"`},
-			wantMetricFile:  "/var/log/reports/rally.csv",
-		},
-		{
-			name: "metrics false keeps report defaults but omits exporter",
-			mutate: func(cr *benchmarkv1alpha1.Esrally) {
-				cr.Spec.Metrics = boolPtr(false)
-			},
-			wantContainers: 1,
-			wantEnv: map[string]string{
-				"REPORT_FORMAT":                 benchmarkv1alpha1.DefaultEsrallyReportFormat,
-				"REPORT_FILE":                   benchmarkv1alpha1.DefaultEsrallyReportFile,
-				"KUBEBENCH_METRICS_UNAVAILABLE": "kubebench metrics unavailable: spec.metrics is false",
-			},
-			wantScriptParts: []string{"kubebench metrics unavailable", `echo "$status" > "/var/log/esrally.exit"`},
+			wantMetricFile:  esrallyReportFile,
 		},
 	}
 
@@ -416,10 +268,6 @@ func containsAll(values []string, wants []string) bool {
 		}
 	}
 	return true
-}
-
-func boolPtr(value bool) *bool {
-	return &value
 }
 
 func envValue(job *batchv1.Job, name string) string {

@@ -50,9 +50,6 @@ spec:
                 items:
                   type: string
                 type: array
-              metrics:
-                default: true
-                type: boolean
               offline:
                 type: boolean
               onError:
@@ -63,15 +60,6 @@ spec:
                 - continue-on-network
                 type: string
               rallyHomePVCClaimName:
-                type: string
-              reportFile:
-                default: /var/log/esrally-report.csv
-                type: string
-              reportFormat:
-                default: csv
-                enum:
-                - csv
-                - markdown
                 type: string
               resourceLimits:
                 properties:
@@ -167,15 +155,6 @@ spec:
             required:
             - target
             type: object
-            x-kubernetes-validations:
-            - message: metrics require reportFormat csv; set metrics to false to use
-                markdown reports
-              rule: (has(self.metrics) && self.metrics == false) || !has(self.reportFormat)
-                || self.reportFormat == 'csv'
-            - message: metrics require reportFile under /var/log so the exporter can
-                read the shared log volume
-              rule: (has(self.metrics) && self.metrics == false) || !has(self.reportFile)
-                || self.reportFile.startsWith('/var/log/')
           status:
             properties:
               completionTimestamp:

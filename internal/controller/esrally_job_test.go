@@ -124,7 +124,7 @@ func TestNewEsrallyJobsSkipsPrecheckForTargetHosts(t *testing.T) {
 	}
 }
 
-func TestNewEsrallyRunJobsWithTrackPathPVCAndTargetHosts(t *testing.T) {
+func TestNewEsrallyRunJobsWithTrackPathAndTargetHosts(t *testing.T) {
 	cr := &benchmarkv1alpha1.Esrally{}
 	cr.Name = "rally"
 	cr.Namespace = "default"
@@ -132,7 +132,6 @@ func TestNewEsrallyRunJobsWithTrackPathPVCAndTargetHosts(t *testing.T) {
 	cr.Spec.Target.Port = 9200
 	cr.Spec.TargetHosts = []string{"es-0:9200", "es-1:9200"}
 	cr.Spec.TrackPath = "/rally/.rally/tracks/custom"
-	cr.Spec.RallyHomePVCClaimName = "rally-home"
 	cr.Spec.Offline = true
 	cr.Spec.TestMode = true
 
@@ -141,8 +140,8 @@ func TestNewEsrallyRunJobsWithTrackPathPVCAndTargetHosts(t *testing.T) {
 	if esrallyTargetHosts(cr) != "es-0:9200,es-1:9200" {
 		t.Fatalf("unexpected target hosts: %s", esrallyTargetHosts(cr))
 	}
-	if job.Spec.Template.Spec.Volumes[1].PersistentVolumeClaim == nil || job.Spec.Template.Spec.Volumes[1].PersistentVolumeClaim.ClaimName != "rally-home" {
-		t.Fatalf("expected rally-home PVC volume: %#v", job.Spec.Template.Spec.Volumes)
+	if job.Spec.Template.Spec.Volumes[1].EmptyDir == nil {
+		t.Fatalf("expected rally-home emptyDir volume: %#v", job.Spec.Template.Spec.Volumes)
 	}
 	script := job.Spec.Template.Spec.Containers[0].Args[0]
 	for _, want := range []string{"--track-path", "--offline", "--test-mode"} {

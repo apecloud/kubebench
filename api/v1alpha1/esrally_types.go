@@ -78,11 +78,6 @@ type EsrallySpec struct {
 	// +optional
 	TelemetryParams string `json:"telemetryParams,omitempty"`
 
-	// rallyHomePVCClaimName mounts an existing PVC at /rally/.rally for track data and Rally metadata reuse.
-	// If empty, a writable emptyDir is used.
-	// +optional
-	RallyHomePVCClaimName string `json:"rallyHomePVCClaimName,omitempty"`
-
 	BenchCommon `json:",inline"`
 }
 

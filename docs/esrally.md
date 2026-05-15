@@ -52,7 +52,6 @@ A track is the workload definition. It can come from Rally's default track repos
 | `testMode` | Adds Rally `--test-mode`. |
 | `telemetry` | Rally telemetry devices such as `node-stats` or `disk-usage-stats`. |
 | `telemetryParams` | Raw Rally telemetry params. |
-| `rallyHomePVCClaimName` | Existing PVC mounted at `/rally/.rally`; otherwise an `emptyDir` is used. |
 
 ## Auth And TLS
 
@@ -88,24 +87,23 @@ spec:
     number_of_replicas: "1"
 ```
 
-For custom tracks packaged in your Rally image or mounted into `/rally/.rally`, use:
+For custom tracks packaged in your Rally image, use:
 
 ```yaml
 spec:
-  trackPath: /rally/.rally/tracks/my-track
+  trackPath: /tracks/my-track
 ```
 
 ## Offline And Storage
 
-Rally may download tracks and large corpora. By default kubebench mounts an `emptyDir` at `/rally/.rally`, so downloads disappear when the Job ends. For repeated or offline runs, create a PVC and reference it:
+Rally may download tracks and large corpora. Kubebench mounts an `emptyDir` at `/rally/.rally`, so downloads disappear when the Job ends.
 
 ```yaml
 spec:
-  rallyHomePVCClaimName: rally-home
   offline: true
 ```
 
-`offline: true` only prevents network updates/downloads. It does not provide missing track data; preload the PVC or use an image that already contains the required data.
+`offline: true` only prevents network updates/downloads. It does not provide missing track data; use an image that already contains the required data.
 
 ## Metrics
 
@@ -127,7 +125,7 @@ If auth, TLS, `targetHosts`, or other Rally client behavior fails, check Rally's
 
 If the report file is missing, verify Rally completed successfully and inspect `/var/log/esrally.log` in the run Job.
 
-If `offline` fails with missing corpora or tracks, preload `/rally/.rally` through a PVC or custom image.
+If `offline` fails with missing corpora or tracks, use a custom image that already contains the required data.
 
 If error rate is nonzero, use `onError: continue` only when measuring errors is intentional. The default `abort` fails fast for unhealthy targets.
 

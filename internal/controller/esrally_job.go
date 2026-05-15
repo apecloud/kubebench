@@ -54,7 +54,7 @@ func newEsrallyPreCheckJob(cr *v1alpha1.Esrally) *batchv1.Job {
 func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 	jobName := fmt.Sprintf("%s-run", cr.Name)
 	job := utils.JobTemplate(jobName, cr.Namespace)
-	addEsrallyHomeVolume(job, cr.Spec.RallyHomePVCClaimName)
+	addEsrallyHomeVolume(job)
 
 	env := []corev1.EnvVar{
 		{Name: "TARGET_HOSTS", Value: esrallyTargetHosts(cr)},
@@ -119,16 +119,13 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-func addEsrallyHomeVolume(job *batchv1.Job, claimName string) {
-	volume := corev1.Volume{Name: "rally-home"}
-	if claimName != "" {
-		volume.VolumeSource.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{
-			ClaimName: claimName,
-		}
-	} else {
-		volume.VolumeSource.EmptyDir = &corev1.EmptyDirVolumeSource{}
-	}
-	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, volume)
+func addEsrallyHomeVolume(job *batchv1.Job) {
+	job.Spec.Template.Spec.Volumes = append(job.Spec.Template.Spec.Volumes, corev1.Volume{
+		Name: "rally-home",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	})
 }
 
 func esrallyRunScript(cr *v1alpha1.Esrally) string {

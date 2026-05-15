@@ -59,8 +59,6 @@ spec:
                 - continue
                 - continue-on-network
                 type: string
-              rallyHomePVCClaimName:
-                type: string
               resourceLimits:
                 properties:
                   cpu:

@@ -14,14 +14,18 @@ import (
 )
 
 const (
-	esrallyLogFile        = "/var/log/esrally.log"
-	esrallyExitFile       = "/var/log/esrally.exit"
-	esrallyHomeMountPath  = "/rally/.rally"
-	esrallyDefaultOnError = "abort"
-	esrallyReportFormat   = "csv"
-	esrallyReportFile     = "/var/log/esrally-report.csv"
-	esrallyDefaultIndex   = "kubebench"
-	esrallyDefaultDocs    = 10000
+	esrallyLogFile            = "/var/log/esrally.log"
+	esrallyExitFile           = "/var/log/esrally.exit"
+	esrallyHomeMountPath      = "/rally/.rally"
+	esrallyGeneratedTrackPath = "/tracks/kubebench-generated"
+	esrallyGeneratedChallenge = "search"
+	esrallyDefaultOnError     = "abort"
+	esrallyReportFormat       = "csv"
+	esrallyReportFile         = "/var/log/esrally-report.csv"
+	esrallyDefaultIndex       = "kubebench"
+	esrallyDefaultDocs        = 10000
+	esrallyTargetIndexParam   = "target_index"
+	esrallyTargetVersionParam = "target_version"
 )
 
 func NewEsrallyJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
@@ -117,9 +121,8 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 	env := []corev1.EnvVar{
 		{Name: "TARGET_HOSTS", Value: esrallyTargetHosts(cr)},
 		{Name: "TARGET_VERSION", Value: esrallyTargetVersion(cr)},
-		{Name: "TRACK_PATH", Value: cr.Spec.TrackPath},
-		{Name: "CHALLENGE", Value: cr.Spec.Challenge},
-		{Name: "INCLUDE_TASKS", Value: strings.Join(cr.Spec.IncludeTasks, ",")},
+		{Name: "TRACK_PATH", Value: esrallyGeneratedTrackPath},
+		{Name: "CHALLENGE", Value: esrallyGeneratedChallenge},
 		{Name: "TRACK_PARAMS", Value: esrallyTrackParams(cr)},
 		{Name: "CLIENT_OPTIONS", Value: esrallyClientOptions(cr)},
 		{Name: "ON_ERROR", Value: esrallyOnError(cr)},
@@ -364,11 +367,8 @@ print("Generated ESRally dataset is ready")
 func esrallyRunScript(cr *v1alpha1.Esrally) string {
 	flags := []string{
 		`set -eu`,
-		`fail_before_rally() { echo "$1" | tee "` + esrallyLogFile + `"; echo "1" > "` + esrallyExitFile + `"; exit 1; }`,
-		`if [ -z "$TRACK_PATH" ]; then fail_before_rally "ESRally generated-data mode requires spec.trackPath; remote Rally tracks and corpora are not supported"; fi`,
 		`set -- race --pipeline=benchmark-only --target-hosts "$TARGET_HOSTS" --track-path "$TRACK_PATH" --offline --on-error "$ON_ERROR" --report-format "$REPORT_FORMAT" --report-file "$REPORT_FILE"`,
 		`if [ -n "$CHALLENGE" ]; then set -- "$@" --challenge "$CHALLENGE"; fi`,
-		`if [ -n "$INCLUDE_TASKS" ]; then set -- "$@" --include-tasks "$INCLUDE_TASKS"; fi`,
 		`if [ -n "$TRACK_PARAMS" ]; then set -- "$@" --track-params "$TRACK_PARAMS"; fi`,
 		`if [ -n "$CLIENT_OPTIONS" ]; then set -- "$@" --client-options "$CLIENT_OPTIONS"; fi`,
 		`if [ -n "$TELEMETRY" ]; then set -- "$@" --telemetry "$TELEMETRY"; fi`,
@@ -434,24 +434,12 @@ func esrallyTargetVersion(cr *v1alpha1.Esrally) string {
 }
 
 func esrallyTrackParams(cr *v1alpha1.Esrally) string {
-	params := cr.Spec.TrackParams
+	params := map[string]string{
+		esrallyTargetIndexParam: esrallyIndexName(cr),
+	}
 	targetVersion := esrallyTargetVersion(cr)
-	if len(params) == 0 {
-		if targetVersion == "" {
-			return ""
-		}
-		params = map[string]string{"target_version": targetVersion}
-	} else if targetVersion != "" {
-		if _, ok := params["target_version"]; !ok {
-			if _, ok := params["targetVersion"]; !ok {
-				withTargetVersion := make(map[string]string, len(params)+1)
-				for key, value := range params {
-					withTargetVersion[key] = value
-				}
-				withTargetVersion["target_version"] = targetVersion
-				params = withTargetVersion
-			}
-		}
+	if targetVersion != "" {
+		params[esrallyTargetVersionParam] = targetVersion
 	}
 	data, err := json.Marshal(params)
 	if err != nil {

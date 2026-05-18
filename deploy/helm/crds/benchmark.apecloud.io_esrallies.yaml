@@ -38,8 +38,6 @@ spec:
             type: object
           spec:
             properties:
-              challenge:
-                type: string
               clientOptions:
                 type: string
               dataProfile:
@@ -53,10 +51,6 @@ spec:
                 minimum: 1
                 type: integer
               extraArgs:
-                items:
-                  type: string
-                type: array
-              includeTasks:
                 items:
                   type: string
                 type: array
@@ -149,12 +143,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              trackParams:
-                additionalProperties:
-                  type: string
-                type: object
-              trackPath:
-                type: string
             required:
             - target
             type: object

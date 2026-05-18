@@ -20,24 +20,6 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // EsrallySpec defines the desired state of Esrally.
 type EsrallySpec struct {
-	// trackPath is a local file or directory path inside the Rally container.
-	// ESRally only supports generated datasets, so run steps require a local
-	// no-corpora track and never use Rally's remote track repository.
-	// +optional
-	TrackPath string `json:"trackPath,omitempty"`
-
-	// challenge is the Rally challenge to run.
-	// +optional
-	Challenge string `json:"challenge,omitempty"`
-
-	// includeTasks limits the race to specific task names.
-	// +optional
-	IncludeTasks []string `json:"includeTasks,omitempty"`
-
-	// trackParams are Rally track template parameters.
-	// +optional
-	TrackParams map[string]string `json:"trackParams,omitempty"`
-
 	// targetHosts overrides spec.target.host:spec.target.port with one or more Rally target hosts.
 	// +optional
 	TargetHosts []string `json:"targetHosts,omitempty"`

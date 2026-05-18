@@ -15,10 +15,6 @@ func TestNewEsrallyJobsDefaultGeneratedDataWorkflow(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.Target.User = "elastic"
 	cr.Spec.Target.Password = "secret"
-	cr.Spec.TrackPath = "/tracks/generated"
-	cr.Spec.Challenge = "search"
-	cr.Spec.IncludeTasks = []string{"query-match"}
-	cr.Spec.TrackParams = map[string]string{"target_index": "kubebench"}
 
 	jobs := NewEsrallyJobs(cr)
 	wantNames := []string{"rally-precheck", "rally-cleanup", "rally-prepare", "rally-run"}
@@ -41,7 +37,7 @@ func TestNewEsrallyJobsDefaultGeneratedDataWorkflow(t *testing.T) {
 	}
 
 	script := runJob.Spec.Template.Spec.Containers[0].Args[0]
-	for _, want := range []string{"--pipeline=benchmark-only", "--target-hosts", "--track-path", "--offline", "--challenge", "--include-tasks", "--track-params", "--client-options", "--report-file"} {
+	for _, want := range []string{"--pipeline=benchmark-only", "--target-hosts", "--track-path", "--offline", "--challenge", "--track-params", "--client-options", "--report-file"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("script missing %s:\n%s", want, script)
 		}
@@ -58,7 +54,6 @@ func TestNewEsrallyJobsDefaultGeneratedDataWorkflow(t *testing.T) {
 
 func TestNewEsrallyRunJobsDefaultsMetricsToCSVSharedReport(t *testing.T) {
 	cr := newEsrallyTestCR()
-	cr.Spec.TrackPath = "/tracks/generated"
 
 	job := NewEsrallyRunJobs(cr)[0]
 	if len(job.Spec.Template.Spec.Containers) != 2 {
@@ -70,8 +65,8 @@ func TestNewEsrallyRunJobsDefaultsMetricsToCSVSharedReport(t *testing.T) {
 	if got := envValue(job, "REPORT_FORMAT"); got != esrallyReportFormat {
 		t.Fatalf("expected default report format env, got %s", got)
 	}
-	if got := envValue(job, "TRACK_PATH"); got != "/tracks/generated" {
-		t.Fatalf("expected trackPath env, got %s", got)
+	if got := envValue(job, "TRACK_PATH"); got != esrallyGeneratedTrackPath {
+		t.Fatalf("expected internal track path env, got %s", got)
 	}
 	if got := envValue(job, "ON_ERROR"); got != esrallyDefaultOnError {
 		t.Fatalf("expected default onError env, got %s", got)
@@ -109,7 +104,6 @@ func TestNewEsrallyJobsHonorsStepForGeneratedData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cr := newEsrallyTestCR()
 			cr.Spec.Step = tt.step
-			cr.Spec.TrackPath = "/tracks/generated"
 
 			jobs := NewEsrallyJobs(cr)
 			if got := jobNames(jobs); strings.Join(got, ",") != strings.Join(tt.want, ",") {
@@ -202,13 +196,19 @@ func TestNewEsrallyPrepareJobsSupportsElasticsearch6TypedBulkMetadata(t *testing
 	}
 }
 
-func TestNewEsrallyRunJobsRequiresTrackPath(t *testing.T) {
+func TestNewEsrallyRunJobsUsesInternalGeneratedTrack(t *testing.T) {
 	cr := newEsrallyTestCR()
 
 	job := NewEsrallyRunJobs(cr)[0]
+	if got := envValue(job, "TRACK_PATH"); got != esrallyGeneratedTrackPath {
+		t.Fatalf("expected internal track path env, got %s", got)
+	}
+	if got := envValue(job, "CHALLENGE"); got != esrallyGeneratedChallenge {
+		t.Fatalf("expected internal challenge env, got %s", got)
+	}
 	script := job.Spec.Template.Spec.Containers[0].Args[0]
-	if !strings.Contains(script, "requires spec.trackPath") {
-		t.Fatalf("expected generated data trackPath guard:\n%s", script)
+	if strings.Contains(script, "spec."+"trackPath") {
+		t.Fatalf("run script leaked removed public track path API field:\n%s", script)
 	}
 }
 
@@ -229,7 +229,6 @@ func TestEsrallyGeneratedDataDefaults(t *testing.T) {
 func TestNewEsrallyJobsSkipsPrecheckForAdvancedRallyClientOptions(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.Step = constants.RunStep
-	cr.Spec.TrackPath = "/tracks/generated"
 	cr.Spec.ClientOptions = "use_ssl:true,verify_certs:false,api_key:'secret'"
 
 	jobs := NewEsrallyJobs(cr)
@@ -248,7 +247,6 @@ func TestNewEsrallyJobsSkipsPrecheckForTargetHosts(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.Step = constants.RunStep
 	cr.Spec.Target.Host = "ignored"
-	cr.Spec.TrackPath = "/tracks/generated"
 	cr.Spec.TargetHosts = []string{"es-0:9200", "es-1:9200/prefix"}
 
 	jobs := NewEsrallyJobs(cr)
@@ -263,11 +261,10 @@ func TestNewEsrallyJobsSkipsPrecheckForTargetHosts(t *testing.T) {
 	}
 }
 
-func TestNewEsrallyRunJobsWithTrackPathAndTargetHosts(t *testing.T) {
+func TestNewEsrallyRunJobsWithTargetHosts(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.Target.Host = "ignored"
 	cr.Spec.TargetHosts = []string{"es-0:9200", "es-1:9200"}
-	cr.Spec.TrackPath = "/rally/.rally/tracks/custom"
 	cr.Spec.TestMode = true
 
 	job := NewEsrallyRunJobs(cr)[0]
@@ -287,9 +284,7 @@ func TestNewEsrallyRunJobsWithTrackPathAndTargetHosts(t *testing.T) {
 
 func TestNewEsrallyRunJobsAddsTargetVersionTrackParam(t *testing.T) {
 	cr := newEsrallyTestCR()
-	cr.Spec.TrackPath = "/tracks/generated"
 	cr.Spec.TargetVersion = " 8.12.2 "
-	cr.Spec.TrackParams = map[string]string{"target_index": "kubebench"}
 
 	job := NewEsrallyRunJobs(cr)[0]
 	if got := envValue(job, "TARGET_VERSION"); got != "8.12.2" {
@@ -310,50 +305,6 @@ func TestNewEsrallyRunJobsAddsTargetVersionTrackParam(t *testing.T) {
 	}
 }
 
-func TestEsrallyTrackParamsPreservesExplicitTargetVersion(t *testing.T) {
-	tests := []struct {
-		name       string
-		params     map[string]string
-		wantKey    string
-		wantValue  string
-		forbidKey  string
-		forbidUsed bool
-	}{
-		{
-			name:      "snake case",
-			params:    map[string]string{"target_version": "7.17.0"},
-			wantKey:   "target_version",
-			wantValue: "7.17.0",
-		},
-		{
-			name:       "camel case",
-			params:     map[string]string{"targetVersion": "7.17.0"},
-			wantKey:    "targetVersion",
-			wantValue:  "7.17.0",
-			forbidKey:  "target_version",
-			forbidUsed: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cr := newEsrallyTestCR()
-			cr.Spec.TargetVersion = "8.12.2"
-			cr.Spec.TrackParams = tt.params
-
-			params := parseTrackParams(t, esrallyTrackParams(cr))
-			if got := params[tt.wantKey]; got != tt.wantValue {
-				t.Fatalf("expected %s=%q, got %q in %#v", tt.wantKey, tt.wantValue, got, params)
-			}
-			if tt.forbidUsed {
-				if _, ok := params[tt.forbidKey]; ok {
-					t.Fatalf("did not expect injected %s in %#v", tt.forbidKey, params)
-				}
-			}
-		})
-	}
-}
-
 func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -367,7 +318,8 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 			name:           "defaults keep csv metrics contract",
 			wantContainers: 2,
 			wantEnv: map[string]string{
-				"TRACK_PATH":    "/tracks/generated",
+				"TRACK_PATH":    esrallyGeneratedTrackPath,
+				"CHALLENGE":     esrallyGeneratedChallenge,
 				"ON_ERROR":      esrallyDefaultOnError,
 				"REPORT_FORMAT": esrallyReportFormat,
 				"REPORT_FILE":   esrallyReportFile,
@@ -396,7 +348,6 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cr := newEsrallyTestCR()
-			cr.Spec.TrackPath = "/tracks/generated"
 			if tt.mutate != nil {
 				tt.mutate(cr)
 			}
@@ -431,7 +382,6 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 func TestNewEsrallyRunJobsSharesReportVolumeWithExporter(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.Step = constants.RunStep
-	cr.Spec.TrackPath = "/tracks/generated"
 	cr.Spec.ClientOptions = "use_ssl:false"
 
 	job := NewEsrallyJobs(cr)[0]

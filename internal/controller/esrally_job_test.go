@@ -226,58 +226,41 @@ func TestEsrallyGeneratedDataDefaults(t *testing.T) {
 	}
 }
 
-func TestNewEsrallyJobsSkipsPrecheckForAdvancedRallyClientOptions(t *testing.T) {
+func TestNewEsrallyJobsAlwaysPrechecksBasicTarget(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.Step = constants.RunStep
-	cr.Spec.ClientOptions = "use_ssl:true,verify_certs:false,api_key:'secret'"
 
 	jobs := NewEsrallyJobs(cr)
-	if len(jobs) != 1 {
-		t.Fatalf("expected only run job, got %d", len(jobs))
+	if len(jobs) != 2 {
+		t.Fatalf("expected precheck and run jobs, got %d", len(jobs))
 	}
-	if jobs[0].Name != "rally-run" {
-		t.Fatalf("expected run job, got %s", jobs[0].Name)
+	if jobs[0].Name != "rally-precheck" || jobs[1].Name != "rally-run" {
+		t.Fatalf("expected precheck then run jobs, got %v", jobNames(jobs))
 	}
-	if got := esrallyClientOptions(cr); got != cr.Spec.ClientOptions {
-		t.Fatalf("expected explicit client options to pass through")
-	}
-}
-
-func TestNewEsrallyJobsSkipsPrecheckForTargetHosts(t *testing.T) {
-	cr := newEsrallyTestCR()
-	cr.Spec.Step = constants.RunStep
-	cr.Spec.Target.Host = "ignored"
-	cr.Spec.TargetHosts = []string{"es-0:9200", "es-1:9200/prefix"}
-
-	jobs := NewEsrallyJobs(cr)
-	if len(jobs) != 1 {
-		t.Fatalf("expected only run job, got %d", len(jobs))
-	}
-	if jobs[0].Name != "rally-run" {
-		t.Fatalf("expected run job, got %s", jobs[0].Name)
-	}
-	if got := esrallyTargetHosts(cr); got != "es-0:9200,es-1:9200/prefix" {
+	if got := esrallyTargetHosts(cr); got != "es.default.svc:9200" {
 		t.Fatalf("unexpected target hosts: %s", got)
 	}
 }
 
-func TestNewEsrallyRunJobsWithTargetHosts(t *testing.T) {
+func TestNewEsrallyRunJobsUsesTargetHostAndPort(t *testing.T) {
 	cr := newEsrallyTestCR()
-	cr.Spec.Target.Host = "ignored"
-	cr.Spec.TargetHosts = []string{"es-0:9200", "es-1:9200"}
-	cr.Spec.TestMode = true
 
 	job := NewEsrallyRunJobs(cr)[0]
-	if esrallyTargetHosts(cr) != "es-0:9200,es-1:9200" {
+	if esrallyTargetHosts(cr) != "es.default.svc:9200" {
 		t.Fatalf("unexpected target hosts: %s", esrallyTargetHosts(cr))
 	}
 	if job.Spec.Template.Spec.Volumes[1].EmptyDir == nil {
 		t.Fatalf("expected rally-home emptyDir volume: %#v", job.Spec.Template.Spec.Volumes)
 	}
 	script := job.Spec.Template.Spec.Containers[0].Args[0]
-	for _, want := range []string{"--track-path", "--offline", "--test-mode"} {
+	for _, want := range []string{"--target-hosts", "--track-path", "--offline"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("script missing %s:\n%s", want, script)
+		}
+	}
+	for _, forbidden := range []string{"--test-mode", "--telemetry-params"} {
+		if strings.Contains(script, forbidden) {
+			t.Fatalf("script still exposes removed Rally option %s:\n%s", forbidden, script)
 		}
 	}
 }
@@ -328,19 +311,17 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 			wantMetricFile:  esrallyReportFile,
 		},
 		{
-			name: "telemetry telemetry params and extra args are wired through",
+			name: "telemetry and extra args are wired through",
 			mutate: func(cr *benchmarkv1alpha1.Esrally) {
 				cr.Spec.Telemetry = []string{"node-stats", "disk-usage-stats"}
-				cr.Spec.TelemetryParams = "node-stats-sample-interval:1"
 				cr.Spec.ExtraArgs = []string{"--kill-running-processes", "--enable-driver-profiling"}
 			},
 			wantContainers: 2,
 			wantEnv: map[string]string{
-				"TELEMETRY":        "node-stats,disk-usage-stats",
-				"TELEMETRY_PARAMS": "node-stats-sample-interval:1",
-				"EXTRA_ARGS":       "--kill-running-processes --enable-driver-profiling",
+				"TELEMETRY":  "node-stats,disk-usage-stats",
+				"EXTRA_ARGS": "--kill-running-processes --enable-driver-profiling",
 			},
-			wantScriptParts: []string{"--telemetry", "--telemetry-params", "$EXTRA_ARGS"},
+			wantScriptParts: []string{"--telemetry", "$EXTRA_ARGS"},
 			wantMetricFile:  esrallyReportFile,
 		},
 	}
@@ -382,9 +363,8 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 func TestNewEsrallyRunJobsSharesReportVolumeWithExporter(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.Step = constants.RunStep
-	cr.Spec.ClientOptions = "use_ssl:false"
 
-	job := NewEsrallyJobs(cr)[0]
+	job := NewEsrallyJobs(cr)[1]
 	workload := job.Spec.Template.Spec.Containers[0]
 	metrics := containerByName(job, "metrics")
 	if metrics == nil {

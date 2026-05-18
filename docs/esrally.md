@@ -41,7 +41,7 @@ spec:
   documentCount: 100000
 ```
 
-For generated data, Kubebench supports the basic HTTP target fields `spec.target.host`, `spec.target.port`, `spec.target.user`, and `spec.target.password` during cleanup and prepare. `targetHosts` and raw Rally `clientOptions` are not parsed by the generated-data cleanup/prepare Jobs in this version.
+For generated data, Kubebench supports the basic HTTP target fields `spec.target.host`, `spec.target.port`, `spec.target.user`, and `spec.target.password`.
 
 The run step uses a local no-corpora Rally track packaged in the Rally image. Kubebench chooses the track path, challenge, included tasks, and track parameters internally, and always passes `--offline` to Rally. It does not expose API fields for remote Rally tracks, track repositories, corpus downloads, or local track internals.
 
@@ -52,8 +52,6 @@ The run step uses a local no-corpora Rally track packaged in the Rally image. Ku
 Rally calls one benchmark execution a race. In Kubebench ESRally, a race runs against data that already exists in the target index because Kubebench generated it earlier.
 
 Kubebench runs a local Rally track against the generated index. Track internals such as challenge names, task names, and template parameters are not part of the ESRally user API.
-
-`testMode` is useful for smoke tests because it makes Rally run a tiny workload. Do not use test-mode results for benchmark comparisons.
 
 ## Steps
 
@@ -73,13 +71,9 @@ When Kubebench can use the basic target fields directly, it adds a precheck Job 
 | Field | Description |
 |-------|-------------|
 | `step` | `cleanup`, `prepare`, `run`, or `all`. Defaults to `all`. |
-| `targetHosts` | Optional list of Rally target hosts for the run step. Defaults to `spec.target.host:spec.target.port`. |
 | `targetVersion` | Optional Elasticsearch target version, such as `7.17.0` or `8.12.2`, used for version-aware kubebench behavior. |
-| `clientOptions` | Raw Rally `--client-options` value for run-step auth, TLS, compression, API keys, and timeouts. |
 | `onError` | `abort`, `continue`, or `continue-on-network`. Defaults to `abort`. |
-| `testMode` | Adds Rally `--test-mode`. |
 | `telemetry` | Rally telemetry devices such as `node-stats` or `disk-usage-stats`. |
-| `telemetryParams` | Raw Rally telemetry params. |
 | `dataProfile` | Generated dataset profile for cleanup/prepare. One of `logs` or `metrics`. Defaults to `logs`. |
 | `documentCount` | Number of generated documents. Defaults to `10000`. |
 
@@ -89,7 +83,7 @@ Kubebench passes the generated target index and, when set, `targetVersion` to it
 
 ## Auth And TLS
 
-If `clientOptions` is empty and `spec.target.user` or `spec.target.password` is set, kubebench synthesizes Rally basic auth client options for the run step:
+When `spec.target.user` or `spec.target.password` is set, Kubebench uses those credentials for generated cleanup/prepare requests and synthesizes Rally basic auth client options internally for the run step:
 
 ```yaml
 spec:
@@ -101,9 +95,7 @@ spec:
     password: secret
 ```
 
-The precheck and generated-data cleanup/prepare contract is intentionally narrow. When `clientOptions` is empty and `targetHosts` is not set, kubebench runs `tools elasticsearch ping` against `spec.target.host:spec.target.port` over HTTP with optional basic auth from `spec.target.user/password`.
-
-When `clientOptions` or `targetHosts` is set, kubebench skips the precheck. Cleanup/prepare Jobs will fail clearly if those advanced fields are used, because this version only supports the basic target fields for generated-data writes.
+Kubebench runs `tools elasticsearch ping` against `spec.target.host:spec.target.port` over HTTP with optional basic auth from `spec.target.user/password` before selected work Jobs.
 
 ## Generated Data Shapes
 
@@ -131,11 +123,9 @@ The report format and path are not user-facing spec fields. They are part of the
 
 If a basic HTTP target is unreachable, inspect the precheck Job logs first. It calls `tools elasticsearch ping` against `/_cluster/health`.
 
-If cleanup or prepare fails with an unsupported configuration message, remove `targetHosts` and `clientOptions` for generated-data steps and use basic `spec.target.host:port` plus optional `user/password`.
-
 If the run step exits before Rally starts, inspect the run Job logs for Rally errors from the packaged generated-data track.
 
-If auth, TLS, `targetHosts`, or other Rally client behavior fails during the run step, check Rally's run Job logs and `clientOptions` quoting. YAML quoting matters for values containing commas, quotes, or colons.
+If auth fails during the run step, check `spec.target.user/password` and the Rally run Job logs. Advanced Rally client options such as TLS and API keys are not exposed in the generated-data ESRally API.
 
 If the report file is missing, verify Rally completed successfully and inspect `/var/log/esrally.log` in the run Job.
 

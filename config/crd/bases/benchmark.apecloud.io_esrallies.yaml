@@ -38,8 +38,6 @@ spec:
             type: object
           spec:
             properties:
-              clientOptions:
-                type: string
               dataProfile:
                 default: logs
                 enum:
@@ -113,20 +111,12 @@ spec:
                 - host
                 - port
                 type: object
-              targetHosts:
-                items:
-                  type: string
-                type: array
               targetVersion:
                 type: string
               telemetry:
                 items:
                   type: string
                 type: array
-              telemetryParams:
-                type: string
-              testMode:
-                type: boolean
               tolerations:
                 items:
                   properties:

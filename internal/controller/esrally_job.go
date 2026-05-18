@@ -69,9 +69,6 @@ func newEsrallyWorkJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 }
 
 func newEsrallyPreCheckJob(cr *v1alpha1.Esrally) *batchv1.Job {
-	if cr.Spec.ClientOptions != "" || len(cr.Spec.TargetHosts) > 0 {
-		return nil
-	}
 	return utils.NewPreCheckJob(cr.Name, cr.Namespace, constants.ElasticsearchDriver, &cr.Spec.Target)
 }
 
@@ -127,7 +124,6 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 		{Name: "CLIENT_OPTIONS", Value: esrallyClientOptions(cr)},
 		{Name: "ON_ERROR", Value: esrallyOnError(cr)},
 		{Name: "TELEMETRY", Value: strings.Join(cr.Spec.Telemetry, ",")},
-		{Name: "TELEMETRY_PARAMS", Value: cr.Spec.TelemetryParams},
 		{Name: "REPORT_FORMAT", Value: esrallyReportFormat},
 		{Name: "REPORT_FILE", Value: esrallyReportFile},
 		{Name: "EXTRA_ARGS", Value: strings.Join(cr.Spec.ExtraArgs, " ")},
@@ -197,8 +193,6 @@ func esrallyGeneratedDataEnv(cr *v1alpha1.Esrally) []corev1.EnvVar {
 		{Name: "TARGET_VERSION", Value: esrallyTargetVersion(cr)},
 		{Name: "ES_USERNAME", Value: cr.Spec.Target.User},
 		{Name: "ES_PASSWORD", Value: cr.Spec.Target.Password},
-		{Name: "CLIENT_OPTIONS", Value: cr.Spec.ClientOptions},
-		{Name: "TARGET_HOSTS_OVERRIDE", Value: strings.Join(cr.Spec.TargetHosts, ",")},
 	}
 }
 
@@ -238,10 +232,6 @@ func esrallyPrepareScript() string {
 
 func esrallyGeneratedDataUnsupportedConfigCheck() string {
 	return strings.Join([]string{
-		`if [ -n "$CLIENT_OPTIONS" ] || [ -n "$TARGET_HOSTS_OVERRIDE" ]; then`,
-		`  echo "generated ESRally data mode supports only spec.target.host, spec.target.port, spec.target.user, and spec.target.password for cleanup/prepare" | tee -a "` + esrallyLogFile + `"`,
-		`  exit 1`,
-		`fi`,
 		`if [ -n "$TARGET_VERSION" ]; then`,
 		`  target_major="${TARGET_VERSION%%.*}"`,
 		`  case "$target_major" in`,
@@ -372,10 +362,6 @@ func esrallyRunScript(cr *v1alpha1.Esrally) string {
 		`if [ -n "$TRACK_PARAMS" ]; then set -- "$@" --track-params "$TRACK_PARAMS"; fi`,
 		`if [ -n "$CLIENT_OPTIONS" ]; then set -- "$@" --client-options "$CLIENT_OPTIONS"; fi`,
 		`if [ -n "$TELEMETRY" ]; then set -- "$@" --telemetry "$TELEMETRY"; fi`,
-		`if [ -n "$TELEMETRY_PARAMS" ]; then set -- "$@" --telemetry-params "$TELEMETRY_PARAMS"; fi`,
-	}
-	if cr.Spec.TestMode {
-		flags = append(flags, `set -- "$@" --test-mode`)
 	}
 	flags = append(flags,
 		`if [ -n "$EXTRA_ARGS" ]; then set -- "$@" $EXTRA_ARGS; fi`,
@@ -423,9 +409,6 @@ func esrallyTargetURL(cr *v1alpha1.Esrally) string {
 }
 
 func esrallyTargetHosts(cr *v1alpha1.Esrally) string {
-	if len(cr.Spec.TargetHosts) > 0 {
-		return strings.Join(cr.Spec.TargetHosts, ",")
-	}
 	return fmt.Sprintf("%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port)
 }
 
@@ -449,9 +432,6 @@ func esrallyTrackParams(cr *v1alpha1.Esrally) string {
 }
 
 func esrallyClientOptions(cr *v1alpha1.Esrally) string {
-	if cr.Spec.ClientOptions != "" {
-		return cr.Spec.ClientOptions
-	}
 	if cr.Spec.Target.User == "" && cr.Spec.Target.Password == "" {
 		return ""
 	}

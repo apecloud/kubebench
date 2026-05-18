@@ -20,19 +20,10 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // EsrallySpec defines the desired state of Esrally.
 type EsrallySpec struct {
-	// targetHosts overrides spec.target.host:spec.target.port with one or more Rally target hosts.
-	// +optional
-	TargetHosts []string `json:"targetHosts,omitempty"`
-
 	// targetVersion is the Elasticsearch target version used for ESRally compatibility decisions.
 	// It is not passed to Rally as --distribution-version in benchmark-only mode.
 	// +optional
 	TargetVersion string `json:"targetVersion,omitempty"`
-
-	// clientOptions is passed to Rally --client-options. If empty, basic auth
-	// is synthesized from spec.target.user and spec.target.password when present.
-	// +optional
-	ClientOptions string `json:"clientOptions,omitempty"`
 
 	// onError controls how Rally handles request errors.
 	// +kubebuilder:validation:Enum={abort,continue,continue-on-network}
@@ -40,17 +31,9 @@ type EsrallySpec struct {
 	// +optional
 	OnError string `json:"onError,omitempty"`
 
-	// testMode enables Rally test mode for smoke checks. Results are not valid benchmark numbers.
-	// +optional
-	TestMode bool `json:"testMode,omitempty"`
-
 	// telemetry lists Rally telemetry devices.
 	// +optional
 	Telemetry []string `json:"telemetry,omitempty"`
-
-	// telemetryParams is passed to Rally --telemetry-params.
-	// +optional
-	TelemetryParams string `json:"telemetryParams,omitempty"`
 
 	// dataProfile selects the generated dataset shape for the prepare step.
 	// +kubebuilder:validation:Enum={logs,metrics}

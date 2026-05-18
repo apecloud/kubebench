@@ -123,7 +123,7 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 		{Name: "TRACK_PARAMS", Value: esrallyTrackParams(cr)},
 		{Name: "CLIENT_OPTIONS", Value: esrallyClientOptions(cr)},
 		{Name: "ON_ERROR", Value: esrallyOnError(cr)},
-		{Name: "TELEMETRY", Value: strings.Join(cr.Spec.Telemetry, ",")},
+		{Name: "TELEMETRY", Value: strings.Join(esrallyTelemetry(cr), ",")},
 		{Name: "REPORT_FORMAT", Value: esrallyReportFormat},
 		{Name: "REPORT_FILE", Value: esrallyReportFile},
 		{Name: "EXTRA_ARGS", Value: strings.Join(cr.Spec.ExtraArgs, " ")},
@@ -429,6 +429,14 @@ func esrallyTrackParams(cr *v1alpha1.Esrally) string {
 		return ""
 	}
 	return string(data)
+}
+
+func esrallyTelemetry(cr *v1alpha1.Esrally) []string {
+	telemetry := make([]string, 0, len(cr.Spec.Telemetry))
+	for _, device := range cr.Spec.Telemetry {
+		telemetry = append(telemetry, string(device))
+	}
+	return telemetry
 }
 
 func esrallyClientOptions(cr *v1alpha1.Esrally) string {

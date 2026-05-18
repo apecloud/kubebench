@@ -18,6 +18,25 @@ package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+// EsrallyTelemetry is a Rally runtime telemetry device supported by
+// --pipeline=benchmark-only.
+// +kubebuilder:validation:Enum={node-stats,recovery-stats,ccr-stats,segment-stats,transform-stats,searchable-snapshots-stats,shard-stats,data-stream-stats,ingest-pipeline-stats,disk-usage-stats,geoip-stats}
+type EsrallyTelemetry string
+
+const (
+	EsrallyTelemetryNodeStats                EsrallyTelemetry = "node-stats"
+	EsrallyTelemetryRecoveryStats            EsrallyTelemetry = "recovery-stats"
+	EsrallyTelemetryCCRStats                 EsrallyTelemetry = "ccr-stats"
+	EsrallyTelemetrySegmentStats             EsrallyTelemetry = "segment-stats"
+	EsrallyTelemetryTransformStats           EsrallyTelemetry = "transform-stats"
+	EsrallyTelemetrySearchableSnapshotsStats EsrallyTelemetry = "searchable-snapshots-stats"
+	EsrallyTelemetryShardStats               EsrallyTelemetry = "shard-stats"
+	EsrallyTelemetryDataStreamStats          EsrallyTelemetry = "data-stream-stats"
+	EsrallyTelemetryIngestPipelineStats      EsrallyTelemetry = "ingest-pipeline-stats"
+	EsrallyTelemetryDiskUsageStats           EsrallyTelemetry = "disk-usage-stats"
+	EsrallyTelemetryGeoIPStats               EsrallyTelemetry = "geoip-stats"
+)
+
 // EsrallySpec defines the desired state of Esrally.
 type EsrallySpec struct {
 	// targetVersion is the Elasticsearch target version used for ESRally compatibility decisions.
@@ -33,7 +52,7 @@ type EsrallySpec struct {
 
 	// telemetry lists Rally telemetry devices.
 	// +optional
-	Telemetry []string `json:"telemetry,omitempty"`
+	Telemetry []EsrallyTelemetry `json:"telemetry,omitempty"`
 
 	// dataProfile selects the generated dataset shape for the prepare step.
 	// +kubebuilder:validation:Enum={logs,metrics}

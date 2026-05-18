@@ -91,6 +91,6 @@ kubebenchImages:
   ycsb: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/go-ycsb:latest"
   fio: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/fio:latest"
   redisbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/redis:7.0.5"
-  esrally: "elastic/rally:2.12.0"
+  esrally: "elastic/rally:2.13.0"
   exporter: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.12"
   tools: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.12"

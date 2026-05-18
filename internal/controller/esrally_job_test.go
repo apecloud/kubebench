@@ -313,7 +313,10 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 		{
 			name: "telemetry and extra args are wired through",
 			mutate: func(cr *benchmarkv1alpha1.Esrally) {
-				cr.Spec.Telemetry = []string{"node-stats", "disk-usage-stats"}
+				cr.Spec.Telemetry = []benchmarkv1alpha1.EsrallyTelemetry{
+					benchmarkv1alpha1.EsrallyTelemetryNodeStats,
+					benchmarkv1alpha1.EsrallyTelemetryDiskUsageStats,
+				}
 				cr.Spec.ExtraArgs = []string{"--kill-running-processes", "--enable-driver-profiling"}
 			},
 			wantContainers: 2,

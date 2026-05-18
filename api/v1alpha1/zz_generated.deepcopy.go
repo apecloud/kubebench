@@ -128,7 +128,7 @@ func (in *EsrallySpec) DeepCopyInto(out *EsrallySpec) {
 	*out = *in
 	if in.Telemetry != nil {
 		in, out := &in.Telemetry, &out.Telemetry
-		*out = make([]string, len(*in))
+		*out = make([]EsrallyTelemetry, len(*in))
 		copy(*out, *in)
 	}
 	in.BenchCommon.DeepCopyInto(&out.BenchCommon)

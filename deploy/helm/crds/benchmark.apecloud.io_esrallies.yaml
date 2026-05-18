@@ -43,6 +43,15 @@ spec:
                 enum:
                 - logs
                 - metrics
+                - http_logs
+                - metricbeat
+                - geonames
+                - nyc_taxis
+                - noaa
+                - nested
+                - pmc
+                - so
+                - dense_vector
                 type: string
               documentCount:
                 default: 10000

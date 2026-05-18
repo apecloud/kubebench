@@ -55,7 +55,7 @@ type EsrallySpec struct {
 	Telemetry []EsrallyTelemetry `json:"telemetry,omitempty"`
 
 	// dataProfile selects the generated dataset shape for the prepare step.
-	// +kubebuilder:validation:Enum={logs,metrics}
+	// +kubebuilder:validation:Enum={logs,metrics,http_logs,metricbeat,geonames,nyc_taxis,noaa,nested,pmc,so,dense_vector}
 	// +kubebuilder:default=logs
 	// +optional
 	DataProfile string `json:"dataProfile,omitempty"`

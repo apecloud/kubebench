@@ -38,7 +38,7 @@ spec:
     port: 9200
     database: kubebench-metrics
   targetVersion: 8.12.2
-  dataProfile: metrics
+  dataProfile: metricbeat
   documentCount: 100000
 ```
 
@@ -75,7 +75,7 @@ When Kubebench can use the basic target fields directly, it adds a precheck Job 
 | `targetVersion` | Optional Elasticsearch target version, such as `7.17.0` or `8.12.2`, used for version-aware kubebench behavior. |
 | `onError` | `abort`, `continue`, or `continue-on-network`. Defaults to `abort`. |
 | `telemetry` | Optional Rally runtime telemetry devices supported by `--pipeline=benchmark-only`: `node-stats`, `recovery-stats`, `ccr-stats`, `segment-stats`, `transform-stats`, `searchable-snapshots-stats`, `shard-stats`, `data-stream-stats`, `ingest-pipeline-stats`, `disk-usage-stats`, or `geoip-stats`. |
-| `dataProfile` | Generated dataset profile for cleanup/prepare. One of `logs` or `metrics`. Defaults to `logs`. |
+| `dataProfile` | Generated dataset profile for cleanup/prepare. One of `logs`, `metrics`, `http_logs`, `metricbeat`, `geonames`, `nyc_taxis`, `noaa`, `nested`, `pmc`, `so`, or `dense_vector`. Defaults to `logs`. |
 | `documentCount` | Number of generated documents. Defaults to `10000`. |
 
 `spec.target.database` is the generated Elasticsearch index name. When omitted, it defaults to `kubebench`.
@@ -100,9 +100,29 @@ Kubebench runs `tools elasticsearch ping` against `spec.target.host:spec.target.
 
 ## Generated Data Shapes
 
-`logs` creates log-like documents with timestamp, service, host, HTTP method/path/status, latency, bytes, and message fields.
+`logs` creates compact service log documents with timestamp, service, host, HTTP method/path/status, latency, bytes, and message fields.
 
-`metrics` creates metric-like documents with timestamp, host/pod/container labels, and CPU, memory, disk, and network numeric fields.
+`metrics` creates generic infrastructure metric documents with timestamp, host/pod/container labels, and CPU, memory, disk, and network numeric fields.
+
+`http_logs` creates HTTP access log documents with client IP, method, URL, status, bytes, user agent, referer, and response latency fields.
+
+`metricbeat` creates Metricbeat-like host and Kubernetes metric documents with event dataset, host, pod, namespace, CPU, memory, and filesystem utilization fields.
+
+`geonames` creates location documents with place names, country and feature codes, population/elevation fields, and a `geo_point` location.
+
+`nyc_taxis` creates trip documents with pickup/dropoff timestamps, pickup/dropoff `geo_point` locations, passenger count, distance, fare, payment type, and vendor fields.
+
+`noaa` creates weather-observation documents with station metadata, `geo_point` location, temperature, precipitation, wind speed, and weather type fields.
+
+`nested` creates order documents with nested line items for nested-query style workloads.
+
+`pmc` creates full-text publication-style documents with title, abstract, body, journal, year, and authors fields.
+
+`so` creates Stack Overflow-style question documents with title, body, tags, scores, answer counts, and nested accepted-answer content.
+
+`dense_vector` creates small semantic-search documents with an 8-dimensional `dense_vector` field. When `targetVersion` is set, Kubebench rejects this profile for Elasticsearch versions below 7 before indexing.
+
+Kubebench creates the target index with profile-specific mappings before bulk indexing. If the index already exists, prepare appends documents and relies on the existing mappings.
 
 ## Storage
 

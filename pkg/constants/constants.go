@@ -42,6 +42,15 @@ const (
 )
 
 const (
-	EsrallyDataProfileLogs    = "logs"
-	EsrallyDataProfileMetrics = "metrics"
+	EsrallyDataProfileLogs        = "logs"
+	EsrallyDataProfileMetrics     = "metrics"
+	EsrallyDataProfileHTTPLogs    = "http_logs"
+	EsrallyDataProfileMetricbeat  = "metricbeat"
+	EsrallyDataProfileGeonames    = "geonames"
+	EsrallyDataProfileNYCTaxis    = "nyc_taxis"
+	EsrallyDataProfileNOAA        = "noaa"
+	EsrallyDataProfileNested      = "nested"
+	EsrallyDataProfilePMC         = "pmc"
+	EsrallyDataProfileSO          = "so"
+	EsrallyDataProfileDenseVector = "dense_vector"
 )

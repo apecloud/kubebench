@@ -115,9 +115,9 @@ func TestNewEsrallyJobsHonorsStepForGeneratedData(t *testing.T) {
 
 func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 	cr := newEsrallyTestCR()
-	cr.Spec.DataProfile = constants.EsrallyDataProfileMetrics
+	cr.Spec.DataProfile = constants.EsrallyDataProfileGeonames
 	cr.Spec.DocumentCount = 1234
-	cr.Spec.Target.Database = "metrics-index"
+	cr.Spec.Target.Database = "geonames-index"
 	cr.Spec.Target.User = "elastic"
 	cr.Spec.Target.Password = "secret"
 
@@ -125,11 +125,11 @@ func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 	if got := envValue(job, "TARGET_URL"); got != "http://es.default.svc:9200" {
 		t.Fatalf("expected target URL env, got %s", got)
 	}
-	if got := envValue(job, "INDEX_NAME"); got != "metrics-index" {
+	if got := envValue(job, "INDEX_NAME"); got != "geonames-index" {
 		t.Fatalf("expected generated index env, got %s", got)
 	}
-	if got := envValue(job, "DATA_PROFILE"); got != constants.EsrallyDataProfileMetrics {
-		t.Fatalf("expected metrics data profile env, got %s", got)
+	if got := envValue(job, "DATA_PROFILE"); got != constants.EsrallyDataProfileGeonames {
+		t.Fatalf("expected geonames data profile env, got %s", got)
 	}
 	if got := envValue(job, "DOCUMENT_COUNT"); got != "1234" {
 		t.Fatalf("expected document count env, got %s", got)
@@ -139,9 +139,38 @@ func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 	}
 
 	script := job.Spec.Template.Spec.Containers[0].Args[0]
-	for _, want := range []string{"python3 <<'PY'", "/_bulk", "cpu_pct", "memory_mb", "targetVersion 6 or newer", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready"} {
+	for _, want := range []string{"python3 <<'PY'", "/_bulk", "create_index()", "geo_point", "geonames_doc", "targetVersion 6 or newer", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("prepare script missing %s:\n%s", want, script)
+		}
+	}
+}
+
+func TestNewEsrallyPrepareScriptSupportsExpandedGeneratedProfiles(t *testing.T) {
+	cr := newEsrallyTestCR()
+
+	job := NewEsrallyPrepareJobs(cr)[0]
+	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	for _, want := range []string{
+		constants.EsrallyDataProfileLogs,
+		constants.EsrallyDataProfileMetrics,
+		constants.EsrallyDataProfileHTTPLogs,
+		constants.EsrallyDataProfileMetricbeat,
+		constants.EsrallyDataProfileGeonames,
+		constants.EsrallyDataProfileNYCTaxis,
+		constants.EsrallyDataProfileNOAA,
+		constants.EsrallyDataProfileNested,
+		constants.EsrallyDataProfilePMC,
+		constants.EsrallyDataProfileSO,
+		constants.EsrallyDataProfileDenseVector,
+		"resource_already_exists_exception",
+		"nested",
+		"dense_vector",
+		"dims",
+		"unsupported dataProfile",
+	} {
+		if !strings.Contains(script, want) {
+			t.Fatalf("prepare script missing expanded profile support %s:\n%s", want, script)
 		}
 	}
 }

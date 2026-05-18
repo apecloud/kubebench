@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -139,12 +140,25 @@ func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 	if got := envValue(job, "DOCUMENT_COUNT"); got != "1234" {
 		t.Fatalf("expected document count env, got %s", got)
 	}
+	if got := envValue(job, "TARGET_VERSION"); got != "" {
+		t.Fatalf("expected empty target version env by default, got %s", got)
+	}
 
 	script := job.Spec.Template.Spec.Containers[0].Args[0]
-	for _, want := range []string{"python3 <<'PY'", "/_bulk", "cpu_pct", "memory_mb", "Generated ESRally dataset is ready"} {
+	for _, want := range []string{"python3 <<'PY'", "/_bulk", "cpu_pct", "memory_mb", "targetVersion 6 or newer", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("prepare script missing %s:\n%s", want, script)
 		}
+	}
+}
+
+func TestNewEsrallyPrepareJobsCarriesTargetVersion(t *testing.T) {
+	cr := newEsrallyTestCR()
+	cr.Spec.TargetVersion = "8.12.2"
+
+	job := NewEsrallyPrepareJobs(cr)[0]
+	if got := envValue(job, "TARGET_VERSION"); got != "8.12.2" {
+		t.Fatalf("expected target version env, got %s", got)
 	}
 }
 
@@ -161,6 +175,29 @@ func TestNewEsrallyCleanupJobsDeletesGeneratedIndex(t *testing.T) {
 	for _, want := range []string{"-X DELETE", "${TARGET_URL}/${INDEX_NAME}", "200|202|404"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("cleanup script missing %s:\n%s", want, script)
+		}
+	}
+	if !strings.Contains(script, "targetVersion 6 or newer") {
+		t.Fatalf("expected cleanup to validate targetVersion before deleting:\n%s", script)
+	}
+	if strings.Index(script, "targetVersion 6 or newer") > strings.Index(script, "Deleting generated ESRally index") {
+		t.Fatalf("expected targetVersion guard before index deletion:\n%s", script)
+	}
+}
+
+func TestNewEsrallyPrepareJobsSupportsElasticsearch6TypedBulkMetadata(t *testing.T) {
+	cr := newEsrallyTestCR()
+	cr.Spec.TargetVersion = "6.8.23"
+
+	job := NewEsrallyPrepareJobs(cr)[0]
+	if got := envValue(job, "TARGET_VERSION"); got != "6.8.23" {
+		t.Fatalf("expected target version env, got %s", got)
+	}
+
+	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	for _, want := range []string{`target_major_version == 6`, `action["_type"] = "_doc"`, "bulk_index_action()"} {
+		if !strings.Contains(script, want) {
+			t.Fatalf("prepare script missing ES6 typed bulk support %s:\n%s", want, script)
 		}
 	}
 }
@@ -245,6 +282,75 @@ func TestNewEsrallyRunJobsWithTrackPathAndTargetHosts(t *testing.T) {
 		if !strings.Contains(script, want) {
 			t.Fatalf("script missing %s:\n%s", want, script)
 		}
+	}
+}
+
+func TestNewEsrallyRunJobsAddsTargetVersionTrackParam(t *testing.T) {
+	cr := newEsrallyTestCR()
+	cr.Spec.TrackPath = "/tracks/generated"
+	cr.Spec.TargetVersion = " 8.12.2 "
+	cr.Spec.TrackParams = map[string]string{"target_index": "kubebench"}
+
+	job := NewEsrallyRunJobs(cr)[0]
+	if got := envValue(job, "TARGET_VERSION"); got != "8.12.2" {
+		t.Fatalf("expected trimmed target version env, got %q", got)
+	}
+
+	params := trackParamsFromEnv(t, job)
+	if got := params["target_index"]; got != "kubebench" {
+		t.Fatalf("expected existing track param to remain, got %q", got)
+	}
+	if got := params["target_version"]; got != "8.12.2" {
+		t.Fatalf("expected target_version track param, got %q in %#v", got, params)
+	}
+
+	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	if strings.Contains(script, "--distribution-version") {
+		t.Fatalf("benchmark-only run script must not pass --distribution-version:\n%s", script)
+	}
+}
+
+func TestEsrallyTrackParamsPreservesExplicitTargetVersion(t *testing.T) {
+	tests := []struct {
+		name       string
+		params     map[string]string
+		wantKey    string
+		wantValue  string
+		forbidKey  string
+		forbidUsed bool
+	}{
+		{
+			name:      "snake case",
+			params:    map[string]string{"target_version": "7.17.0"},
+			wantKey:   "target_version",
+			wantValue: "7.17.0",
+		},
+		{
+			name:       "camel case",
+			params:     map[string]string{"targetVersion": "7.17.0"},
+			wantKey:    "targetVersion",
+			wantValue:  "7.17.0",
+			forbidKey:  "target_version",
+			forbidUsed: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cr := newEsrallyTestCR()
+			cr.Spec.TargetVersion = "8.12.2"
+			cr.Spec.TrackParams = tt.params
+
+			params := parseTrackParams(t, esrallyTrackParams(cr))
+			if got := params[tt.wantKey]; got != tt.wantValue {
+				t.Fatalf("expected %s=%q, got %q in %#v", tt.wantKey, tt.wantValue, got, params)
+			}
+			if tt.forbidUsed {
+				if _, ok := params[tt.forbidKey]; ok {
+					t.Fatalf("did not expect injected %s in %#v", tt.forbidKey, params)
+				}
+			}
+		})
 	}
 }
 
@@ -400,6 +506,20 @@ func metricsContainerArg(job *batchv1.Job, name string) string {
 		}
 	}
 	return ""
+}
+
+func trackParamsFromEnv(t *testing.T, job *batchv1.Job) map[string]string {
+	t.Helper()
+	return parseTrackParams(t, envValue(job, "TRACK_PARAMS"))
+}
+
+func parseTrackParams(t *testing.T, value string) map[string]string {
+	t.Helper()
+	params := map[string]string{}
+	if err := json.Unmarshal([]byte(value), &params); err != nil {
+		t.Fatalf("failed to parse track params %q: %v", value, err)
+	}
+	return params
 }
 
 func newEsrallyTestCR() *benchmarkv1alpha1.Esrally {

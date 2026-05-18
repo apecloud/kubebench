@@ -15,6 +15,7 @@ spec:
     host: elasticsearch.default.svc
     port: 9200
     database: kubebench-logs
+  targetVersion: 8.12.2
   dataProfile: logs
   documentCount: 10000
   trackPath: /tracks/kubebench-generated

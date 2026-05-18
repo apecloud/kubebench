@@ -17,6 +17,7 @@ spec:
     host: elasticsearch.default.svc
     port: 9200
     database: kubebench-logs
+  targetVersion: 8.12.2
   dataProfile: logs
   documentCount: 100000
   trackPath: /tracks/kubebench-generated
@@ -37,6 +38,7 @@ spec:
     host: elasticsearch.default.svc
     port: 9200
     database: kubebench-metrics
+  targetVersion: 8.12.2
   dataProfile: metrics
   documentCount: 100000
   trackPath: /tracks/kubebench-generated
@@ -46,6 +48,8 @@ spec:
 For generated data, Kubebench supports the basic HTTP target fields `spec.target.host`, `spec.target.port`, `spec.target.user`, and `spec.target.password` during cleanup and prepare. `targetHosts` and raw Rally `clientOptions` are not parsed by the generated-data cleanup/prepare Jobs in this version.
 
 The run step requires `trackPath` to point at a local no-corpora Rally track packaged in the Rally image. Kubebench always passes `--offline` to Rally and does not expose API fields for remote Rally tracks, track repositories, or corpus downloads.
+
+`targetVersion` identifies the target Elasticsearch version for kubebench compatibility decisions. Kubebench does not pass it as Rally `--distribution-version` because ESRally uses Rally's `benchmark-only` pipeline against an already-running cluster.
 
 ## Concepts
 
@@ -78,6 +82,7 @@ When Kubebench can use the basic target fields directly, it adds a precheck Job 
 | `includeTasks` | Optional list of task names to run. |
 | `trackParams` | String map passed as Rally track parameters. |
 | `targetHosts` | Optional list of Rally target hosts for the run step. Defaults to `spec.target.host:spec.target.port`. |
+| `targetVersion` | Optional Elasticsearch target version, such as `7.17.0` or `8.12.2`, used for version-aware kubebench behavior. |
 | `clientOptions` | Raw Rally `--client-options` value for run-step auth, TLS, compression, API keys, and timeouts. |
 | `onError` | `abort`, `continue`, or `continue-on-network`. Defaults to `abort`. |
 | `testMode` | Adds Rally `--test-mode`. |
@@ -87,6 +92,8 @@ When Kubebench can use the basic target fields directly, it adds a precheck Job 
 | `documentCount` | Number of generated documents. Defaults to `10000`. |
 
 `spec.target.database` is the generated Elasticsearch index name. When omitted, it defaults to `kubebench`.
+
+When `targetVersion` is set, kubebench passes it to local Rally tracks as `target_version` in `--track-params` unless the user already supplied `target_version` or `targetVersion` in `trackParams`. Generated-data cleanup and prepare support Elasticsearch 6 and newer; for Elasticsearch 6, prepare writes bulk action metadata with `_type: _doc`, while Elasticsearch 7 and newer use typeless bulk metadata. Unsupported target versions fail before cleanup deletes the target index.
 
 ## Auth And TLS
 
@@ -122,6 +129,15 @@ spec:
     - query-match
   trackParams:
     target_index: kubebench
+```
+
+When `targetVersion` is set and `trackParams` does not already include a target version key, kubebench expands the Rally track params as if the following had been provided:
+
+```yaml
+spec:
+  targetVersion: 8.12.2
+  trackParams:
+    target_version: 8.12.2
 ```
 
 ## Generated Data Shapes

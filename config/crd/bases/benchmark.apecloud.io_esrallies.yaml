@@ -123,6 +123,8 @@ spec:
                 items:
                   type: string
                 type: array
+              targetVersion:
+                type: string
               telemetry:
                 items:
                   type: string

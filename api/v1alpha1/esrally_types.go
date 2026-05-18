@@ -42,6 +42,11 @@ type EsrallySpec struct {
 	// +optional
 	TargetHosts []string `json:"targetHosts,omitempty"`
 
+	// targetVersion is the Elasticsearch target version used for ESRally compatibility decisions.
+	// It is not passed to Rally as --distribution-version in benchmark-only mode.
+	// +optional
+	TargetVersion string `json:"targetVersion,omitempty"`
+
 	// clientOptions is passed to Rally --client-options. If empty, basic auth
 	// is synthesized from spec.target.user and spec.target.password when present.
 	// +optional

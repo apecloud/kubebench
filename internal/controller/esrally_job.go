@@ -116,10 +116,11 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 
 	env := []corev1.EnvVar{
 		{Name: "TARGET_HOSTS", Value: esrallyTargetHosts(cr)},
+		{Name: "TARGET_VERSION", Value: esrallyTargetVersion(cr)},
 		{Name: "TRACK_PATH", Value: cr.Spec.TrackPath},
 		{Name: "CHALLENGE", Value: cr.Spec.Challenge},
 		{Name: "INCLUDE_TASKS", Value: strings.Join(cr.Spec.IncludeTasks, ",")},
-		{Name: "TRACK_PARAMS", Value: esrallyTrackParams(cr.Spec.TrackParams)},
+		{Name: "TRACK_PARAMS", Value: esrallyTrackParams(cr)},
 		{Name: "CLIENT_OPTIONS", Value: esrallyClientOptions(cr)},
 		{Name: "ON_ERROR", Value: esrallyOnError(cr)},
 		{Name: "TELEMETRY", Value: strings.Join(cr.Spec.Telemetry, ",")},
@@ -190,6 +191,7 @@ func esrallyGeneratedDataEnv(cr *v1alpha1.Esrally) []corev1.EnvVar {
 		{Name: "INDEX_NAME", Value: esrallyIndexName(cr)},
 		{Name: "DATA_PROFILE", Value: esrallyDataProfile(cr)},
 		{Name: "DOCUMENT_COUNT", Value: fmt.Sprintf("%d", esrallyDocumentCount(cr))},
+		{Name: "TARGET_VERSION", Value: esrallyTargetVersion(cr)},
 		{Name: "ES_USERNAME", Value: cr.Spec.Target.User},
 		{Name: "ES_PASSWORD", Value: cr.Spec.Target.Password},
 		{Name: "CLIENT_OPTIONS", Value: cr.Spec.ClientOptions},
@@ -237,6 +239,15 @@ func esrallyGeneratedDataUnsupportedConfigCheck() string {
 		`  echo "generated ESRally data mode supports only spec.target.host, spec.target.port, spec.target.user, and spec.target.password for cleanup/prepare" | tee -a "` + esrallyLogFile + `"`,
 		`  exit 1`,
 		`fi`,
+		`if [ -n "$TARGET_VERSION" ]; then`,
+		`  target_major="${TARGET_VERSION%%.*}"`,
+		`  case "$target_major" in`,
+		`    ''|*[!0-9]*) echo "invalid targetVersion ${TARGET_VERSION}; expected an Elasticsearch version like 6.8.23, 7.17.0, or 8.12.2" | tee -a "` + esrallyLogFile + `"; exit 1 ;;`,
+		`  esac`,
+		`  if [ "$target_major" -lt 6 ]; then`,
+		`    echo "generated ESRally data mode supports targetVersion 6 or newer; got ${TARGET_VERSION}" | tee -a "` + esrallyLogFile + `"; exit 1`,
+		`  fi`,
+		`fi`,
 	}, "\n")
 }
 
@@ -254,6 +265,8 @@ target_url = os.environ["TARGET_URL"].rstrip("/")
 index_name = os.environ["INDEX_NAME"]
 profile = os.environ["DATA_PROFILE"]
 document_count = int(os.environ["DOCUMENT_COUNT"])
+target_version = os.environ.get("TARGET_VERSION", "").strip()
+target_major_version = int(target_version.split(".", 1)[0]) if target_version else 0
 username = os.environ.get("ES_USERNAME", "")
 password = os.environ.get("ES_PASSWORD", "")
 batch_size = 500
@@ -274,6 +287,12 @@ def request(method, path, body=None):
             return resp.status, resp.read().decode("utf-8")
     except urllib.error.HTTPError as err:
         return err.code, err.read().decode("utf-8")
+
+def bulk_index_action():
+    action = {"_index": index_name}
+    if target_major_version == 6:
+        action["_type"] = "_doc"
+    return {"index": action}
 
 def log_doc(i):
     status = random.choice([200, 200, 200, 201, 204, 301, 400, 404, 500])
@@ -320,7 +339,7 @@ while sent < document_count:
     upper = min(sent + batch_size, document_count)
     lines = []
     for i in range(sent, upper):
-        lines.append(json.dumps({"index": {"_index": index_name}}, separators=(",", ":")))
+        lines.append(json.dumps(bulk_index_action(), separators=(",", ":")))
         lines.append(json.dumps(make_doc(i), separators=(",", ":")))
     status, body = request("POST", "/_bulk", "\n".join(lines) + "\n")
     if status >= 300:
@@ -410,9 +429,29 @@ func esrallyTargetHosts(cr *v1alpha1.Esrally) string {
 	return fmt.Sprintf("%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port)
 }
 
-func esrallyTrackParams(params map[string]string) string {
+func esrallyTargetVersion(cr *v1alpha1.Esrally) string {
+	return strings.TrimSpace(cr.Spec.TargetVersion)
+}
+
+func esrallyTrackParams(cr *v1alpha1.Esrally) string {
+	params := cr.Spec.TrackParams
+	targetVersion := esrallyTargetVersion(cr)
 	if len(params) == 0 {
-		return ""
+		if targetVersion == "" {
+			return ""
+		}
+		params = map[string]string{"target_version": targetVersion}
+	} else if targetVersion != "" {
+		if _, ok := params["target_version"]; !ok {
+			if _, ok := params["targetVersion"]; !ok {
+				withTargetVersion := make(map[string]string, len(params)+1)
+				for key, value := range params {
+					withTargetVersion[key] = value
+				}
+				withTargetVersion["target_version"] = targetVersion
+				params = withTargetVersion
+			}
+		}
 	}
 	data, err := json.Marshal(params)
 	if err != nil {

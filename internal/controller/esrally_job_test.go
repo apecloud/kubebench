@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 
@@ -36,7 +37,7 @@ func TestNewEsrallyJobsDefaultGeneratedDataWorkflow(t *testing.T) {
 		t.Fatalf("expected default exporter report file, got %s", got)
 	}
 
-	script := runJob.Spec.Template.Spec.Containers[0].Args[0]
+	script := scriptContent(t, "scripts/esrally/run.sh")
 	for _, want := range []string{"--pipeline=benchmark-only", "--target-hosts", "--track-path", "--offline", "--challenge", "--track-params", "--client-options", "--report-file"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("script missing %s:\n%s", want, script)
@@ -138,19 +139,95 @@ func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 		t.Fatalf("expected empty target version env by default, got %s", got)
 	}
 
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
-	for _, want := range []string{"python3 <<'PY'", "/_bulk", "create_index()", "geo_point", "geonames_doc", "targetVersion 6 or newer", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready"} {
-		if !strings.Contains(script, want) {
-			t.Fatalf("prepare script missing %s:\n%s", want, script)
+	if got := job.Spec.Template.Spec.Containers[0].Args[0]; got != "/bin/sh "+esrallyPrepareScriptPath {
+		t.Fatalf("expected prepare script path, got %s", got)
+	}
+
+	prepareScript := scriptContent(t, "scripts/esrally/prepare.sh")
+	preparePython := scriptContent(t, "scripts/esrally/prepare.py")
+	versionGuard := scriptContent(t, "scripts/esrally/target_version_guard.sh")
+	for _, want := range []string{"/_bulk", "create_index()", "geo_point", "geonames_doc", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready"} {
+		if !strings.Contains(preparePython, want) {
+			t.Fatalf("prepare python script missing %s:\n%s", want, preparePython)
+		}
+	}
+	for _, want := range []string{"targetVersion 6 or newer"} {
+		if !strings.Contains(versionGuard, want) {
+			t.Fatalf("target version guard missing %s:\n%s", want, versionGuard)
+		}
+	}
+	for _, want := range []string{"prepare.py", "/tmp/esrally-prepare.out", "${ESRALLY_LOG_FILE}"} {
+		if !strings.Contains(prepareScript, want) {
+			t.Fatalf("prepare wrapper missing %s:\n%s", want, prepareScript)
+		}
+	}
+}
+
+func TestNewEsrallyJobScriptPaths(t *testing.T) {
+	cr := newEsrallyTestCR()
+
+	tests := []struct {
+		name string
+		job  *batchv1.Job
+		want string
+	}{
+		{name: "cleanup", job: NewEsrallyCleanupJobs(cr)[0], want: "/bin/sh " + esrallyCleanupScriptPath},
+		{name: "prepare", job: NewEsrallyPrepareJobs(cr)[0], want: "/bin/sh " + esrallyPrepareScriptPath},
+		{name: "run", job: NewEsrallyRunJobs(cr)[0], want: "/bin/sh " + esrallyRunScriptPath},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.job.Spec.Template.Spec.Containers[0].Args[0]; got != tt.want {
+				t.Fatalf("expected script command %q, got %q", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestEsrallyScriptsPackagedByDerivedRallyImage(t *testing.T) {
+	dockerfile := scriptContent(t, "images/esrally/Dockerfile")
+	for _, want := range []string{"FROM elastic/rally:2.13.0", "COPY scripts/esrally /usr/local/share/kubebench/esrally"} {
+		if !strings.Contains(dockerfile, want) {
+			t.Fatalf("derived ESRally Dockerfile missing %s:\n%s", want, dockerfile)
+		}
+	}
+}
+
+func TestEsrallyDefaultsUseDerivedRallyImage(t *testing.T) {
+	const wantImage = "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.13.0"
+	for path, content := range map[string]string{
+		"pkg/constants/env.go":    scriptContent(t, "pkg/constants/env.go"),
+		"deploy/helm/values.yaml": scriptContent(t, "deploy/helm/values.yaml"),
+	} {
+		if !strings.Contains(content, wantImage) {
+			t.Fatalf("%s missing default ESRally image %s", path, wantImage)
+		}
+	}
+}
+
+func TestNewEsrallyJobsUseScriptsBuiltIntoWorkloadImage(t *testing.T) {
+	cr := newEsrallyTestCR()
+
+	for _, job := range []*batchv1.Job{
+		NewEsrallyCleanupJobs(cr)[0],
+		NewEsrallyPrepareJobs(cr)[0],
+		NewEsrallyRunJobs(cr)[0],
+	} {
+		if len(job.Spec.Template.Spec.InitContainers) != 0 {
+			t.Fatalf("expected no script injection init containers, got %#v", job.Spec.Template.Spec.InitContainers)
+		}
+		if hasVolume(job, "esrally-scripts") {
+			t.Fatalf("expected scripts to come from workload image, got script volume: %#v", job.Spec.Template.Spec.Volumes)
+		}
+		if !strings.Contains(job.Spec.Template.Spec.Containers[0].Args[0], "/usr/local/share/kubebench/esrally/") {
+			t.Fatalf("expected workload image script path, got %#v", job.Spec.Template.Spec.Containers[0].Args)
 		}
 	}
 }
 
 func TestNewEsrallyPrepareScriptSupportsExpandedGeneratedProfiles(t *testing.T) {
-	cr := newEsrallyTestCR()
-
-	job := NewEsrallyPrepareJobs(cr)[0]
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	script := scriptContent(t, "scripts/esrally/prepare.py")
 	for _, want := range []string{
 		constants.EsrallyDataProfileLogs,
 		constants.EsrallyDataProfileMetrics,
@@ -194,17 +271,18 @@ func TestNewEsrallyCleanupJobsDeletesGeneratedIndex(t *testing.T) {
 		t.Fatalf("expected cleanup index env, got %s", got)
 	}
 
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	cleanupScript := scriptContent(t, "scripts/esrally/cleanup.sh")
 	for _, want := range []string{"-X DELETE", "${TARGET_URL}/${INDEX_NAME}", "200|202|404"} {
-		if !strings.Contains(script, want) {
-			t.Fatalf("cleanup script missing %s:\n%s", want, script)
+		if !strings.Contains(cleanupScript, want) {
+			t.Fatalf("cleanup script missing %s:\n%s", want, cleanupScript)
 		}
 	}
-	if !strings.Contains(script, "targetVersion 6 or newer") {
-		t.Fatalf("expected cleanup to validate targetVersion before deleting:\n%s", script)
+	versionGuard := scriptContent(t, "scripts/esrally/target_version_guard.sh")
+	if !strings.Contains(versionGuard, "targetVersion 6 or newer") {
+		t.Fatalf("expected cleanup to validate targetVersion before deleting:\n%s", versionGuard)
 	}
-	if strings.Index(script, "targetVersion 6 or newer") > strings.Index(script, "Deleting generated ESRally index") {
-		t.Fatalf("expected targetVersion guard before index deletion:\n%s", script)
+	if strings.Index(cleanupScript, "target_version_guard.sh") > strings.Index(cleanupScript, "Deleting generated ESRally index") {
+		t.Fatalf("expected targetVersion guard before index deletion:\n%s", cleanupScript)
 	}
 }
 
@@ -217,7 +295,7 @@ func TestNewEsrallyPrepareJobsSupportsElasticsearch6TypedBulkMetadata(t *testing
 		t.Fatalf("expected target version env, got %s", got)
 	}
 
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	script := scriptContent(t, "scripts/esrally/prepare.py")
 	for _, want := range []string{`target_major_version == 6`, `action["_type"] = "_doc"`, "bulk_index_action()"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("prepare script missing ES6 typed bulk support %s:\n%s", want, script)
@@ -235,7 +313,7 @@ func TestNewEsrallyRunJobsUsesInternalGeneratedTrack(t *testing.T) {
 	if got := envValue(job, "CHALLENGE"); got != esrallyGeneratedChallenge {
 		t.Fatalf("expected internal challenge env, got %s", got)
 	}
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	script := scriptContent(t, "scripts/esrally/run.sh")
 	if strings.Contains(script, "spec."+"trackPath") {
 		t.Fatalf("run script leaked removed public track path API field:\n%s", script)
 	}
@@ -281,7 +359,7 @@ func TestNewEsrallyRunJobsUsesTargetHostAndPort(t *testing.T) {
 	if job.Spec.Template.Spec.Volumes[1].EmptyDir == nil {
 		t.Fatalf("expected rally-home emptyDir volume: %#v", job.Spec.Template.Spec.Volumes)
 	}
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	script := scriptContent(t, "scripts/esrally/run.sh")
 	for _, want := range []string{"--target-hosts", "--track-path", "--offline"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("script missing %s:\n%s", want, script)
@@ -311,7 +389,7 @@ func TestNewEsrallyRunJobsAddsTargetVersionTrackParam(t *testing.T) {
 		t.Fatalf("expected target_version track param, got %q in %#v", got, params)
 	}
 
-	script := job.Spec.Template.Spec.Containers[0].Args[0]
+	script := scriptContent(t, "scripts/esrally/run.sh")
 	if strings.Contains(script, "--distribution-version") {
 		t.Fatalf("benchmark-only run script must not pass --distribution-version:\n%s", script)
 	}
@@ -374,7 +452,7 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 					t.Fatalf("expected env %s=%q, got %q", name, want, got)
 				}
 			}
-			script := job.Spec.Template.Spec.Containers[0].Args[0]
+			script := scriptContent(t, "scripts/esrally/run.sh")
 			for _, want := range tt.wantScriptParts {
 				if !strings.Contains(script, want) {
 					t.Fatalf("script missing %s:\n%s", want, script)
@@ -500,4 +578,25 @@ func jobNames(jobs []*batchv1.Job) []string {
 		names = append(names, job.Name)
 	}
 	return names
+}
+
+func hasVolume(job *batchv1.Job, name string) bool {
+	for _, volume := range job.Spec.Template.Spec.Volumes {
+		if volume.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func scriptContent(t *testing.T, path string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		data, err = os.ReadFile("../.." + "/" + path)
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", path, err)
+		}
+	}
+	return string(data)
 }

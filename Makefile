@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller
 VERSION ?= latest
-ESRALLY_IMG ?= apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.13.0
+ESRALLY_IMG ?= apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.12.0
 ESRALLY_PLATFORMS ?= linux/arm64,linux/amd64
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27.1

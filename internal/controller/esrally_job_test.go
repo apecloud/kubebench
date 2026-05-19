@@ -187,7 +187,7 @@ func TestNewEsrallyJobScriptPaths(t *testing.T) {
 
 func TestEsrallyScriptsPackagedByDerivedRallyImage(t *testing.T) {
 	dockerfile := scriptContent(t, "images/esrally/Dockerfile")
-	for _, want := range []string{"FROM elastic/rally:2.13.0", "COPY scripts/esrally /usr/local/share/kubebench/esrally"} {
+	for _, want := range []string{"FROM elastic/rally:2.12.0", "COPY scripts/esrally /usr/local/share/kubebench/esrally"} {
 		if !strings.Contains(dockerfile, want) {
 			t.Fatalf("derived ESRally Dockerfile missing %s:\n%s", want, dockerfile)
 		}
@@ -195,7 +195,7 @@ func TestEsrallyScriptsPackagedByDerivedRallyImage(t *testing.T) {
 }
 
 func TestEsrallyDefaultsUseDerivedRallyImage(t *testing.T) {
-	const wantImage = "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.13.0"
+	const wantImage = "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.12.0"
 	for path, content := range map[string]string{
 		"pkg/constants/env.go":    scriptContent(t, "pkg/constants/env.go"),
 		"deploy/helm/values.yaml": scriptContent(t, "deploy/helm/values.yaml"),

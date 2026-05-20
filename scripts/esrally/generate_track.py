@@ -33,6 +33,7 @@ workload = os.environ.get("WORKLOAD", "all")
 target_version = os.environ.get("TARGET_VERSION", "").strip()
 track_path = Path(os.environ["GENERATED_TRACK_PATH"])
 documents_file = Path(os.environ["DOCUMENTS_FILE"])
+index_body_file = "index.json"
 
 random.seed(7)
 base_time = datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
@@ -579,7 +580,7 @@ def build_track(uncompressed_bytes):
     return {
         "version": 2,
         "description": "Kubebench generated ESRally workload",
-        "indices": [{"name": "{{target_index}}", "body": index_body_for_profile()}],
+        "indices": [{"name": "{{target_index}}", "body": index_body_file}],
         "corpora": [{"name": "kubebench-generated", "documents": [document_entry]}],
         "operations": operations,
         "challenges": [
@@ -597,7 +598,9 @@ print(
     f"targetVersion={target_version or 'unspecified'} index={index_name}"
 )
 uncompressed_bytes = write_documents()
+index_file = track_path / index_body_file
+index_file.write_text(json.dumps(index_body_for_profile(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 track = build_track(uncompressed_bytes)
 track_file = track_path / "track.json"
 track_file.write_text(json.dumps(track, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-print(f"Generated Rally track {track_file} and corpus {documents_file}")
+print(f"Generated Rally track {track_file}, mapping {index_file}, and corpus {documents_file}")

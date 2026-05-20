@@ -253,6 +253,8 @@ func TestNewEsrallyGenerateTrackScriptSupportsExpandedGeneratedProfiles(t *testi
 		"dense_vector",
 		"dims",
 		"unsupported dataProfile",
+		`"body": index_body_file`,
+		`index_file.write_text`,
 		"write_documents",
 		"build_track",
 	} {

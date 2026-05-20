@@ -139,27 +139,21 @@ func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 		t.Fatalf("expected empty target version env by default, got %s", got)
 	}
 
-	if got := job.Spec.Template.Spec.Containers[0].Args[0]; got != "/bin/sh "+esrallyPrepareScriptPath {
+	if got := job.Spec.Template.Spec.Containers[0].Args[0]; got != esrallyPrepareScriptPath {
 		t.Fatalf("expected prepare script path, got %s", got)
 	}
+	if got := strings.Join(job.Spec.Template.Spec.Containers[0].Command, " "); got != "python3" {
+		t.Fatalf("expected prepare to run python3 directly, got command %#v", job.Spec.Template.Spec.Containers[0].Command)
+	}
 
-	prepareScript := scriptContent(t, "scripts/esrally/prepare.sh")
 	preparePython := scriptContent(t, "scripts/esrally/prepare.py")
-	versionGuard := scriptContent(t, "scripts/esrally/target_version_guard.sh")
-	for _, want := range []string{"/_bulk", "create_index()", "geo_point", "geonames_doc", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready"} {
+	for _, want := range []string{"/_bulk", "create_index()", "geo_point", "geonames_doc", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready", "targetVersion 6 or newer", "ESRALLY_LOG_FILE"} {
 		if !strings.Contains(preparePython, want) {
 			t.Fatalf("prepare python script missing %s:\n%s", want, preparePython)
 		}
 	}
-	for _, want := range []string{"targetVersion 6 or newer"} {
-		if !strings.Contains(versionGuard, want) {
-			t.Fatalf("target version guard missing %s:\n%s", want, versionGuard)
-		}
-	}
-	for _, want := range []string{"prepare.py", "/tmp/esrally-prepare.out", "${ESRALLY_LOG_FILE}"} {
-		if !strings.Contains(prepareScript, want) {
-			t.Fatalf("prepare wrapper missing %s:\n%s", want, prepareScript)
-		}
+	if strings.Index(preparePython, "validate_target_version()") > strings.Index(preparePython, "Generating") {
+		t.Fatalf("expected targetVersion guard before dataset generation:\n%s", preparePython)
 	}
 }
 
@@ -171,8 +165,8 @@ func TestNewEsrallyJobScriptPaths(t *testing.T) {
 		job  *batchv1.Job
 		want string
 	}{
-		{name: "cleanup", job: NewEsrallyCleanupJobs(cr)[0], want: "/bin/sh " + esrallyCleanupScriptPath},
-		{name: "prepare", job: NewEsrallyPrepareJobs(cr)[0], want: "/bin/sh " + esrallyPrepareScriptPath},
+		{name: "cleanup", job: NewEsrallyCleanupJobs(cr)[0], want: esrallyCleanupScriptPath},
+		{name: "prepare", job: NewEsrallyPrepareJobs(cr)[0], want: esrallyPrepareScriptPath},
 		{name: "run", job: NewEsrallyRunJobs(cr)[0], want: "/bin/sh " + esrallyRunScriptPath},
 	}
 
@@ -271,18 +265,18 @@ func TestNewEsrallyCleanupJobsDeletesGeneratedIndex(t *testing.T) {
 		t.Fatalf("expected cleanup index env, got %s", got)
 	}
 
-	cleanupScript := scriptContent(t, "scripts/esrally/cleanup.sh")
-	for _, want := range []string{"-X DELETE", "${TARGET_URL}/${INDEX_NAME}", "200|202|404"} {
-		if !strings.Contains(cleanupScript, want) {
-			t.Fatalf("cleanup script missing %s:\n%s", want, cleanupScript)
+	cleanupPython := scriptContent(t, "scripts/esrally/cleanup.py")
+	for _, want := range []string{`method="DELETE"`, `f"{target_url}/{index_name}"`, "status in (200, 202, 404)", "targetVersion 6 or newer", "ESRALLY_LOG_FILE"} {
+		if !strings.Contains(cleanupPython, want) {
+			t.Fatalf("cleanup python missing %s:\n%s", want, cleanupPython)
 		}
 	}
-	versionGuard := scriptContent(t, "scripts/esrally/target_version_guard.sh")
-	if !strings.Contains(versionGuard, "targetVersion 6 or newer") {
-		t.Fatalf("expected cleanup to validate targetVersion before deleting:\n%s", versionGuard)
+	container := job.Spec.Template.Spec.Containers[0]
+	if got := strings.Join(container.Command, " "); got != "python3" {
+		t.Fatalf("expected cleanup to run python3 directly, got command %#v", container.Command)
 	}
-	if strings.Index(cleanupScript, "target_version_guard.sh") > strings.Index(cleanupScript, "Deleting generated ESRally index") {
-		t.Fatalf("expected targetVersion guard before index deletion:\n%s", cleanupScript)
+	if strings.Index(cleanupPython, "validate_target_version()") > strings.Index(cleanupPython, "Deleting generated ESRally index") {
+		t.Fatalf("expected targetVersion guard before index deletion:\n%s", cleanupPython)
 	}
 }
 

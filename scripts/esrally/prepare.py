@@ -7,12 +7,32 @@ import sys
 import urllib.error
 import urllib.request
 
+log_file = os.environ["ESRALLY_LOG_FILE"]
+
+
+class Tee:
+    def __init__(self, stream, log_path):
+        self.stream = stream
+        self.log = open(log_path, "a", encoding="utf-8")
+
+    def write(self, data):
+        self.stream.write(data)
+        self.log.write(data)
+        self.flush()
+
+    def flush(self):
+        self.stream.flush()
+        self.log.flush()
+
+
+sys.stdout = Tee(sys.stdout, log_file)
+sys.stderr = Tee(sys.stderr, log_file)
+
 target_url = os.environ["TARGET_URL"].rstrip("/")
 index_name = os.environ["INDEX_NAME"]
 profile = os.environ["DATA_PROFILE"]
 document_count = int(os.environ["DOCUMENT_COUNT"])
 target_version = os.environ.get("TARGET_VERSION", "").strip()
-target_major_version = int(target_version.split(".", 1)[0]) if target_version else 0
 username = os.environ.get("ES_USERNAME", "")
 password = os.environ.get("ES_PASSWORD", "")
 batch_size = 500
@@ -30,6 +50,34 @@ supported_profiles = (
     "so",
     "dense_vector",
 )
+
+def utc_now():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+def utc_timestamp(timestamp):
+    return timestamp.isoformat().replace("+00:00", "Z")
+
+def validate_target_version():
+    if not target_version:
+        return 0
+
+    target_major = target_version.split(".", 1)[0]
+    if not target_major.isdigit():
+        print(
+            "invalid targetVersion "
+            f"{target_version}; expected an Elasticsearch version like 6.8.23, 7.17.0, or 8.12.2",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    target_major_version = int(target_major)
+    if target_major_version < 6:
+        print(f"generated ESRally data mode supports targetVersion 6 or newer; got {target_version}", file=sys.stderr)
+        sys.exit(1)
+
+    return target_major_version
+
+target_major_version = validate_target_version()
 
 def request(method, path, body=None):
     headers = {}
@@ -221,7 +269,7 @@ def log_doc(i):
     service = random.choice(["api", "checkout", "search", "billing"])
     path = random.choice(["/api/search", "/api/orders", "/api/cart", "/health", "/login"])
     return {
-        "@timestamp": (datetime.datetime.utcnow() - datetime.timedelta(seconds=document_count - i)).isoformat() + "Z",
+        "@timestamp": utc_timestamp(utc_now() - datetime.timedelta(seconds=document_count - i)),
         "service": service,
         "host": f"host-{i % 12}",
         "method": random.choice(["GET", "POST", "PUT", "DELETE"]),
@@ -234,7 +282,7 @@ def log_doc(i):
 
 def metrics_doc(i):
     return {
-        "@timestamp": (datetime.datetime.utcnow() - datetime.timedelta(seconds=document_count - i)).isoformat() + "Z",
+        "@timestamp": utc_timestamp(utc_now() - datetime.timedelta(seconds=document_count - i)),
         "host": f"node-{i % 10}",
         "pod": f"pod-{i % 30}",
         "container": random.choice(["app", "sidecar", "worker"]),
@@ -251,7 +299,7 @@ def http_logs_doc(i):
     status = random.choice([200, 200, 200, 200, 201, 204, 301, 302, 400, 401, 404, 429, 500, 503])
     url = random.choice(["/login", "/products", "/checkout", "/search", "/api/v1/orders", "/static/app.js"])
     return {
-        "@timestamp": (datetime.datetime.utcnow() - datetime.timedelta(milliseconds=(document_count - i) * 20)).isoformat() + "Z",
+        "@timestamp": utc_timestamp(utc_now() - datetime.timedelta(milliseconds=(document_count - i) * 20)),
         "client_ip": f"10.{i % 255}.{(i * 7) % 255}.{(i * 13) % 255}",
         "method": random.choice(["GET", "GET", "POST", "PUT", "DELETE"]),
         "url": url,
@@ -265,7 +313,7 @@ def http_logs_doc(i):
 def metricbeat_doc(i):
     namespace = random.choice(["default", "observability", "payments", "search"])
     return {
-        "@timestamp": (datetime.datetime.utcnow() - datetime.timedelta(seconds=document_count - i)).isoformat() + "Z",
+        "@timestamp": utc_timestamp(utc_now() - datetime.timedelta(seconds=document_count - i)),
         "host": {"name": f"node-{i % 24}"},
         "event": {"dataset": random.choice(["system.cpu", "system.memory", "system.filesystem", "kubernetes.pod"])},
         "system": {
@@ -295,11 +343,11 @@ def geonames_doc(i):
     }
 
 def nyc_taxis_doc(i):
-    pickup = datetime.datetime.utcnow() - datetime.timedelta(minutes=document_count - i)
+    pickup = utc_now() - datetime.timedelta(minutes=document_count - i)
     duration = random.randint(3, 75)
     return {
-        "pickup_datetime": pickup.isoformat() + "Z",
-        "dropoff_datetime": (pickup + datetime.timedelta(minutes=duration)).isoformat() + "Z",
+        "pickup_datetime": utc_timestamp(pickup),
+        "dropoff_datetime": utc_timestamp(pickup + datetime.timedelta(minutes=duration)),
         "pickup_location": {"lat": round(random.uniform(40.55, 40.90), 6), "lon": round(random.uniform(-74.05, -73.75), 6)},
         "dropoff_location": {"lat": round(random.uniform(40.55, 40.90), 6), "lon": round(random.uniform(-74.05, -73.75), 6)},
         "passenger_count": random.randint(1, 6),
@@ -311,7 +359,7 @@ def nyc_taxis_doc(i):
 
 def noaa_doc(i):
     return {
-        "@timestamp": (datetime.datetime.utcnow() - datetime.timedelta(hours=document_count - i)).isoformat() + "Z",
+        "@timestamp": utc_timestamp(utc_now() - datetime.timedelta(hours=document_count - i)),
         "station_id": f"STN{i % 10000:05d}",
         "station_name": random.choice(["Central Observatory", "Harbor Station", "Airport Station", "Mountain Station"]),
         "location": {"lat": round(random.uniform(-75, 75), 6), "lon": round(random.uniform(-180, 180), 6)},
@@ -332,7 +380,7 @@ def nested_doc(i):
             "price": round(random.uniform(1.0, 500.0), 2),
         })
     return {
-        "@timestamp": (datetime.datetime.utcnow() - datetime.timedelta(seconds=document_count - i)).isoformat() + "Z",
+        "@timestamp": utc_timestamp(utc_now() - datetime.timedelta(seconds=document_count - i)),
         "order_id": f"order-{i}",
         "customer_id": f"customer-{i % 1000}",
         "status": random.choice(["created", "paid", "shipped", "returned"]),
@@ -354,7 +402,7 @@ def so_doc(i):
     tag_pool = ["elasticsearch", "kubernetes", "golang", "python", "performance", "query-dsl", "indexing"]
     tags = random.sample(tag_pool, random.randint(2, 4))
     return {
-        "creation_date": (datetime.datetime.utcnow() - datetime.timedelta(days=i % 3650)).isoformat() + "Z",
+        "creation_date": utc_timestamp(utc_now() - datetime.timedelta(days=i % 3650)),
         "title": f"How to tune {' '.join(tags[:2])} workload {i}?",
         "body": f"I am benchmarking {' and '.join(tags)} and need predictable latency for query {i}.",
         "tags": tags,
@@ -369,7 +417,7 @@ def so_doc(i):
 
 def dense_vector_doc(i):
     return {
-        "@timestamp": (datetime.datetime.utcnow() - datetime.timedelta(seconds=document_count - i)).isoformat() + "Z",
+        "@timestamp": utc_timestamp(utc_now() - datetime.timedelta(seconds=document_count - i)),
         "title": f"Vector benchmark document {i}",
         "text": f"Generated semantic document about {random.choice(['search', 'databases', 'cloud', 'observability'])} number {i}",
         "category": random.choice(["search", "database", "cloud", "observability"]),
@@ -417,7 +465,7 @@ while sent < document_count:
     sent = upper
     print(f"Indexed {sent}/{document_count} documents")
 
-status, body = request("POST", f"/{index_name}/_refresh", "{}")
+status, body = request("POST", f"/{index_name}/_refresh")
 if status >= 300:
     print(f"refresh failed with HTTP {status}: {body[:1000]}", file=sys.stderr)
     sys.exit(1)

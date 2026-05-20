@@ -27,8 +27,8 @@ const (
 	esrallyTargetIndexParam   = "target_index"
 	esrallyTargetVersionParam = "target_version"
 	esrallyScriptDir          = "/usr/local/share/kubebench/esrally"
-	esrallyCleanupScriptPath  = esrallyScriptDir + "/cleanup.sh"
-	esrallyPrepareScriptPath  = esrallyScriptDir + "/prepare.sh"
+	esrallyCleanupScriptPath  = esrallyScriptDir + "/cleanup.py"
+	esrallyPrepareScriptPath  = esrallyScriptDir + "/prepare.py"
 	esrallyRunScriptPath      = esrallyScriptDir + "/run.sh"
 )
 
@@ -84,8 +84,8 @@ func NewEsrallyCleanupJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 			Name:            constants.ContainerName,
 			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvEsrally),
 			ImagePullPolicy: corev1.PullIfNotPresent,
-			Command:         []string{"/bin/sh", "-c"},
-			Args:            []string{fmt.Sprintf("/bin/sh %s", esrallyCleanupScriptPath)},
+			Command:         []string{"python3"},
+			Args:            []string{esrallyCleanupScriptPath},
 			Env:             esrallyGeneratedDataEnv(cr),
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: "log", MountPath: "/var/log"},
@@ -103,8 +103,8 @@ func NewEsrallyPrepareJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 			Name:            constants.ContainerName,
 			Image:           constants.GetBenchmarkImage(constants.KubebenchEnvEsrally),
 			ImagePullPolicy: corev1.PullIfNotPresent,
-			Command:         []string{"/bin/sh", "-c"},
-			Args:            []string{fmt.Sprintf("/bin/sh %s", esrallyPrepareScriptPath)},
+			Command:         []string{"python3"},
+			Args:            []string{esrallyPrepareScriptPath},
 			Env:             esrallyGeneratedDataEnv(cr),
 			VolumeMounts: []corev1.VolumeMount{
 				{Name: "log", MountPath: "/var/log"},

@@ -17,8 +17,8 @@ const (
 	esrallyLogFile            = "/var/log/esrally.log"
 	esrallyExitFile           = "/var/log/esrally.exit"
 	esrallyHomeMountPath      = "/rally/.rally"
-	esrallyGeneratedTrackPath = "/tracks/kubebench-generated"
-	esrallyGeneratedChallenge = "search"
+	esrallyGeneratedTrackPath = "/tmp/kubebench-esrally-track"
+	esrallyDocumentsFile      = esrallyGeneratedTrackPath + "/documents.json"
 	esrallyDefaultOnError     = "abort"
 	esrallyReportFormat       = "csv"
 	esrallyReportFile         = "/var/log/esrally-report.csv"
@@ -29,6 +29,7 @@ const (
 	esrallyScriptDir          = "/usr/local/share/kubebench/esrally"
 	esrallyCleanupScriptPath  = esrallyScriptDir + "/cleanup.py"
 	esrallyPrepareScriptPath  = esrallyScriptDir + "/prepare.py"
+	esrallyGenerateScriptPath = esrallyScriptDir + "/generate_track.py"
 	esrallyRunScriptPath      = esrallyScriptDir + "/run.sh"
 )
 
@@ -122,8 +123,12 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 	env := []corev1.EnvVar{
 		{Name: "TARGET_HOSTS", Value: esrallyTargetHosts(cr)},
 		{Name: "TARGET_VERSION", Value: esrallyTargetVersion(cr)},
-		{Name: "TRACK_PATH", Value: esrallyGeneratedTrackPath},
-		{Name: "CHALLENGE", Value: esrallyGeneratedChallenge},
+		{Name: "INDEX_NAME", Value: esrallyIndexName(cr)},
+		{Name: "DATA_PROFILE", Value: esrallyDataProfile(cr)},
+		{Name: "DOCUMENT_COUNT", Value: fmt.Sprintf("%d", esrallyDocumentCount(cr))},
+		{Name: "WORKLOAD", Value: esrallyWorkload(cr)},
+		{Name: "GENERATED_TRACK_PATH", Value: esrallyGeneratedTrackPath},
+		{Name: "DOCUMENTS_FILE", Value: esrallyDocumentsFile},
 		{Name: "TRACK_PARAMS", Value: esrallyTrackParams(cr)},
 		{Name: "CLIENT_OPTIONS", Value: esrallyClientOptions(cr)},
 		{Name: "ON_ERROR", Value: esrallyOnError(cr)},
@@ -132,6 +137,7 @@ func NewEsrallyRunJobs(cr *v1alpha1.Esrally) []*batchv1.Job {
 		{Name: "REPORT_FILE", Value: esrallyReportFile},
 		{Name: "ESRALLY_LOG_FILE", Value: esrallyLogFile},
 		{Name: "ESRALLY_EXIT_FILE", Value: esrallyExitFile},
+		{Name: "GENERATE_TRACK_SCRIPT", Value: esrallyGenerateScriptPath},
 		{Name: "EXTRA_ARGS", Value: strings.Join(cr.Spec.ExtraArgs, " ")},
 	}
 
@@ -196,6 +202,7 @@ func esrallyGeneratedDataEnv(cr *v1alpha1.Esrally) []corev1.EnvVar {
 		{Name: "INDEX_NAME", Value: esrallyIndexName(cr)},
 		{Name: "DATA_PROFILE", Value: esrallyDataProfile(cr)},
 		{Name: "DOCUMENT_COUNT", Value: fmt.Sprintf("%d", esrallyDocumentCount(cr))},
+		{Name: "WORKLOAD", Value: esrallyWorkload(cr)},
 		{Name: "TARGET_VERSION", Value: esrallyTargetVersion(cr)},
 		{Name: "ES_USERNAME", Value: cr.Spec.Target.User},
 		{Name: "ES_PASSWORD", Value: cr.Spec.Target.Password},
@@ -222,6 +229,13 @@ func esrallyDocumentCount(cr *v1alpha1.Esrally) int {
 		return cr.Spec.DocumentCount
 	}
 	return esrallyDefaultDocs
+}
+
+func esrallyWorkload(cr *v1alpha1.Esrally) string {
+	if cr.Spec.Workload != "" {
+		return cr.Spec.Workload
+	}
+	return constants.EsrallyWorkloadAll
 }
 
 func esrallyIndexName(cr *v1alpha1.Esrally) string {

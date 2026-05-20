@@ -54,3 +54,10 @@ const (
 	EsrallyDataProfileSO          = "so"
 	EsrallyDataProfileDenseVector = "dense_vector"
 )
+
+const (
+	EsrallyWorkloadIndex  = "index"
+	EsrallyWorkloadSearch = "search"
+	EsrallyWorkloadMixed  = "mixed"
+	EsrallyWorkloadAll    = "all"
+)

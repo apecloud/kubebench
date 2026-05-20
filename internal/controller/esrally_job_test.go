@@ -38,7 +38,7 @@ func TestNewEsrallyJobsDefaultGeneratedDataWorkflow(t *testing.T) {
 	}
 
 	script := scriptContent(t, "scripts/esrally/run.sh")
-	for _, want := range []string{"--pipeline=benchmark-only", "--target-hosts", "--track-path", "--offline", "--challenge", "--track-params", "--client-options", "--report-file"} {
+	for _, want := range []string{"generate_track.py", "--pipeline=benchmark-only", "--target-hosts", "--track-path", "$GENERATED_TRACK_PATH", "--offline", "--challenge", "$WORKLOAD", "--track-params", "--client-options", "--report-file"} {
 		if !strings.Contains(script, want) {
 			t.Fatalf("script missing %s:\n%s", want, script)
 		}
@@ -66,8 +66,14 @@ func TestNewEsrallyRunJobsDefaultsMetricsToCSVSharedReport(t *testing.T) {
 	if got := envValue(job, "REPORT_FORMAT"); got != esrallyReportFormat {
 		t.Fatalf("expected default report format env, got %s", got)
 	}
-	if got := envValue(job, "TRACK_PATH"); got != esrallyGeneratedTrackPath {
-		t.Fatalf("expected internal track path env, got %s", got)
+	if got := envValue(job, "GENERATED_TRACK_PATH"); got != esrallyGeneratedTrackPath {
+		t.Fatalf("expected generated track path env, got %s", got)
+	}
+	if got := envValue(job, "DOCUMENTS_FILE"); got != esrallyDocumentsFile {
+		t.Fatalf("expected generated corpus path env, got %s", got)
+	}
+	if got := envValue(job, "WORKLOAD"); got != constants.EsrallyWorkloadAll {
+		t.Fatalf("expected default workload env, got %s", got)
 	}
 	if got := envValue(job, "ON_ERROR"); got != esrallyDefaultOnError {
 		t.Fatalf("expected default onError env, got %s", got)
@@ -114,10 +120,11 @@ func TestNewEsrallyJobsHonorsStepForGeneratedData(t *testing.T) {
 	}
 }
 
-func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
+func TestNewEsrallyPrepareJobsValidatesGeneratedDataEnvAndScript(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.DataProfile = constants.EsrallyDataProfileGeonames
 	cr.Spec.DocumentCount = 1234
+	cr.Spec.Workload = constants.EsrallyWorkloadSearch
 	cr.Spec.Target.Database = "geonames-index"
 	cr.Spec.Target.User = "elastic"
 	cr.Spec.Target.Password = "secret"
@@ -135,6 +142,9 @@ func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 	if got := envValue(job, "DOCUMENT_COUNT"); got != "1234" {
 		t.Fatalf("expected document count env, got %s", got)
 	}
+	if got := envValue(job, "WORKLOAD"); got != constants.EsrallyWorkloadSearch {
+		t.Fatalf("expected workload env, got %s", got)
+	}
 	if got := envValue(job, "TARGET_VERSION"); got != "" {
 		t.Fatalf("expected empty target version env by default, got %s", got)
 	}
@@ -147,13 +157,18 @@ func TestNewEsrallyPrepareJobsGeneratedDataEnvAndScript(t *testing.T) {
 	}
 
 	preparePython := scriptContent(t, "scripts/esrally/prepare.py")
-	for _, want := range []string{"/_bulk", "create_index()", "geo_point", "geonames_doc", "bulk_index_action", `action["_type"] = "_doc"`, "Generated ESRally dataset is ready", "targetVersion 6 or newer", "ESRALLY_LOG_FILE"} {
+	for _, want := range []string{"Validated ESRally generated workload", "supported_workloads", "documentCount must be >= 1", "unsupported dataProfile", "unsupported workload", "targetVersion 6 or newer", "dense_vector requires Elasticsearch 7", "ESRALLY_LOG_FILE"} {
 		if !strings.Contains(preparePython, want) {
 			t.Fatalf("prepare python script missing %s:\n%s", want, preparePython)
 		}
 	}
-	if strings.Index(preparePython, "validate_target_version()") > strings.Index(preparePython, "Generating") {
-		t.Fatalf("expected targetVersion guard before dataset generation:\n%s", preparePython)
+	for _, forbidden := range []string{"/_bulk", "create_index()", "_refresh", "urllib.request"} {
+		if strings.Contains(preparePython, forbidden) {
+			t.Fatalf("prepare script must only validate, found %s:\n%s", forbidden, preparePython)
+		}
+	}
+	if strings.Index(preparePython, "validate_target_version()") > strings.Index(preparePython, "Validated ESRally generated workload") {
+		t.Fatalf("expected targetVersion guard before success log:\n%s", preparePython)
 	}
 }
 
@@ -220,8 +235,8 @@ func TestNewEsrallyJobsUseScriptsBuiltIntoWorkloadImage(t *testing.T) {
 	}
 }
 
-func TestNewEsrallyPrepareScriptSupportsExpandedGeneratedProfiles(t *testing.T) {
-	script := scriptContent(t, "scripts/esrally/prepare.py")
+func TestNewEsrallyGenerateTrackScriptSupportsExpandedGeneratedProfiles(t *testing.T) {
+	script := scriptContent(t, "scripts/esrally/generate_track.py")
 	for _, want := range []string{
 		constants.EsrallyDataProfileLogs,
 		constants.EsrallyDataProfileMetrics,
@@ -234,14 +249,15 @@ func TestNewEsrallyPrepareScriptSupportsExpandedGeneratedProfiles(t *testing.T) 
 		constants.EsrallyDataProfilePMC,
 		constants.EsrallyDataProfileSO,
 		constants.EsrallyDataProfileDenseVector,
-		"resource_already_exists_exception",
 		"nested",
 		"dense_vector",
 		"dims",
 		"unsupported dataProfile",
+		"write_documents",
+		"build_track",
 	} {
 		if !strings.Contains(script, want) {
-			t.Fatalf("prepare script missing expanded profile support %s:\n%s", want, script)
+			t.Fatalf("generate track script missing expanded profile support %s:\n%s", want, script)
 		}
 	}
 }
@@ -280,19 +296,19 @@ func TestNewEsrallyCleanupJobsDeletesGeneratedIndex(t *testing.T) {
 	}
 }
 
-func TestNewEsrallyPrepareJobsSupportsElasticsearch6TypedBulkMetadata(t *testing.T) {
+func TestNewEsrallyRunJobsSupportsElasticsearch6TypedCorpusAndMappings(t *testing.T) {
 	cr := newEsrallyTestCR()
 	cr.Spec.TargetVersion = "6.8.23"
 
-	job := NewEsrallyPrepareJobs(cr)[0]
+	job := NewEsrallyRunJobs(cr)[0]
 	if got := envValue(job, "TARGET_VERSION"); got != "6.8.23" {
 		t.Fatalf("expected target version env, got %s", got)
 	}
 
-	script := scriptContent(t, "scripts/esrally/prepare.py")
-	for _, want := range []string{`target_major_version == 6`, `action["_type"] = "_doc"`, "bulk_index_action()"} {
+	script := scriptContent(t, "scripts/esrally/generate_track.py")
+	for _, want := range []string{`target_major_version == 6`, `"target-type"] = "_doc"`, `return {"_doc": mappings}`} {
 		if !strings.Contains(script, want) {
-			t.Fatalf("prepare script missing ES6 typed bulk support %s:\n%s", want, script)
+			t.Fatalf("generate track script missing ES6 typed corpus support %s:\n%s", want, script)
 		}
 	}
 }
@@ -301,11 +317,11 @@ func TestNewEsrallyRunJobsUsesInternalGeneratedTrack(t *testing.T) {
 	cr := newEsrallyTestCR()
 
 	job := NewEsrallyRunJobs(cr)[0]
-	if got := envValue(job, "TRACK_PATH"); got != esrallyGeneratedTrackPath {
+	if got := envValue(job, "GENERATED_TRACK_PATH"); got != esrallyGeneratedTrackPath {
 		t.Fatalf("expected internal track path env, got %s", got)
 	}
-	if got := envValue(job, "CHALLENGE"); got != esrallyGeneratedChallenge {
-		t.Fatalf("expected internal challenge env, got %s", got)
+	if got := envValue(job, "WORKLOAD"); got != constants.EsrallyWorkloadAll {
+		t.Fatalf("expected default workload challenge env, got %s", got)
 	}
 	script := scriptContent(t, "scripts/esrally/run.sh")
 	if strings.Contains(script, "spec."+"trackPath") {
@@ -324,6 +340,9 @@ func TestEsrallyGeneratedDataDefaults(t *testing.T) {
 	}
 	if got := esrallyIndexName(cr); got != esrallyDefaultIndex {
 		t.Fatalf("expected default index %s, got %s", esrallyDefaultIndex, got)
+	}
+	if got := esrallyWorkload(cr); got != constants.EsrallyWorkloadAll {
+		t.Fatalf("expected default workload all, got %s", got)
 	}
 }
 
@@ -402,11 +421,12 @@ func TestNewEsrallyRunJobsProductionOptions(t *testing.T) {
 			name:           "defaults keep csv metrics contract",
 			wantContainers: 2,
 			wantEnv: map[string]string{
-				"TRACK_PATH":    esrallyGeneratedTrackPath,
-				"CHALLENGE":     esrallyGeneratedChallenge,
-				"ON_ERROR":      esrallyDefaultOnError,
-				"REPORT_FORMAT": esrallyReportFormat,
-				"REPORT_FILE":   esrallyReportFile,
+				"GENERATED_TRACK_PATH": esrallyGeneratedTrackPath,
+				"DOCUMENTS_FILE":       esrallyDocumentsFile,
+				"WORKLOAD":             constants.EsrallyWorkloadAll,
+				"ON_ERROR":             esrallyDefaultOnError,
+				"REPORT_FORMAT":        esrallyReportFormat,
+				"REPORT_FILE":          esrallyReportFile,
 			},
 			wantScriptParts: []string{"--pipeline=benchmark-only", "--track-path", "--offline", "--report-format", "--report-file"},
 			wantMetricFile:  esrallyReportFile,

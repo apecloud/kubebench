@@ -154,6 +154,14 @@ spec:
                       type: string
                   type: object
                 type: array
+              workload:
+                default: all
+                enum:
+                - index
+                - search
+                - mixed
+                - all
+                type: string
             required:
             - target
             type: object

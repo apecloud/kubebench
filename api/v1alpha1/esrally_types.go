@@ -54,17 +54,23 @@ type EsrallySpec struct {
 	// +optional
 	Telemetry []EsrallyTelemetry `json:"telemetry,omitempty"`
 
-	// dataProfile selects the generated dataset shape for the prepare step.
+	// dataProfile selects the generated dataset shape.
 	// +kubebuilder:validation:Enum={logs,metrics,http_logs,metricbeat,geonames,nyc_taxis,noaa,nested,pmc,so,dense_vector}
 	// +kubebuilder:default=logs
 	// +optional
 	DataProfile string `json:"dataProfile,omitempty"`
 
-	// documentCount is the number of documents generated during the prepare step.
+	// documentCount is the number of documents generated during the run step.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:default=10000
 	// +optional
 	DocumentCount int `json:"documentCount,omitempty"`
+
+	// workload selects the generated Rally workload profile.
+	// +kubebuilder:validation:Enum={index,search,mixed,all}
+	// +kubebuilder:default=all
+	// +optional
+	Workload string `json:"workload,omitempty"`
 
 	BenchCommon `json:",inline"`
 }

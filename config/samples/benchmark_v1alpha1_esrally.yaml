@@ -18,3 +18,4 @@ spec:
   targetVersion: 8.12.2
   dataProfile: logs
   documentCount: 10000
+  workload: all

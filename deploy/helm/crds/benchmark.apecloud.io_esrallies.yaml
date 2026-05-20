@@ -66,7 +66,6 @@ spec:
                 enum:
                 - abort
                 - continue
-                - continue-on-network
                 type: string
               resourceLimits:
                 properties:

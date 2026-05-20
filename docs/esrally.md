@@ -75,7 +75,7 @@ When Kubebench can use the basic target fields directly, it adds a precheck Job 
 |-------|-------------|
 | `step` | `cleanup`, `prepare`, `run`, or `all`. Defaults to `all`. |
 | `targetVersion` | Optional Elasticsearch target version, such as `7.17.0` or `8.12.2`, used for version-aware kubebench behavior. |
-| `onError` | `abort`, `continue`, or `continue-on-network`. Defaults to `abort`. |
+| `onError` | `abort` or `continue`. Defaults to `abort`. |
 | `telemetry` | Optional Rally runtime telemetry devices supported by `--pipeline=benchmark-only`: `node-stats`, `recovery-stats`, `ccr-stats`, `segment-stats`, `transform-stats`, `searchable-snapshots-stats`, `shard-stats`, `data-stream-stats`, `ingest-pipeline-stats`, `disk-usage-stats`, or `geoip-stats`. |
 | `dataProfile` | Generated dataset profile. One of `logs`, `metrics`, `http_logs`, `metricbeat`, `geonames`, `nyc_taxis`, `noaa`, `nested`, `pmc`, `so`, or `dense_vector`. Defaults to `logs`. |
 | `documentCount` | Number of generated documents. Defaults to `10000`. |

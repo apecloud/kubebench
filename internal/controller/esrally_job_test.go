@@ -80,6 +80,31 @@ func TestNewEsrallyRunJobsDefaultsMetricsToCSVSharedReport(t *testing.T) {
 	}
 }
 
+func TestEsrallyOnErrorEnumMatchesPackagedRallyRuntime(t *testing.T) {
+	for _, path := range []string{
+		"api/v1alpha1/esrally_types.go",
+		"docs/esrally.md",
+		"config/crd/bases/benchmark.apecloud.io_esrallies.yaml",
+		"deploy/helm/crds/benchmark.apecloud.io_esrallies.yaml",
+	} {
+		if content := scriptContent(t, path); strings.Contains(content, "continue-on-network") {
+			t.Fatalf("%s still exposes unsupported Rally --on-error value continue-on-network", path)
+		}
+	}
+
+	cr := newEsrallyTestCR()
+	cr.Spec.OnError = "continue"
+	job := NewEsrallyRunJobs(cr)[0]
+	if got := envValue(job, "ON_ERROR"); got != "continue" {
+		t.Fatalf("expected supported onError env, got %s", got)
+	}
+
+	script := scriptContent(t, "scripts/esrally/run.sh")
+	if !strings.Contains(script, `--on-error "$ON_ERROR"`) {
+		t.Fatalf("expected run script to pass CRD-validated onError to Rally:\n%s", script)
+	}
+}
+
 func TestNewEsrallyJobsHonorsStepForGeneratedData(t *testing.T) {
 	tests := []struct {
 		name string

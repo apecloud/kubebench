@@ -45,7 +45,7 @@ type EsrallySpec struct {
 	TargetVersion string `json:"targetVersion,omitempty"`
 
 	// onError controls how Rally handles request errors.
-	// +kubebuilder:validation:Enum={abort,continue,continue-on-network}
+	// +kubebuilder:validation:Enum={abort,continue}
 	// +kubebuilder:default=abort
 	// +optional
 	OnError string `json:"onError,omitempty"`

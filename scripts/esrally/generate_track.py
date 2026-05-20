@@ -579,7 +579,7 @@ def build_track(uncompressed_bytes):
 
     return {
         "version": 2,
-        "description": "Kubebench generated ESRally workload",
+        "description": "Kubebench generated ESRally workload for target {{target_version | default('unspecified')}}",
         "indices": [{"name": "{{target_index}}", "body": index_body_file}],
         "corpora": [{"name": "kubebench-generated", "documents": [document_entry]}],
         "operations": operations,

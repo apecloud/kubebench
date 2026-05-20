@@ -255,6 +255,7 @@ func TestNewEsrallyGenerateTrackScriptSupportsExpandedGeneratedProfiles(t *testi
 		"unsupported dataProfile",
 		`"body": index_body_file`,
 		`index_file.write_text`,
+		`{{target_version | default('unspecified')}}`,
 		`name="mixed-bulk-index"`,
 		`name="all-mixed-bulk-index"`,
 		"write_documents",

@@ -1,0 +1,21 @@
+apiVersion: benchmark.apecloud.io/v1alpha1
+kind: Esrally
+metadata:
+  labels:
+    app.kubernetes.io/name: esrally
+    app.kubernetes.io/instance: esrally-sample
+    app.kubernetes.io/part-of: kubebench
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: kubebench
+  name: esrally-sample
+spec:
+  step: all
+  target:
+    driver: elasticsearch
+    host: elasticsearch.default.svc
+    port: 9200
+    database: kubebench-logs
+  targetVersion: 8.12.2
+  dataProfile: logs
+  documentCount: 10000
+  workload: all

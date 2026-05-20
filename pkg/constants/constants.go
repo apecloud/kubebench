@@ -13,6 +13,7 @@ const (
 	PgbenchType    = "pgbench"
 	SysbenchType   = "sysbench"
 	RedisBenchType = "redisbench"
+	EsrallyType    = "esrally"
 	TpccType       = "tpcc"
 	TpcdsType      = "tpcds"
 	TpchType       = "tpch"
@@ -30,6 +31,7 @@ const (
 	MinioDriver                 = "minio"
 	TidbDriver                  = "tidb"
 	MssqlDriver                 = "mssql"
+	ElasticsearchDriver         = "elasticsearch"
 )
 
 const (
@@ -37,4 +39,25 @@ const (
 	PrepareStep = "prepare"
 	RunStep     = "run"
 	AllStep     = "all"
+)
+
+const (
+	EsrallyDataProfileLogs        = "logs"
+	EsrallyDataProfileMetrics     = "metrics"
+	EsrallyDataProfileHTTPLogs    = "http_logs"
+	EsrallyDataProfileMetricbeat  = "metricbeat"
+	EsrallyDataProfileGeonames    = "geonames"
+	EsrallyDataProfileNYCTaxis    = "nyc_taxis"
+	EsrallyDataProfileNOAA        = "noaa"
+	EsrallyDataProfileNested      = "nested"
+	EsrallyDataProfilePMC         = "pmc"
+	EsrallyDataProfileSO          = "so"
+	EsrallyDataProfileDenseVector = "dense_vector"
+)
+
+const (
+	EsrallyWorkloadIndex  = "index"
+	EsrallyWorkloadSearch = "search"
+	EsrallyWorkloadMixed  = "mixed"
+	EsrallyWorkloadAll    = "all"
 )

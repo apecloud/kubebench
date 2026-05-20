@@ -2,6 +2,8 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller
 VERSION ?= latest
+ESRALLY_IMG ?= apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.12.0
+ESRALLY_PLATFORMS ?= linux/arm64,linux/amd64
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27.1
 
@@ -85,6 +87,16 @@ docker-build: test ## Build docker image with the manager.
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	$(CONTAINER_TOOL) push ${IMG}
+
+.PHONY: docker-build-esrally
+docker-build-esrally: ## Build and push the kubebench ESRally image for multiple architectures.
+	- $(CONTAINER_TOOL) buildx create --name kubebench-esrally-builder
+	$(CONTAINER_TOOL) buildx build --builder kubebench-esrally-builder --push --platform=$(ESRALLY_PLATFORMS) --tag ${ESRALLY_IMG} -f images/esrally/Dockerfile .
+	- $(CONTAINER_TOOL) buildx rm kubebench-esrally-builder
+
+.PHONY: docker-push-esrally
+docker-push-esrally: ## Push the kubebench ESRally image.
+	$(CONTAINER_TOOL) push ${ESRALLY_IMG}
 
 # PLATFORMS defines the target platforms for  the manager image be build to provide support to multiple
 # architectures. (i.e. make docker-buildx IMG=myregistry/mypoperator:0.0.1). To use this option you need to:

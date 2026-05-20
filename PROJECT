@@ -77,6 +77,15 @@ resources:
   controller: true
   domain: apecloud.io
   group: benchmark
+  kind: Esrally
+  path: github.com/apecloud/kubebench/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: apecloud.io
+  group: benchmark
   kind: Tpcds
   path: github.com/apecloud/kubebench/api/v1alpha1
   version: v1alpha1

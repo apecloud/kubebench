@@ -10,6 +10,7 @@ resources:
 - bases/benchmark.apecloud.io_fios.yaml
 - bases/benchmark.apecloud.io_redisbenches.yaml
 - bases/benchmark.apecloud.io_tpcds.yaml
+- bases/benchmark.apecloud.io_esrallies.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:

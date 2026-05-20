@@ -4,14 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.5
-  name: ycsbs.benchmark.apecloud.io
+  name: esrallies.benchmark.apecloud.io
 spec:
   group: benchmark.apecloud.io
   names:
-    kind: Ycsb
-    listKind: YcsbList
-    plural: ycsbs
-    singular: ycsb
+    kind: Esrally
+    listKind: EsrallyList
+    plural: esrallies
+    singular: esrally
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -38,60 +38,34 @@ spec:
             type: object
           spec:
             properties:
+              dataProfile:
+                default: logs
+                enum:
+                - logs
+                - metrics
+                - http_logs
+                - metricbeat
+                - geonames
+                - nyc_taxis
+                - noaa
+                - nested
+                - pmc
+                - so
+                - dense_vector
+                type: string
+              documentCount:
+                default: 10000
+                minimum: 1
+                type: integer
               extraArgs:
                 items:
                   type: string
                 type: array
-              fieldLengthDistribution:
-                default: constant
+              onError:
+                default: abort
                 enum:
-                - constant
-                - uniform
-                - zipfian
-                - histogram
-                type: string
-              insertProportion:
-                default: 0
-                maximum: 100
-                minimum: 0
-                type: integer
-              masterName:
-                type: string
-              operationCount:
-                default: 10000
-                minimum: 1
-                type: integer
-              readModifyWriteProportion:
-                default: 0
-                maximum: 100
-                minimum: 0
-                type: integer
-              readProportion:
-                default: 0
-                maximum: 100
-                minimum: 0
-                type: integer
-              recordCount:
-                default: 10000
-                minimum: 1
-                type: integer
-              redisAddr:
-                type: string
-              redisMode:
-                type: string
-              redisSentinelPassword:
-                type: string
-              redisSentinelUsername:
-                type: string
-              requestDistribution:
-                default: uniform
-                enum:
-                - uniform
-                - sequential
-                - zipfian
-                - latest
-                - hotspot
-                - exponential
+                - abort
+                - continue
                 type: string
               resourceLimits:
                 properties:
@@ -107,17 +81,6 @@ spec:
                   memory:
                     type: string
                 type: object
-              scanLengthDistribution:
-                default: uniform
-                enum:
-                - uniform
-                - zipfian
-                type: string
-              scanProportion:
-                default: 0
-                maximum: 100
-                minimum: 0
-                type: integer
               step:
                 default: all
                 enum:
@@ -156,12 +119,23 @@ spec:
                 - host
                 - port
                 type: object
-              threads:
-                default:
-                - 1
+              targetVersion:
+                type: string
+              telemetry:
                 items:
-                  type: integer
-                minItems: 1
+                  enum:
+                  - node-stats
+                  - recovery-stats
+                  - ccr-stats
+                  - segment-stats
+                  - transform-stats
+                  - searchable-snapshots-stats
+                  - shard-stats
+                  - data-stream-stats
+                  - ingest-pipeline-stats
+                  - disk-usage-stats
+                  - geoip-stats
+                  type: string
                 type: array
               tolerations:
                 items:
@@ -179,11 +153,14 @@ spec:
                       type: string
                   type: object
                 type: array
-              updateProportion:
-                default: 0
-                maximum: 100
-                minimum: 0
-                type: integer
+              workload:
+                default: all
+                enum:
+                - index
+                - search
+                - mixed
+                - all
+                type: string
             required:
             - target
             type: object

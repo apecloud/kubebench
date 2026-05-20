@@ -373,6 +373,27 @@ func NewRedisPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv
 	return job
 }
 
+func NewElasticsearchPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv1.Job {
+	job := JobTemplate(fmt.Sprintf("%s-precheck", name), namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchTools),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args: []string{"elasticsearch", "ping",
+				"--user", target.User,
+				"--password", target.Password,
+				"--host", target.Host,
+				"--port", fmt.Sprintf("%d", target.Port),
+			},
+		},
+	)
+
+	return job
+}
+
 // NewPreCheckJob create a job to check the connection
 func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Target) *batchv1.Job {
 	switch driver {
@@ -382,6 +403,8 @@ func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Targ
 		return NewPgbenchPreCheckJob(name, namespace, *target)
 	case constants.MongoDbDriver:
 		return NewMongodbPreCheckJob(name, namespace, *target)
+	case constants.ElasticsearchDriver:
+		return NewElasticsearchPreCheckJob(name, namespace, *target)
 	// TODO: achieve in next kubebench version
 	//case constants.RedisDriver:
 	//	return NewRedisPreCheckJob(name, namespace, *target)

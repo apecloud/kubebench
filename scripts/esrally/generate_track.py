@@ -562,8 +562,8 @@ def build_track(uncompressed_bytes):
         task("refresh"),
         task("mixed-bulk-search", iterations=10),
         task("term-or-keyword-search", iterations=10),
-        task("bulk-index", clients=1),
-        task("refresh"),
+        task("bulk-index", name="mixed-bulk-index", clients=1),
+        task("refresh", name="mixed-refresh"),
         task("range-search", iterations=10),
         task("aggregation", iterations=5),
     ]
@@ -572,8 +572,8 @@ def build_track(uncompressed_bytes):
         task("term-or-keyword-search", iterations=20),
         task("range-search", iterations=20),
         task("aggregation", iterations=10),
-        task("bulk-index", clients=1),
-        task("refresh"),
+        task("bulk-index", name="all-mixed-bulk-index", clients=1),
+        task("refresh", name="all-mixed-refresh"),
         task("mixed-bulk-search", iterations=10),
     ]
 

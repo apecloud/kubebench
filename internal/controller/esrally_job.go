@@ -281,7 +281,7 @@ func esrallyTelemetry(cr *v1alpha1.Esrally) []string {
 }
 
 func esrallyClientOptions(cr *v1alpha1.Esrally) string {
-	if cr.Spec.Target.User == "" && cr.Spec.Target.Password == "" {
+	if cr.Spec.Target.User == "" || cr.Spec.Target.Password == "" {
 		return ""
 	}
 	return fmt.Sprintf("basic_auth_user:'%s',basic_auth_password:'%s'", cr.Spec.Target.User, cr.Spec.Target.Password)

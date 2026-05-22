@@ -80,6 +80,48 @@ func TestNewEsrallyRunJobsDefaultsMetricsToCSVSharedReport(t *testing.T) {
 	}
 }
 
+func TestNewEsrallyJobsUsesHTTPSTargetOptions(t *testing.T) {
+	cr := newEsrallyTestCR()
+	cr.Spec.Target.TLS = true
+	cr.Spec.Target.User = "elastic"
+	cr.Spec.Target.Password = "secret"
+
+	jobs := NewEsrallyJobs(cr)
+	precheckArgs := jobs[0].Spec.Template.Spec.Containers[0].Args
+	if !containsAll(precheckArgs, []string{"--scheme", "https", "--insecure-skip-verify"}) {
+		t.Fatalf("expected https precheck args, got %#v", precheckArgs)
+	}
+
+	cleanupJob := jobs[1]
+	if got := envValue(cleanupJob, "TARGET_URL"); got != "https://es.default.svc:9200" {
+		t.Fatalf("expected https cleanup target URL, got %q", got)
+	}
+	if got := envValue(cleanupJob, "ES_INSECURE_SKIP_VERIFY"); got != "true" {
+		t.Fatalf("expected cleanup to skip TLS verification, got %q", got)
+	}
+
+	runJob := jobs[3]
+	options := envValue(runJob, "CLIENT_OPTIONS")
+	for _, want := range []string{"use_ssl:true", "verify_certs:false", "basic_auth_user:'elastic'", "basic_auth_password:'secret'"} {
+		if !strings.Contains(options, want) {
+			t.Fatalf("expected client options to contain %s, got %q", want, options)
+		}
+	}
+}
+
+func TestEsrallyClientOptionsSkipsPartialBasicAuth(t *testing.T) {
+	cr := newEsrallyTestCR()
+	cr.Spec.Target.User = "elastic"
+	if got := esrallyClientOptions(cr); got != "" {
+		t.Fatalf("expected no client options with partial auth on http, got %q", got)
+	}
+
+	cr.Spec.Target.TLS = true
+	if got := esrallyClientOptions(cr); got != "use_ssl:true,verify_certs:false" {
+		t.Fatalf("expected only https client options with partial auth, got %q", got)
+	}
+}
+
 func TestEsrallyOnErrorEnumMatchesPackagedRallyRuntime(t *testing.T) {
 	for _, path := range []string{
 		"api/v1alpha1/esrally_types.go",

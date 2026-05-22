@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -206,6 +207,7 @@ func esrallyGeneratedDataEnv(cr *v1alpha1.Esrally) []corev1.EnvVar {
 		{Name: "TARGET_VERSION", Value: esrallyTargetVersion(cr)},
 		{Name: "ES_USERNAME", Value: cr.Spec.Target.User},
 		{Name: "ES_PASSWORD", Value: cr.Spec.Target.Password},
+		{Name: "ES_INSECURE_SKIP_VERIFY", Value: strconv.FormatBool(cr.Spec.Target.TLS)},
 		{Name: "ESRALLY_LOG_FILE", Value: esrallyLogFile},
 	}
 }
@@ -246,7 +248,7 @@ func esrallyIndexName(cr *v1alpha1.Esrally) string {
 }
 
 func esrallyTargetURL(cr *v1alpha1.Esrally) string {
-	return fmt.Sprintf("http://%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port)
+	return fmt.Sprintf("%s://%s:%d", esrallyTargetScheme(cr), cr.Spec.Target.Host, cr.Spec.Target.Port)
 }
 
 func esrallyTargetHosts(cr *v1alpha1.Esrally) string {
@@ -255,6 +257,13 @@ func esrallyTargetHosts(cr *v1alpha1.Esrally) string {
 
 func esrallyTargetVersion(cr *v1alpha1.Esrally) string {
 	return strings.TrimSpace(cr.Spec.TargetVersion)
+}
+
+func esrallyTargetScheme(cr *v1alpha1.Esrally) string {
+	if cr.Spec.Target.TLS {
+		return "https"
+	}
+	return "http"
 }
 
 func esrallyTrackParams(cr *v1alpha1.Esrally) string {
@@ -281,10 +290,20 @@ func esrallyTelemetry(cr *v1alpha1.Esrally) []string {
 }
 
 func esrallyClientOptions(cr *v1alpha1.Esrally) string {
-	if cr.Spec.Target.User == "" || cr.Spec.Target.Password == "" {
+	options := make([]string, 0, 4)
+	if cr.Spec.Target.TLS {
+		options = append(options, "use_ssl:true", "verify_certs:false")
+	}
+	if cr.Spec.Target.User != "" && cr.Spec.Target.Password != "" {
+		options = append(options,
+			fmt.Sprintf("basic_auth_user:'%s'", cr.Spec.Target.User),
+			fmt.Sprintf("basic_auth_password:'%s'", cr.Spec.Target.Password),
+		)
+	}
+	if len(options) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("basic_auth_user:'%s',basic_auth_password:'%s'", cr.Spec.Target.User, cr.Spec.Target.Password)
+	return strings.Join(options, ",")
 }
 
 func esrallyOnError(cr *v1alpha1.Esrally) string {

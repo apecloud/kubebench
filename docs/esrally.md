@@ -44,7 +44,7 @@ spec:
   workload: mixed
 ```
 
-For generated data, Kubebench supports the basic HTTP target fields `spec.target.host`, `spec.target.port`, `spec.target.user`, and `spec.target.password`.
+For generated data, Kubebench supports the basic target fields `spec.target.host`, `spec.target.port`, `spec.target.tls`, `spec.target.user`, and `spec.target.password`.
 
 The run step generates a local Rally track and local JSON corpus in the run Pod before invoking Rally. Kubebench chooses the track path, challenge, included tasks, corpus file, and track parameters internally, and always passes `--offline` to Rally. It does not expose API fields for remote Rally tracks, track repositories, corpus downloads, or local track internals.
 
@@ -97,7 +97,7 @@ Kubebench passes the generated target index and, when set, `targetVersion` to it
 
 ## Auth And TLS
 
-When `spec.target.user` or `spec.target.password` is set, Kubebench uses those credentials for generated cleanup/prepare requests and synthesizes Rally basic auth client options internally for the run step:
+When both `spec.target.user` and `spec.target.password` are set, Kubebench uses those credentials for generated cleanup requests and synthesizes Rally basic auth client options internally for the run step. If only one of the two fields is set, Kubebench does not send partial basic auth credentials.
 
 ```yaml
 spec:
@@ -109,7 +109,20 @@ spec:
     password: secret
 ```
 
-Kubebench runs `tools elasticsearch ping` against `spec.target.host:spec.target.port` over HTTP with optional basic auth from `spec.target.user/password` before selected work Jobs.
+`spec.target.tls` defaults to `false`. Set it to `true` when the Elasticsearch HTTP endpoint uses TLS. Kubebench then uses HTTPS for the precheck, cleanup, and Rally run paths, skips TLS certificate verification for precheck and cleanup, and passes Rally `verify_certs:false` for the run step.
+
+```yaml
+spec:
+  target:
+    driver: elasticsearch
+    host: elasticsearch.default.svc
+    port: 9200
+    tls: true
+    user: elastic
+    password: secret
+```
+
+Kubebench runs `tools elasticsearch ping` against `spec.target.host:spec.target.port` before selected work Jobs, using `spec.target.tls` to choose HTTP or HTTPS and optional paired basic auth.
 
 ## Generated Data Shapes
 

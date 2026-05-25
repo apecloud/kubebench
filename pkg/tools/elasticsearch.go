@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,12 +14,13 @@ import (
 )
 
 type ElasticsearchClient struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	Scheme   string
-	Path     string
+	Host               string
+	Port               int
+	Username           string
+	Password           string
+	Scheme             string
+	Path               string
+	InsecureSkipVerify bool
 
 	client *http.Client
 }
@@ -64,12 +66,16 @@ func addElasticsearchFlags(cmd *cobra.Command, client *ElasticsearchClient) {
 	cmd.Flags().StringVar(&client.Password, "password", "", "Elasticsearch password")
 	cmd.Flags().StringVar(&client.Scheme, "scheme", "http", "Elasticsearch HTTP scheme")
 	cmd.Flags().StringVar(&client.Path, "path", "/_cluster/health", "Elasticsearch health check path")
+	cmd.Flags().BoolVar(&client.InsecureSkipVerify, "insecure-skip-verify", false, "Skip TLS certificate verification")
 }
 
 func (c *ElasticsearchClient) InitClient() error {
-	c.Scheme = strings.TrimSuffix(c.Scheme, "://")
+	c.Scheme = strings.ToLower(strings.TrimSuffix(c.Scheme, "://"))
 	if c.Scheme == "" {
 		c.Scheme = "http"
+	}
+	if c.Scheme != "http" && c.Scheme != "https" {
+		return fmt.Errorf("unsupported elasticsearch scheme %q", c.Scheme)
 	}
 	if c.Path == "" {
 		c.Path = "/_cluster/health"
@@ -78,7 +84,11 @@ func (c *ElasticsearchClient) InitClient() error {
 		c.Path = "/" + c.Path
 	}
 
-	c.client = &http.Client{Timeout: 10 * time.Second}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if c.Scheme == "https" && c.InsecureSkipVerify {
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+	c.client = &http.Client{Timeout: 10 * time.Second, Transport: transport}
 	return nil
 }
 
@@ -92,7 +102,7 @@ func (c *ElasticsearchClient) CheckConnection() error {
 	if err != nil {
 		return err
 	}
-	if c.Username != "" || c.Password != "" {
+	if c.Username != "" && c.Password != "" {
 		req.SetBasicAuth(c.Username, c.Password)
 	}
 

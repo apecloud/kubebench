@@ -1,5 +1,6 @@
 import base64
 import os
+import ssl
 import sys
 import urllib.error
 import urllib.request
@@ -9,6 +10,7 @@ index_name = os.environ["INDEX_NAME"]
 target_version = os.environ.get("TARGET_VERSION", "").strip()
 username = os.environ.get("ES_USERNAME", "")
 password = os.environ.get("ES_PASSWORD", "")
+insecure_skip_verify = os.environ.get("ES_INSECURE_SKIP_VERIFY", "").lower() == "true"
 log_file = os.environ["ESRALLY_LOG_FILE"]
 
 
@@ -38,12 +40,13 @@ def validate_target_version():
 
 def delete_index():
     request = urllib.request.Request(f"{target_url}/{index_name}", method="DELETE")
-    if username or password:
+    if username and password:
         token = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
         request.add_header("Authorization", "Basic " + token)
 
+    context = ssl._create_unverified_context() if target_url.startswith("https://") and insecure_skip_verify else None
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=60, context=context) as response:
             return response.status, response.read().decode("utf-8", errors="replace")
     except urllib.error.HTTPError as err:
         return err.code, err.read().decode("utf-8", errors="replace")

@@ -61,6 +61,10 @@ type Target struct {
 	// +required
 	Port int `json:"port"`
 
+	// tls enables HTTPS for HTTP-based targets.
+	// +optional
+	TLS bool `json:"tls,omitempty"`
+
 	// The username to connect as
 	// +optional
 	User string `json:"user,omitempty"`

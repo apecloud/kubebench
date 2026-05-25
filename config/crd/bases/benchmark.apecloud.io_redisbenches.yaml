@@ -112,6 +112,8 @@ spec:
                     type: string
                   port:
                     type: integer
+                  tls:
+                    type: boolean
                   user:
                     type: string
                 required:

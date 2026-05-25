@@ -375,6 +375,10 @@ func NewRedisPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv
 
 func NewElasticsearchPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv1.Job {
 	job := JobTemplate(fmt.Sprintf("%s-precheck", name), namespace)
+	scheme := "http"
+	if target.TLS {
+		scheme = "https"
+	}
 	job.Spec.Template.Spec.Containers = append(
 		job.Spec.Template.Spec.Containers,
 		corev1.Container{
@@ -387,9 +391,14 @@ func NewElasticsearchPreCheckJob(name, namespace string, target v1alpha1.Target)
 				"--password", target.Password,
 				"--host", target.Host,
 				"--port", fmt.Sprintf("%d", target.Port),
+				"--scheme", scheme,
 			},
 		},
 	)
+	if target.TLS {
+		container := &job.Spec.Template.Spec.Containers[0]
+		container.Args = append(container.Args, "--insecure-skip-verify")
+	}
 
 	return job
 }

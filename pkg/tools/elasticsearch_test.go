@@ -47,6 +47,48 @@ func TestElasticsearchCheckConnectionStatusError(t *testing.T) {
 	}
 }
 
+func TestElasticsearchCheckConnectionHTTPSInsecureSkipVerify(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"status":"green"}`))
+	}))
+	defer server.Close()
+
+	client := elasticsearchClientFromURL(t, server.URL)
+	client.InsecureSkipVerify = true
+	if err := client.InitClient(); err != nil {
+		t.Fatal(err)
+	}
+	if err := client.CheckConnection(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestElasticsearchCheckConnectionSkipsPartialBasicAuth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, _, ok := r.BasicAuth(); ok {
+			t.Fatal("did not expect basic auth with partial credentials")
+		}
+		_, _ = w.Write([]byte(`{"status":"green"}`))
+	}))
+	defer server.Close()
+
+	client := elasticsearchClientFromURL(t, server.URL)
+	client.Username = "elastic"
+	if err := client.InitClient(); err != nil {
+		t.Fatal(err)
+	}
+	if err := client.CheckConnection(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestElasticsearchInitClientRejectsUnsupportedScheme(t *testing.T) {
+	client := &ElasticsearchClient{Scheme: "ftp"}
+	if err := client.InitClient(); err == nil {
+		t.Fatal("expected unsupported scheme error")
+	}
+}
+
 func elasticsearchClientFromURL(t *testing.T, rawURL string) *ElasticsearchClient {
 	t.Helper()
 	u, err := url.Parse(rawURL)

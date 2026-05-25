@@ -172,7 +172,7 @@ If a basic HTTP target is unreachable, inspect the precheck Job logs first. It c
 
 If the run step exits before Rally starts, inspect the run Job logs for Rally errors from the packaged generated-data track.
 
-If auth fails during the run step, check `spec.target.user/password` and the Rally run Job logs. Advanced Rally client options such as TLS and API keys are not exposed in the generated-data ESRally API.
+If auth or TLS fails during the run step, check `spec.target.user/password`, `spec.target.tls`, and the Rally run Job logs. Advanced Rally client options such as API keys are not exposed in the generated-data ESRally API.
 
 If the report file is missing, verify Rally completed successfully and inspect `/var/log/esrally.log` in the run Job.
 

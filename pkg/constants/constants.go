@@ -32,6 +32,7 @@ const (
 	TidbDriver                  = "tidb"
 	MssqlDriver                 = "mssql"
 	ElasticsearchDriver         = "elasticsearch"
+	GaussDBDriver              = "gaussdb"
 )
 
 const (

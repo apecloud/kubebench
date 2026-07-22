@@ -110,3 +110,24 @@ func CleanMongoDatabaseContainer(target v1alpha1.Target, database string) *corev
 		Args:            args,
 	}
 }
+
+// InitGaussdbDatabaseContainer will create a database in gaussdb (openGauss)
+func InitGaussdbDatabaseContainer(target v1alpha1.Target, database string) *corev1.Container {
+	args := []string{
+		"gaussdb",
+		"create",
+		database,
+		"--host", target.Host,
+		"--port", strconv.Itoa(target.Port),
+		"--user", target.User,
+		"--password", target.Password,
+	}
+
+	return &corev1.Container{
+		Name:            "init",
+		Image:           constants.GetBenchmarkImage(constants.KubebenchTools),
+		ImagePullPolicy: corev1.PullIfNotPresent,
+		Command:         []string{"/tools"},
+		Args:            args,
+	}
+}

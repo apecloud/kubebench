@@ -1,4 +1,4 @@
-name: RELEASE-CHART
+name: Release Chart
 
 on:
   workflow_dispatch:
@@ -13,6 +13,7 @@ on:
 
 env:
   RELEASE_VERSION: ${{ github.ref_name }}
+run-name: Release Chart ${{ inputs.chart_version || github.ref_name }}
 
 
 jobs:

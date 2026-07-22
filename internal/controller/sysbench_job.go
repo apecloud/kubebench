@@ -242,6 +242,8 @@ func getSysbenchDriver(driver string) string {
 		return "mysql"
 	case constants.PostgreSqlDriver:
 		return "pgsql"
+	case constants.GaussDBDriver:
+		return "mysql"
 	default:
 		return driver
 	}

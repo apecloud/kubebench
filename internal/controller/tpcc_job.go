@@ -158,6 +158,8 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 		return NewTidbParams(cr)
 	case constants.MssqlDriver:
 		return NewMssqlParams(cr)
+	case constants.GaussDBDriver:
+		return NewTpccGaussdbParams(cr)
 	default:
 		return ""
 	}
@@ -166,6 +168,12 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 func NewTpccMysqlParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.mysql.cj.jdbc.Driver")
 	result = fmt.Sprintf("%s --conn \"jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true\"", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	return result
+}
+
+func NewTpccGaussdbParams(cr *v1alpha1.Tpcc) string {
+	result := fmt.Sprintf("--driver %s", "com.huawei.opengauss.jdbc.Driver")
+	result = fmt.Sprintf("%s --conn jdbc:opengauss://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 
@@ -189,7 +197,7 @@ func NewDamengParams(cr *v1alpha1.Tpcc) string {
 
 func NewTidbParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.tidb.jdbc.Driver")
-	result = fmt.Sprintf("%s --conn jdbc:mysql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	result = fmt.Sprintf("%s --conn \"jdbc:mysql://%s:%d/%s?useSSL=false&useServerPrepStmts=true&useConfigs=maxPerformance&rewriteBatchedStatements=true&cachePrepStmts=true&prepStmtCacheSize=1000&prepStmtCacheSqlLimit=2048\"", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 
@@ -207,6 +215,8 @@ func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.PostgreSqlDriver:
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.GaussDBDriver:
+		return utils.InitGaussdbDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	default:
 		return nil
 	}
@@ -221,6 +231,8 @@ func getTpccDriver(driver string) string {
 		return "postgres"
 	case constants.OceanBaseOracleTenantDriver:
 		return "oracle"
+	case constants.GaussDBDriver:
+		return "gaussdb"
 	default:
 		return driver
 	}

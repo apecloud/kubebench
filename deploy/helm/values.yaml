@@ -83,14 +83,47 @@ tolerations: []
 affinity: {}
 
 kubebenchImages:
-  pgbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/spilo:14.8.0"
-  sysbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest"
-  tpcc: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:1.0"
-  tpcds: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest"
-  tpch: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest"
-  ycsb: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/go-ycsb:latest"
-  fio: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/fio:latest"
-  redisbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/redis:7.0.5"
-  esrally: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.12.0"
-  exporter: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.14"
-  tools: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.14"
+  pgbench:
+    registry: ""
+    repository: apecloud/spilo
+    tag: "14.8.0"
+  sysbench:
+    registry: ""
+    repository: apecloud/customsuites
+    tag: "latest"
+  tpcc:
+    registry: ""
+    repository: apecloud/benchmarksql
+    tag: "2.0"
+  tpcds:
+    registry: ""
+    repository: apecloud/tpcds
+    tag: "latest"
+  tpch:
+    registry: ""
+    repository: apecloud/customsuites
+    tag: "latest"
+  ycsb:
+    registry: ""
+    repository: apecloud/go-ycsb
+    tag: "latest"
+  fio:
+    registry: ""
+    repository: apecloud/fio
+    tag: "latest"
+  redisbench:
+    registry: ""
+    repository: apecloud/redis
+    tag: "7.0.5"
+  esrally:
+    registry: ""
+    repository: apecloud/kubebench-esrally
+    tag: "2.12.0"
+  exporter:
+    registry: ""
+    repository: apecloud/kubebench
+    tag: "0.0.14"
+  tools:
+    registry: ""
+    repository: apecloud/kubebench
+    tag: "0.0.14"

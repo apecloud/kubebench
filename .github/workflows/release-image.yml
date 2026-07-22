@@ -7,6 +7,15 @@ on:
         description: 'The tag name of image'
         required: true
         default: ''
+      build_platform:
+        description: 'Build platform'
+        required: false
+        type: choice
+        default: "linux/amd64"
+        options:
+          - linux/amd64,linux/arm64
+          - linux/amd64
+          - linux/arm64
   release:
     types:
       - published
@@ -14,12 +23,14 @@ on:
 env:
   RELEASE_VERSION: ${{ github.ref_name }}
 
+run-name: Release Image ${{ inputs.image_tag || github.ref_name }}
 
 jobs:
   image-tag:
     runs-on: ubuntu-latest
     outputs:
       tag-name: ${{ steps.get_tag_name.outputs.tag_name }}
+      build-platform: ${{ steps.get_tag_name.outputs.build-platform }}
     steps:
       - name: Get Tag Name
         id: get_tag_name
@@ -29,13 +40,20 @@ jobs:
               TAG_NAME=${{ env.RELEASE_VERSION }}
           fi
           echo tag_name=$TAG_NAME >> $GITHUB_OUTPUT
+          
+          BUILD_PLATFORM=${{ inputs.build_platform }}
+          if [ -z "$BUILD_PLATFORM" ]; then
+              BUILD_PLATFORM="linux/amd64,linux/arm64"
+          fi
+          echo build-platform=${BUILD_PLATFORM} >> $GITHUB_OUTPUT
 
   release-image:
     needs: image-tag
-    uses: apecloud/apecloud-cd/.github/workflows/release-image.yml@v0.1.42
+    uses: apecloud/apecloud-cd/.github/workflows/release-image-sync2.yml@v0.2.8
     with:
       MAKE_OPS: "docker-buildx"
       IMG: "apecloud/kubebench"
       VERSION: "${{ needs.image-tag.outputs.tag-name }}"
       GO_VERSION: "1.25"
+      BUILDX_PLATFORMS: "${{ needs.image-tag.outputs.build-platform }}"
     secrets: inherit

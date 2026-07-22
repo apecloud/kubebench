@@ -122,8 +122,8 @@ kubebenchImages:
   exporter:
     registry: ""
     repository: apecloud/kubebench
-    tag: "0.0.14"
+    tag: ""
   tools:
     registry: ""
     repository: apecloud/kubebench
-    tag: "0.0.14"
+    tag: ""

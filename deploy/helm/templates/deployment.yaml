@@ -54,9 +54,9 @@ spec:
             - name: KUBEBENCH_ESRALLY_IMAGE
               value: "{{ .Values.kubebenchImages.esrally.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.esrally.repository }}:{{ .Values.kubebenchImages.esrally.tag }}"
             - name: KUBEBENCH_EXPORTER_IMAGE
-              value: "{{ .Values.kubebenchImages.exporter.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.exporter.repository }}:{{ .Values.kubebenchImages.exporter.tag }}"
+              value: "{{ .Values.kubebenchImages.exporter.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.exporter.repository }}:{{ .Values.kubebenchImages.exporter.tag | default .Chart.AppVersion }}"
             - name: KUBEBENCH_TOOLS_IMAGE
-              value: "{{ .Values.kubebenchImages.tools.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.tools.repository }}:{{ .Values.kubebenchImages.tools.tag }}"
+              value: "{{ .Values.kubebenchImages.tools.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.tools.repository }}:{{ .Values.kubebenchImages.tools.tag | default .Chart.AppVersion }}"
             {{- with .Values.tolerations }}
             - name: CM_TOLERATIONS
               value: {{ toJson . | quote }}

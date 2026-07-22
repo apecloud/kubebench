@@ -2,9 +2,12 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 
 	benchmarkv1alpha1 "github.com/apecloud/kubebench/api/v1alpha1"
 	"github.com/apecloud/kubebench/pkg/constants"
@@ -272,13 +275,38 @@ func TestEsrallyScriptsPackagedByDerivedRallyImage(t *testing.T) {
 
 func TestEsrallyDefaultsUseDerivedRallyImage(t *testing.T) {
 	const wantImage = "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.12.0"
-	for path, content := range map[string]string{
-		"pkg/constants/env.go":    scriptContent(t, "pkg/constants/env.go"),
-		"deploy/helm/values.yaml": scriptContent(t, "deploy/helm/values.yaml"),
-	} {
-		if !strings.Contains(content, wantImage) {
-			t.Fatalf("%s missing default ESRally image %s", path, wantImage)
-		}
+
+	// Go-side defaults are now built from DefaultImageRegistry; verify via the
+	// public accessor that the resolved default matches the expected derived image.
+	if got := constants.GetBenchmarkImage(constants.KubebenchEnvEsrally); got != wantImage {
+		t.Fatalf("pkg/constants/env.go default ESRally image = %s, want %s", got, wantImage)
+	}
+
+	// Helm values split the image into registry/repository/tag and fall back to
+	// .Values.image.registry when an image-specific registry is not set.
+	values := scriptContent(t, "deploy/helm/values.yaml")
+	var cfg struct {
+		Image struct {
+			Registry string `yaml:"registry"`
+		} `yaml:"image"`
+		KubebenchImages struct {
+			Esrally struct {
+				Registry   string `yaml:"registry"`
+				Repository string `yaml:"repository"`
+				Tag        string `yaml:"tag"`
+			} `yaml:"esrally"`
+		} `yaml:"kubebenchImages"`
+	}
+	if err := yaml.Unmarshal([]byte(values), &cfg); err != nil {
+		t.Fatalf("failed to parse deploy/helm/values.yaml: %v", err)
+	}
+	registry := cfg.KubebenchImages.Esrally.Registry
+	if registry == "" {
+		registry = cfg.Image.Registry
+	}
+	gotImage := fmt.Sprintf("%s/%s:%s", registry, cfg.KubebenchImages.Esrally.Repository, cfg.KubebenchImages.Esrally.Tag)
+	if gotImage != wantImage {
+		t.Fatalf("deploy/helm/values.yaml default ESRally image = %s, want %s", gotImage, wantImage)
 	}
 }
 

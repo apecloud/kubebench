@@ -36,27 +36,27 @@ spec:
           - --leader-elect
           env:
             - name: KUBEBENCH_PGBENCH_IMAGE
-              value: "{{ .Values.kubebenchImages.pgbench }}"
+              value: "{{ .Values.kubebenchImages.pgbench.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.pgbench.repository }}:{{ .Values.kubebenchImages.pgbench.tag }}"
             - name: KUBEBENCH_SYSBENCH_IMAGE
-              value: "{{ .Values.kubebenchImages.sysbench }}"
+              value: "{{ .Values.kubebenchImages.sysbench.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.sysbench.repository }}:{{ .Values.kubebenchImages.sysbench.tag }}"
             - name: KUBEBENCH_TPCC_IMAGE
-              value: "{{ .Values.kubebenchImages.tpcc }}"
+              value: "{{ .Values.kubebenchImages.tpcc.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.tpcc.repository }}:{{ .Values.kubebenchImages.tpcc.tag }}"
             - name: KUBEBENCH_TPCDS_IMAGE
-              value: "{{ .Values.kubebenchImages.tpcds }}"
+              value: "{{ .Values.kubebenchImages.tpcds.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.tpcds.repository }}:{{ .Values.kubebenchImages.tpcds.tag }}"
             - name: KUBEBENCH_TPCH_IMAGE
-              value: "{{ .Values.kubebenchImages.tpch }}"
+              value: "{{ .Values.kubebenchImages.tpch.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.tpch.repository }}:{{ .Values.kubebenchImages.tpch.tag }}"
             - name: KUBEBENCH_YCSB_IMAGE
-              value: "{{ .Values.kubebenchImages.ycsb }}"
+              value: "{{ .Values.kubebenchImages.ycsb.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.ycsb.repository }}:{{ .Values.kubebenchImages.ycsb.tag }}"
             - name: KUBEBENCH_FIO_IMAGE
-              value: "{{ .Values.kubebenchImages.fio }}"
+              value: "{{ .Values.kubebenchImages.fio.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.fio.repository }}:{{ .Values.kubebenchImages.fio.tag }}"
             - name: KUBEBENCH_REDISBENCH_IMAGE
-              value: "{{ .Values.kubebenchImages.redisbench }}"
+              value: "{{ .Values.kubebenchImages.redisbench.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.redisbench.repository }}:{{ .Values.kubebenchImages.redisbench.tag }}"
             - name: KUBEBENCH_ESRALLY_IMAGE
-              value: "{{ .Values.kubebenchImages.esrally }}"
+              value: "{{ .Values.kubebenchImages.esrally.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.esrally.repository }}:{{ .Values.kubebenchImages.esrally.tag }}"
             - name: KUBEBENCH_EXPORTER_IMAGE
-              value: "{{ .Values.kubebenchImages.exporter }}"
+              value: "{{ .Values.kubebenchImages.exporter.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.exporter.repository }}:{{ .Values.kubebenchImages.exporter.tag }}"
             - name: KUBEBENCH_TOOLS_IMAGE
-              value: "{{ .Values.kubebenchImages.tools }}"
+              value: "{{ .Values.kubebenchImages.tools.registry | default (.Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com") }}/{{ .Values.kubebenchImages.tools.repository }}:{{ .Values.kubebenchImages.tools.tag }}"
             {{- with .Values.tolerations }}
             - name: CM_TOLERATIONS
               value: {{ toJson . | quote }}
@@ -65,7 +65,7 @@ spec:
           - /manager
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.registry | default "docker.io" }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.registry | default "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com" }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           livenessProbe:
             httpGet:

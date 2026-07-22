@@ -1,6 +1,7 @@
 package constants
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/viper"
@@ -24,18 +25,22 @@ const (
 	CfgKeyCtrlrMgrTolerations = "CM_TOLERATIONS"
 )
 
+const (
+	DefaultImageRegistry = "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com"
+)
+
 func init() {
-	viper.SetDefault(KubebenchEnvPgbench, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/spilo:14.8.0")
-	viper.SetDefault(KubebenchEnvSysbench, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest")
-	viper.SetDefault(KubebenchEnvTpcc, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/benchmarksql:1.0")
-	viper.SetDefault(KubebenchEnvTpcds, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/tpcds:latest")
-	viper.SetDefault(KubebenchEnvTpch, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/customsuites:latest")
-	viper.SetDefault(KubebenchEnvYcsb, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/go-ycsb:latest")
-	viper.SetDefault(KubebenchEnvFio, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/fio:latest")
-	viper.SetDefault(KubebenchEnvRedisBench, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/redis:7.0.5")
-	viper.SetDefault(KubebenchEnvEsrally, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.12.0")
-	viper.SetDefault(KubebenchExporter, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.14")
-	viper.SetDefault(KubebenchTools, "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.14")
+	viper.SetDefault(KubebenchEnvPgbench, fmt.Sprintf("%s/apecloud/spilo:14.8.0", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvSysbench, fmt.Sprintf("%s/apecloud/customsuites:latest", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvTpcc, fmt.Sprintf("%s/apecloud/benchmarksql:1.0", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvTpcds, fmt.Sprintf("%s/apecloud/tpcds:latest", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvTpch, fmt.Sprintf("%s/apecloud/customsuites:latest", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvYcsb, fmt.Sprintf("%s/apecloud/go-ycsb:latest", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvFio, fmt.Sprintf("%s/apecloud/fio:latest", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvRedisBench, fmt.Sprintf("%s/apecloud/redis:7.0.5", DefaultImageRegistry))
+	viper.SetDefault(KubebenchEnvEsrally, fmt.Sprintf("%s/apecloud/kubebench-esrally:2.12.0", DefaultImageRegistry))
+	viper.SetDefault(KubebenchExporter, fmt.Sprintf("%s/apecloud/kubebench:0.0.14", DefaultImageRegistry))
+	viper.SetDefault(KubebenchTools, fmt.Sprintf("%s/apecloud/kubebench:0.0.14", DefaultImageRegistry))
 	viper.SetDefault(CfgKeyCtrlrMgrTolerations, os.Getenv(CfgKeyCtrlrMgrTolerations))
 }
 

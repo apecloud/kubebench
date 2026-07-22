@@ -85,6 +85,7 @@ spec:
                     - tidb
                     - mssql
                     - elasticsearch
+                    - gaussdb
                     type: string
                   host:
                     type: string

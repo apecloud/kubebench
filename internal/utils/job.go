@@ -410,6 +410,8 @@ func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Targ
 		return NewMysqlPreCheckJob(name, namespace, *target)
 	case constants.PostgreSqlDriver:
 		return NewPgbenchPreCheckJob(name, namespace, *target)
+	case constants.GaussDBDriver:
+		return NewMysqlPreCheckJob(name, namespace, *target)
 	case constants.MongoDbDriver:
 		return NewMongodbPreCheckJob(name, namespace, *target)
 	case constants.ElasticsearchDriver:

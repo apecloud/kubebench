@@ -23,6 +23,11 @@ require (
 )
 
 require (
+	github.com/tjfoc/gmsm v1.4.1 // indirect
+	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+)
+
+require (
 	gitee.com/opengauss/openGauss-connector-go-pq v1.0.7
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect

@@ -9,7 +9,7 @@ image:
   pullPolicy: IfNotPresent
   registry: apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.0.12"
+  tag: "0.0.14"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -92,5 +92,5 @@ kubebenchImages:
   fio: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/fio:latest"
   redisbench: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/redis:7.0.5"
   esrally: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench-esrally:2.12.0"
-  exporter: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.13"
-  tools: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.13"
+  exporter: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.14"
+  tools: "apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/kubebench:0.0.14"

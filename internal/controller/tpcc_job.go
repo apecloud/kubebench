@@ -159,7 +159,7 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 	case constants.MssqlDriver:
 		return NewMssqlParams(cr)
 	case constants.GaussDBDriver:
-		return NewTpccMysqlParams(cr)
+		return NewTpccGaussdbParams(cr)
 	default:
 		return ""
 	}
@@ -168,6 +168,12 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 func NewTpccMysqlParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.mysql.cj.jdbc.Driver")
 	result = fmt.Sprintf("%s --conn \"jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true\"", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	return result
+}
+
+func NewTpccGaussdbParams(cr *v1alpha1.Tpcc) string {
+	result := fmt.Sprintf("--driver %s", "com.huawei.opengauss.jdbc.Driver")
+	result = fmt.Sprintf("%s --conn jdbc:opengauss://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 
@@ -224,7 +230,7 @@ func getTpccDriver(driver string) string {
 	case constants.OceanBaseOracleTenantDriver:
 		return "oracle"
 	case constants.GaussDBDriver:
-		return "mysql"
+		return "gaussdb"
 	default:
 		return driver
 	}

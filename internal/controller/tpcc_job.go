@@ -211,10 +211,12 @@ func NewMssqlParams(cr *v1alpha1.Tpcc) string {
 // tpcc will fail if database not exists, so we need to create database first
 func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 	switch cr.Spec.Target.Driver {
-	case constants.MySqlDriver, constants.GaussDBDriver:
+	case constants.MySqlDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.PostgreSqlDriver:
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.GaussDBDriver:
+		return utils.InitGaussdbDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	default:
 		return nil
 	}

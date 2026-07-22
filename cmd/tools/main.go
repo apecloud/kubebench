@@ -14,6 +14,7 @@ func main() {
 	rootCmd.AddCommand(tools.NewPostgreSQLCmd())
 	rootCmd.AddCommand(tools.NewRedisCmd())
 	rootCmd.AddCommand(tools.NewElasticsearchCmd())
+	rootCmd.AddCommand(tools.NewGaussdbCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)

@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	_ "github.com/lib/pq"
+	_ "gitee.com/opengauss/openGauss-connector-go-pq"
 	"github.com/spf13/cobra"
 )
 
@@ -119,7 +119,7 @@ func (c *GaussDBClient) InitClient() error {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		c.Host, c.Port, c.Username, c.Password, DefaultGaussDBDatabase)
 
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("opengauss", connStr)
 	if err != nil {
 		return err
 	}

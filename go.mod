@@ -23,6 +23,7 @@ require (
 )
 
 require (
+	gitee.com/opengauss/openGauss-connector-go-pq v1.0.7
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect

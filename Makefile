@@ -175,3 +175,13 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240320141353-395cfc7486e6
+
+.PHONY: bump-chart-version
+bump-chart-version:
+ifeq ($(GOOS), darwin)
+	sed -i "" "s/^version:.*/version: \"$(VERSION)\"/" deploy/helm/Chart.yaml
+	sed -i "" "s/^appVersion:.*/appVersion: \"$(VERSION)\"/" deploy/helm/Chart.yaml
+else
+	sed -i "s/^version:.*/version: \"$(VERSION)\"/" deploy/helm/Chart.yaml
+	sed -i "s/^appVersion:.*/appVersion: \"$(VERSION)\"/" deploy/helm/Chart.yaml
+endif

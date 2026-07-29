@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -10,6 +11,14 @@ import (
 	"github.com/apecloud/kubebench/internal/utils"
 	"github.com/apecloud/kubebench/pkg/constants"
 )
+
+// shellQuote wraps s in single quotes for safe use in shell command strings.
+// This prevents shell interpretation of special characters (;, $, `, etc.).
+
+// Embedded single quotes are escaped by ending the quote, adding \', and restarting.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
+}
 
 func NewTpcdsJobs(cr v1alpha1.Tpcds) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
@@ -53,7 +62,7 @@ func NewTpcdsCleanupJobs(cr v1alpha1.Tpcds) []*batchv1.Job {
 	cmd = fmt.Sprintf("%s --host %s", cmd, cr.Spec.Target.Host)
 	cmd = fmt.Sprintf("%s --port %d", cmd, cr.Spec.Target.Port)
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
-	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
+	cmd = fmt.Sprintf("%s --password %s", cmd, shellQuote(cr.Spec.Target.Password))
 	cmd = fmt.Sprintf("%s --database %s", cmd, cr.Spec.Target.Database)
 	cmd = fmt.Sprintf("%s --step %s", cmd, "cleanup")
 
@@ -83,7 +92,7 @@ func NewTpcdsPrepareJobs(cr v1alpha1.Tpcds) []*batchv1.Job {
 	cmd = fmt.Sprintf("%s --host %s", cmd, cr.Spec.Target.Host)
 	cmd = fmt.Sprintf("%s --port %d", cmd, cr.Spec.Target.Port)
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
-	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
+	cmd = fmt.Sprintf("%s --password %s", cmd, shellQuote(cr.Spec.Target.Password))
 	cmd = fmt.Sprintf("%s --database %s", cmd, cr.Spec.Target.Database)
 	cmd = fmt.Sprintf("%s --step %s", cmd, "prepare")
 	if cr.Spec.UseKey {
@@ -116,7 +125,7 @@ func NewTpcdsRunJobs(cr v1alpha1.Tpcds) []*batchv1.Job {
 	cmd = fmt.Sprintf("%s --host %s", cmd, cr.Spec.Target.Host)
 	cmd = fmt.Sprintf("%s --port %d", cmd, cr.Spec.Target.Port)
 	cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)
-	cmd = fmt.Sprintf("%s --password %s", cmd, cr.Spec.Target.Password)
+	cmd = fmt.Sprintf("%s --password %s", cmd, shellQuote(cr.Spec.Target.Password))
 	cmd = fmt.Sprintf("%s --database %s", cmd, cr.Spec.Target.Database)
 	cmd = fmt.Sprintf("%s --step %s", cmd, "run")
 

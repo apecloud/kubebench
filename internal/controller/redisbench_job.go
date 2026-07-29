@@ -55,7 +55,7 @@ func NewRedisBenchRunJobs(cr *v1alpha1.RedisBench) []*batchv1.Job {
 		cmd = fmt.Sprintf("%s -q", cmd)
 	}
 	if cr.Spec.Target.Password != "" {
-		cmd = fmt.Sprintf("%s -a %s", cmd, cr.Spec.Target.Password)
+		cmd = fmt.Sprintf("%s -a %s", cmd, shellQuote(cr.Spec.Target.Password))
 	}
 	if cr.Spec.Target.User != "" {
 		cmd = fmt.Sprintf("%s --user %s", cmd, cr.Spec.Target.User)

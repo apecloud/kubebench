@@ -182,7 +182,7 @@ func NewYcsbMysqlParams(cr *v1alpha1.Ycsb) string {
 		result = fmt.Sprintf("%s -p mysql.user=%s", result, cr.Spec.Target.User)
 	}
 	if cr.Spec.Target.Password != "" {
-		result = fmt.Sprintf("%s -p mysql.password=%s", result, cr.Spec.Target.Password)
+		result = fmt.Sprintf("%s -p mysql.password=%s", result, shellQuote(cr.Spec.Target.Password))
 	}
 	if cr.Spec.Target.Database != "" {
 		result = fmt.Sprintf("%s -p mysql.db=%s", result, cr.Spec.Target.Database)
@@ -202,7 +202,7 @@ func NewYcsbRedisParams(cr *v1alpha1.Ycsb) string {
 		result = fmt.Sprintf("%s -p redis.username=%s", result, cr.Spec.Target.User)
 	}
 	if cr.Spec.Target.Password != "" {
-		result = fmt.Sprintf("%s -p redis.password=%s", result, cr.Spec.Target.Password)
+		result = fmt.Sprintf("%s -p redis.password=%s", result, shellQuote(cr.Spec.Target.Password))
 	}
 	if cr.Spec.Target.Database != "" {
 		result = fmt.Sprintf("%s -p redis.db=%s", result, cr.Spec.Target.Database)
@@ -211,7 +211,7 @@ func NewYcsbRedisParams(cr *v1alpha1.Ycsb) string {
 		result = fmt.Sprintf("%s -p redis.mode=sentinel", result)
 		result = fmt.Sprintf("%s -p redis.sentinel_master_name=%s", result, cr.Spec.MasterName)
 		result = fmt.Sprintf("%s -p redis.sentinel_username=%s", result, cr.Spec.RedisSentinelUsername)
-		result = fmt.Sprintf("%s -p redis.sentinel_password=%s", result, cr.Spec.RedisSentinelPassword)
+		result = fmt.Sprintf("%s -p redis.sentinel_password=%s", result, shellQuote(cr.Spec.RedisSentinelPassword))
 	}
 	return result
 }
@@ -223,7 +223,7 @@ func NewYcsbPostgresParams(cr *v1alpha1.Ycsb) string {
 		result = fmt.Sprintf("%s -p pg.user=%s", result, cr.Spec.Target.User)
 	}
 	if cr.Spec.Target.Password != "" {
-		result = fmt.Sprintf("%s -p pg.password=%s", result, cr.Spec.Target.Password)
+		result = fmt.Sprintf("%s -p pg.password=%s", result, shellQuote(cr.Spec.Target.Password))
 	}
 	if cr.Spec.Target.Database != "" {
 		result = fmt.Sprintf("%s -p pg.db=%s", result, cr.Spec.Target.Database)

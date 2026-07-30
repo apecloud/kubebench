@@ -26,10 +26,10 @@ env:
 run-name: Release Image ${{ inputs.image_tag || github.ref_name }}
 
 jobs:
-  image-tag:
+  release-version:
     runs-on: ubuntu-latest
     outputs:
-      tag-name: ${{ steps.get_tag_name.outputs.tag_name }}
+      release-version: ${{ steps.get_tag_name.outputs.release_version }}
       build-platform: ${{ steps.get_tag_name.outputs.build-platform }}
     steps:
       - name: Get Tag Name
@@ -39,7 +39,7 @@ jobs:
           if [ -z "$TAG_NAME" ]; then
               TAG_NAME=${{ env.RELEASE_VERSION }}
           fi
-          echo tag_name=$TAG_NAME >> $GITHUB_OUTPUT
+          echo release_version=$TAG_NAME >> $GITHUB_OUTPUT
           
           BUILD_PLATFORM=${{ inputs.build_platform }}
           if [ -z "$BUILD_PLATFORM" ]; then
@@ -48,14 +48,14 @@ jobs:
           echo build-platform=${BUILD_PLATFORM} >> $GITHUB_OUTPUT
 
   release-image:
-    needs: image-tag
+    needs: release-version
     uses: apecloud/apecloud-cd/.github/workflows/release-image-sync2.yml@v0.2.8
     with:
       MAKE_OPS: "docker-buildx"
       IMG: "apecloud/kubebench"
-      VERSION: "${{ needs.image-tag.outputs.tag-name }}"
+      VERSION: "${{ needs.release-version.outputs.release-version }}"
       GO_VERSION: "1.25"
-      BUILDX_PLATFORMS: "${{ needs.image-tag.outputs.build-platform }}"
+      BUILDX_PLATFORMS: "${{ needs.release-version.outputs.build-platform }}"
     secrets: inherit
 
   release-message:

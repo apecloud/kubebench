@@ -1,0 +1,24 @@
+name: Release Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'The version of release'
+        required: false
+        default: ''
+      content:
+        description: 'The request content'
+        required: false
+        default: ''
+
+run-name: ref_name:${{ github.ref_name }} release_version:${{ inputs.release_version }} ${{ inputs.content }}
+
+jobs:
+  release-version:
+    uses: apecloud/apecloud-cd/.github/workflows/release-version.yml@v0.1.55
+    with:
+      RELEASE_VERSION: "${{ inputs.release_version }}"
+      CONTENT: "${{ inputs.content }}"
+      APECD_REF: "v0.1.55"
+    secrets: inherit

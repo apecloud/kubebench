@@ -1,0 +1,13 @@
+name: Release Create On Tag Creation
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release-create:
+    uses: apecloud/apecloud-cd/.github/workflows/release-create.yml@v0.1.55
+    with:
+      APECD_REF: "v0.1.55"
+    secrets: inherit

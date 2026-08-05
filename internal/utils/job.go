@@ -425,6 +425,28 @@ func NewGaussdbPreCheckJob(name string, namespace string, target v1alpha1.Target
 	return job
 }
 
+// NewMinioPreCheckJob create a job to check the minio connection
+func NewMinioPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv1.Job {
+	job := JobTemplate(fmt.Sprintf("%s-precheck", name), namespace)
+	job.Spec.Template.Spec.Containers = append(
+		job.Spec.Template.Spec.Containers,
+		corev1.Container{
+			Name:            constants.ContainerName,
+			Image:           constants.GetBenchmarkImage(constants.KubebenchTools),
+			ImagePullPolicy: corev1.PullIfNotPresent,
+			Command:         []string{"/tools"},
+			Args: []string{"minio", "ping",
+				"--host", target.Host,
+				"--port", fmt.Sprintf("%d", target.Port),
+				"--access-key", target.User,
+				"--secret-key", target.Password,
+			},
+		},
+	)
+
+	return job
+}
+
 // NewPreCheckJob create a job to check the connection
 func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Target) *batchv1.Job {
 	switch driver {
@@ -446,6 +468,8 @@ func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Targ
 		return NewMongodbPreCheckJob(name, namespace, *target)
 	case constants.ElasticsearchDriver:
 		return NewElasticsearchPreCheckJob(name, namespace, *target)
+	case constants.MinioDriver:
+		return NewMinioPreCheckJob(name, namespace, *target)
 	// TODO: achieve in next kubebench version
 	//case constants.RedisDriver:
 	//	return NewRedisPreCheckJob(name, namespace, *target)

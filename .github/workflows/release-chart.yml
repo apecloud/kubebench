@@ -65,6 +65,6 @@ jobs:
     uses: apecloud/apecloud-cd/.github/workflows/feishui-message.yml@v0.1.55
     with:
       TYPE: "2"
-      CONTENT: "release servicemirror chart ${{ needs.release-version.outputs.release-version }} ${{ needs.release-message.outputs.content-result }}"
+      CONTENT: "release kubebench chart ${{ needs.release-version.outputs.release-version }} ${{ needs.release-message.outputs.content-result }}"
       APECD_REF: "v0.1.55"
     secrets: inherit

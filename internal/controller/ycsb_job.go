@@ -58,6 +58,8 @@ func NewYcsbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.GreatdbDriver:
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.StarrocksDriver:
+		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.PostgreSqlDriver:
 		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.KingbaseDriver:
@@ -170,6 +172,8 @@ func NewYcsbWorkloadParams(cr *v1alpha1.Ycsb) string {
 		return NewYcsbMysqlParams(cr)
 	case constants.GreatdbDriver:
 		return NewYcsbMysqlParams(cr)
+	case constants.StarrocksDriver:
+		return NewYcsbMysqlParams(cr)
 	case constants.RedisDriver:
 		return NewYcsbRedisParams(cr)
 	case constants.PostgreSqlDriver:
@@ -265,6 +269,8 @@ func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
 	case constants.GreatdbDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
+	case constants.StarrocksDriver:
+		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
 	case constants.PostgreSqlDriver:
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, database)
 	case constants.KingbaseDriver:
@@ -281,6 +287,8 @@ func getYcsbDriver(driver string) string {
 	case constants.MySqlDriver:
 		return "mysql"
 	case constants.GreatdbDriver:
+		return "mysql"
+	case constants.StarrocksDriver:
 		return "mysql"
 	case constants.PostgreSqlDriver:
 		return "postgresql"

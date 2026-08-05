@@ -243,6 +243,8 @@ func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 		return nil
 	case constants.GreatdbDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.StarrocksDriver:
+		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	default:
 		return nil
 	}
@@ -266,6 +268,8 @@ func getTpccDriver(driver string) string {
 	case constants.MssqlDriver:
 		return "mssql"
 	case constants.GreatdbDriver:
+		return "mysql"
+	case constants.StarrocksDriver:
 		return "mysql"
 	default:
 		return driver

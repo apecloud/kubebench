@@ -147,6 +147,7 @@ spec:
                     - kingbase
                     - vastbase
                     - greatdb
+                    - starrocks
                     type: string
                   host:
                     type: string

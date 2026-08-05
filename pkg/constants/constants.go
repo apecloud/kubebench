@@ -36,6 +36,7 @@ const (
 	KingbaseDriver              = "kingbase"
 	VastbaseDriver              = "vastbase"
 	GreatdbDriver               = "greatdb"
+	StarrocksDriver             = "starrocks"
 )
 
 const (

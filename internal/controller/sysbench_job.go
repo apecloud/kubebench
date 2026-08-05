@@ -250,6 +250,8 @@ func getSysbenchDriver(driver string) string {
 		return "pgsql"
 	case constants.GreatdbDriver:
 		return "mysql"
+	case constants.StarrocksDriver:
+		return "mysql"
 	default:
 		return driver
 	}

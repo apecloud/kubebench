@@ -56,7 +56,13 @@ func NewYcsbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	switch cr.Spec.Target.Driver {
 	case constants.MySqlDriver:
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.GreatdbDriver:
+		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.PostgreSqlDriver:
+		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.KingbaseDriver:
+		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.VastbaseDriver:
 		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.MongoDbDriver:
 		// 'ycsb' is the default database name when running ycsb on mongodb
@@ -162,9 +168,15 @@ func NewYcsbWorkloadParams(cr *v1alpha1.Ycsb) string {
 	switch cr.Spec.Target.Driver {
 	case constants.MySqlDriver:
 		return NewYcsbMysqlParams(cr)
+	case constants.GreatdbDriver:
+		return NewYcsbMysqlParams(cr)
 	case constants.RedisDriver:
 		return NewYcsbRedisParams(cr)
 	case constants.PostgreSqlDriver:
+		return NewYcsbPostgresParams(cr)
+	case constants.KingbaseDriver:
+		return NewYcsbPostgresParams(cr)
+	case constants.VastbaseDriver:
 		return NewYcsbPostgresParams(cr)
 	case constants.MongoDbDriver:
 		return NewYcsbMongodbParams(cr)
@@ -251,7 +263,13 @@ func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
 	switch cr.Spec.Target.Driver {
 	case constants.MySqlDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
+	case constants.GreatdbDriver:
+		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
 	case constants.PostgreSqlDriver:
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, database)
+	case constants.KingbaseDriver:
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, database)
+	case constants.VastbaseDriver:
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, database)
 	default:
 		return nil
@@ -262,7 +280,13 @@ func getYcsbDriver(driver string) string {
 	switch driver {
 	case constants.MySqlDriver:
 		return "mysql"
+	case constants.GreatdbDriver:
+		return "mysql"
 	case constants.PostgreSqlDriver:
+		return "postgresql"
+	case constants.KingbaseDriver:
+		return "postgresql"
+	case constants.VastbaseDriver:
 		return "postgresql"
 	case constants.MongoDbDriver:
 		return "mongodb"

@@ -160,6 +160,10 @@ func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 		return NewMssqlParams(cr)
 	case constants.GaussDBDriver:
 		return NewTpccGaussdbParams(cr)
+	case constants.KingbaseDriver:
+		return NewTpccKingbaseParams(cr)
+	case constants.VastbaseDriver:
+		return NewTpccVastbaseParams(cr)
 	default:
 		return ""
 	}
@@ -174,6 +178,18 @@ func NewTpccMysqlParams(cr *v1alpha1.Tpcc) string {
 func NewTpccGaussdbParams(cr *v1alpha1.Tpcc) string {
 	result := fmt.Sprintf("--driver %s", "com.huawei.opengauss.jdbc.Driver")
 	result = fmt.Sprintf("%s --conn jdbc:opengauss://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	return result
+}
+
+func NewTpccKingbaseParams(cr *v1alpha1.Tpcc) string {
+	result := fmt.Sprintf("--driver %s", "org.postgresql.Driver")
+	result = fmt.Sprintf("%s --conn jdbc:postgresql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
+	return result
+}
+
+func NewTpccVastbaseParams(cr *v1alpha1.Tpcc) string {
+	result := fmt.Sprintf("--driver %s", "org.postgresql.Driver")
+	result = fmt.Sprintf("%s --conn jdbc:postgresql://%s:%d/%s", result, cr.Spec.Target.Host, cr.Spec.Target.Port, cr.Spec.Target.Database)
 	return result
 }
 
@@ -217,6 +233,16 @@ func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.GaussDBDriver:
 		return utils.InitGaussdbDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.KingbaseDriver:
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.VastbaseDriver:
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.MssqlDriver:
+		// mssql TPCC relies on an existing database; no init container is provided yet.
+		// Users should create the target database before running the prepare step.
+		return nil
+	case constants.GreatdbDriver:
+		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	default:
 		return nil
 	}
@@ -233,6 +259,14 @@ func getTpccDriver(driver string) string {
 		return "oracle"
 	case constants.GaussDBDriver:
 		return "gaussdb"
+	case constants.KingbaseDriver:
+		return "postgres"
+	case constants.VastbaseDriver:
+		return "postgres"
+	case constants.MssqlDriver:
+		return "mssql"
+	case constants.GreatdbDriver:
+		return "mysql"
 	default:
 		return driver
 	}

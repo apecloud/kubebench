@@ -430,10 +430,16 @@ func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Targ
 	switch driver {
 	case constants.MySqlDriver:
 		return NewMysqlPreCheckJob(name, namespace, *target)
+	case constants.GreatdbDriver:
+		return NewMysqlPreCheckJob(name, namespace, *target)
 	case constants.PostgreSqlDriver:
 		return NewPgbenchPreCheckJob(name, namespace, *target)
 	case constants.GaussDBDriver:
 		return NewGaussdbPreCheckJob(name, namespace, *target)
+	case constants.KingbaseDriver:
+		return NewPgbenchPreCheckJob(name, namespace, *target)
+	case constants.VastbaseDriver:
+		return NewPgbenchPreCheckJob(name, namespace, *target)
 	case constants.MongoDbDriver:
 		return NewMongodbPreCheckJob(name, namespace, *target)
 	case constants.ElasticsearchDriver:

@@ -89,6 +89,9 @@ spec:
                     - mssql
                     - elasticsearch
                     - gaussdb
+                    - kingbase
+                    - vastbase
+                    - greatdb
                     type: string
                   host:
                     type: string

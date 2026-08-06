@@ -33,6 +33,10 @@ const (
 	MssqlDriver                 = "mssql"
 	ElasticsearchDriver         = "elasticsearch"
 	GaussDBDriver               = "gaussdb"
+	KingbaseDriver              = "kingbase"
+	VastbaseDriver              = "vastbase"
+	GreatdbDriver               = "greatdb"
+	StarrocksDriver             = "starrocks"
 )
 
 const (

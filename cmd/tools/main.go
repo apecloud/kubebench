@@ -15,6 +15,7 @@ func main() {
 	rootCmd.AddCommand(tools.NewRedisCmd())
 	rootCmd.AddCommand(tools.NewElasticsearchCmd())
 	rootCmd.AddCommand(tools.NewGaussdbCmd())
+	rootCmd.AddCommand(tools.NewMinioCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)

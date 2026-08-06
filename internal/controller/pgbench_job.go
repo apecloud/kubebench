@@ -16,7 +16,9 @@ func NewPgbenchJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	jobs := make([]*batchv1.Job, 0)
 
 	// add pre-check job
-	jobs = append(jobs, utils.NewPreCheckJob(cr.Name, cr.Namespace, constants.PostgreSqlDriver, &cr.Spec.Target))
+	if preCheckJob := utils.NewPreCheckJob(cr.Name, cr.Namespace, cr.Spec.Target.Driver, &cr.Spec.Target); preCheckJob != nil {
+		jobs = append(jobs, preCheckJob)
+	}
 
 	step := cr.Spec.Step
 	if step == constants.CleanupStep || step == constants.AllStep {
@@ -90,7 +92,7 @@ func NewPgbenchCleanupJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	)
 
 	// add init containers to create database for cleanup job
-	if initContainer := utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database); initContainer != nil {
+	if initContainer := PgbenchInitContainers(cr); initContainer != nil {
 		job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, *initContainer)
 	}
 
@@ -141,11 +143,21 @@ func NewPgbenchPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	)
 
 	// add init containers to create database for prepare job
-	if initContainer := utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database); initContainer != nil {
+	if initContainer := PgbenchInitContainers(cr); initContainer != nil {
 		job.Spec.Template.Spec.InitContainers = append(job.Spec.Template.Spec.InitContainers, *initContainer)
 	}
 
 	return []*batchv1.Job{job}
+}
+
+// PgbenchInitContainers returns the init containers for pgbench
+func PgbenchInitContainers(cr *v1alpha1.Pgbench) *corev1.Container {
+	switch cr.Spec.Target.Driver {
+	case constants.PostgreSqlDriver, constants.KingbaseDriver, constants.VastbaseDriver:
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	default:
+		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	}
 }
 
 func NewPgbenchRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {

@@ -60,35 +60,35 @@ type TpccSpec struct {
 	// +kubebuilder:validation:Maximum=100
 	// +kubebuilder:default=45
 	// +optional
-	NewOrder int `json:"newOrder,omitempty"`
+	NewOrder *int `json:"newOrder,omitempty"`
 
 	// percentage of payment transactions
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	// +kubebuilder:default=43
 	// +optional
-	Payment int `json:"payment,omitempty"`
+	Payment *int `json:"payment,omitempty"`
 
 	// percentage of order status transactions
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	// +kubebuilder:default=4
 	// +optional
-	OrderStatus int `json:"orderStatus,omitempty"`
+	OrderStatus *int `json:"orderStatus,omitempty"`
 
 	// percentage of delivery transactions
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	// +kubebuilder:default=4
 	// +optional
-	Delivery int `json:"delivery,omitempty"`
+	Delivery *int `json:"delivery,omitempty"`
 
 	// percentage of stock level transactions
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=100
 	// +kubebuilder:default=4
 	// +optional
-	StockLevel int `json:"stockLevel,omitempty"`
+	StockLevel *int `json:"stockLevel,omitempty"`
 
 	BenchCommon `json:",inline"`
 }

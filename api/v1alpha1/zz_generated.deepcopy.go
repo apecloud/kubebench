@@ -727,6 +727,31 @@ func (in *TpccSpec) DeepCopyInto(out *TpccSpec) {
 		*out = make([]int, len(*in))
 		copy(*out, *in)
 	}
+	if in.NewOrder != nil {
+		in, out := &in.NewOrder, &out.NewOrder
+		*out = new(int)
+		**out = **in
+	}
+	if in.Payment != nil {
+		in, out := &in.Payment, &out.Payment
+		*out = new(int)
+		**out = **in
+	}
+	if in.OrderStatus != nil {
+		in, out := &in.OrderStatus, &out.OrderStatus
+		*out = new(int)
+		**out = **in
+	}
+	if in.Delivery != nil {
+		in, out := &in.Delivery, &out.Delivery
+		*out = new(int)
+		**out = **in
+	}
+	if in.StockLevel != nil {
+		in, out := &in.StockLevel, &out.StockLevel
+		*out = new(int)
+		**out = **in
+	}
 	in.BenchCommon.DeepCopyInto(&out.BenchCommon)
 }
 

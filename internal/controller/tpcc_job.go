@@ -117,11 +117,11 @@ func NewTpccRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 		cmd = fmt.Sprintf("%s --runMins %d", cmd, cr.Spec.Duration)
 	}
 
-	cmd = fmt.Sprintf("%s --newOrderWeight %d", cmd, cr.Spec.NewOrder)
-	cmd = fmt.Sprintf("%s --paymentWeight %d", cmd, cr.Spec.Payment)
-	cmd = fmt.Sprintf("%s --orderStatusWeight %d", cmd, cr.Spec.OrderStatus)
-	cmd = fmt.Sprintf("%s --deliveryWeight %d", cmd, cr.Spec.Delivery)
-	cmd = fmt.Sprintf("%s --stockLevelWeight %d", cmd, cr.Spec.StockLevel)
+	cmd = fmt.Sprintf("%s --newOrderWeight %d", cmd, *cr.Spec.NewOrder)
+	cmd = fmt.Sprintf("%s --paymentWeight %d", cmd, *cr.Spec.Payment)
+	cmd = fmt.Sprintf("%s --orderStatusWeight %d", cmd, *cr.Spec.OrderStatus)
+	cmd = fmt.Sprintf("%s --deliveryWeight %d", cmd, *cr.Spec.Delivery)
+	cmd = fmt.Sprintf("%s --stockLevelWeight %d", cmd, *cr.Spec.StockLevel)
 	cmd = fmt.Sprintf("%s %s", cmd, strings.Join(cr.Spec.ExtraArgs, " "))
 
 	jobs := make([]*batchv1.Job, 0)

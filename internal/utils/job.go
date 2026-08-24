@@ -324,6 +324,7 @@ func NewPgbenchPreCheckJob(name string, namespace string, target v1alpha1.Target
 				"--password", target.Password,
 				"--host", target.Host,
 				"--port", fmt.Sprintf("%d", target.Port),
+				"--database", target.Database,
 			},
 		},
 	)

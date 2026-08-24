@@ -17,6 +17,7 @@ type PostgreSQLClient struct {
 	Port     int
 	Username string
 	Password string
+	Database string
 
 	db *sql.DB
 }
@@ -112,9 +113,13 @@ func newPingPgDatabaseCmd() *cobra.Command {
 }
 
 func (c *PostgreSQLClient) InitClient() error {
-	// create connection string with default pg database
+	database := c.Database
+	if database == "" {
+		database = DefaultPGDatabase
+	}
+
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		c.Host, c.Port, c.Username, c.Password, DefaultPGDatabase)
+		c.Host, c.Port, c.Username, c.Password, database)
 
 	// open connection
 	db, err := sql.Open("postgres", connStr)
@@ -173,4 +178,5 @@ func addPostgreSQLFlags(cmd *cobra.Command, client *PostgreSQLClient) {
 	cmd.Flags().IntVar(&client.Port, "port", 5432, "PostgreSQL port")
 	cmd.Flags().StringVar(&client.Username, "user", "postgres", "PostgreSQL username")
 	cmd.Flags().StringVar(&client.Password, "password", "", "PostgreSQL password")
+	cmd.Flags().StringVar(&client.Database, "database", DefaultPGDatabase, "PostgreSQL database")
 }

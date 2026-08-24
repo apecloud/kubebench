@@ -150,14 +150,9 @@ func NewPgbenchPrepareJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {
 	return []*batchv1.Job{job}
 }
 
-// PgbenchInitContainers returns the init containers for pgbench
+// PgbenchInitContainers returns no init container; pgbench uses the configured target database directly.
 func PgbenchInitContainers(cr *v1alpha1.Pgbench) *corev1.Container {
-	switch cr.Spec.Target.Driver {
-	case constants.PostgreSqlDriver, constants.KingbaseDriver, constants.VastbaseDriver:
-		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	default:
-		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	}
+	return nil
 }
 
 func NewPgbenchRunJobs(cr *v1alpha1.Pgbench) []*batchv1.Job {

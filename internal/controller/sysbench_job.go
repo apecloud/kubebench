@@ -238,7 +238,7 @@ func NewSysbenchRunJobs(cr *v1alpha1.Sysbench) []*batchv1.Job {
 // getSysbenchDriver returns the database type required by sysbench
 func getSysbenchDriver(driver string) string {
 	switch driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return "mysql"
 	case constants.PostgreSqlDriver:
 		return "pgsql"

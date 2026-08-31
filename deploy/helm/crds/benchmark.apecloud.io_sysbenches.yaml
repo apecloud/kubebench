@@ -79,6 +79,7 @@ spec:
                   driver:
                     enum:
                     - mysql
+                    - mariadb
                     - postgresql
                     - mongodb
                     - redis

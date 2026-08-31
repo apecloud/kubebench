@@ -451,7 +451,7 @@ func NewMinioPreCheckJob(name, namespace string, target v1alpha1.Target) *batchv
 // NewPreCheckJob create a job to check the connection
 func NewPreCheckJob(name, namespace string, driver string, target *v1alpha1.Target) *batchv1.Job {
 	switch driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return NewMysqlPreCheckJob(name, namespace, *target)
 	case constants.GreatdbDriver:
 		return NewMysqlPreCheckJob(name, namespace, *target)

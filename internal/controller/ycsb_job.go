@@ -54,7 +54,7 @@ func NewYcsbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 	job := utils.JobTemplate(fmt.Sprintf("%s-cleanup", cr.Name), cr.Namespace)
 
 	switch cr.Spec.Target.Driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.GreatdbDriver:
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
@@ -168,7 +168,7 @@ func NewYcsbRunJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 
 func NewYcsbWorkloadParams(cr *v1alpha1.Ycsb) string {
 	switch cr.Spec.Target.Driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return NewYcsbMysqlParams(cr)
 	case constants.GreatdbDriver:
 		return NewYcsbMysqlParams(cr)
@@ -265,7 +265,7 @@ func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
 	database := cr.Spec.Target.Database
 
 	switch cr.Spec.Target.Driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
 	case constants.GreatdbDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, database)
@@ -284,7 +284,7 @@ func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
 
 func getYcsbDriver(driver string) string {
 	switch driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return "mysql"
 	case constants.GreatdbDriver:
 		return "mysql"

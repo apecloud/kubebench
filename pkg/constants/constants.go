@@ -23,6 +23,7 @@ const (
 
 const (
 	MySqlDriver                 = "mysql"
+	MariaDBDriver               = "mariadb"
 	PostgreSqlDriver            = "postgresql"
 	MongoDbDriver               = "mongodb"
 	RedisDriver                 = "redis"

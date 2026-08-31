@@ -146,7 +146,7 @@ func NewTpccRunJobs(cr *v1alpha1.Tpcc) []*batchv1.Job {
 
 func NewTpccWorkLoadParams(cr *v1alpha1.Tpcc) string {
 	switch cr.Spec.Target.Driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return NewTpccMysqlParams(cr)
 	case constants.PostgreSqlDriver:
 		return NewTpccPostgresParams(cr)
@@ -227,7 +227,7 @@ func NewMssqlParams(cr *v1alpha1.Tpcc) string {
 // tpcc will fail if database not exists, so we need to create database first
 func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 	switch cr.Spec.Target.Driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return utils.InitMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.PostgreSqlDriver:
 		return utils.InitPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
@@ -253,7 +253,7 @@ func TpccInitContainers(cr *v1alpha1.Tpcc) *corev1.Container {
 // getTpccDriver returns the database type required by tpcc
 func getTpccDriver(driver string) string {
 	switch driver {
-	case constants.MySqlDriver:
+	case constants.MySqlDriver, constants.MariaDBDriver:
 		return "mysql"
 	case constants.PostgreSqlDriver:
 		return "postgres"

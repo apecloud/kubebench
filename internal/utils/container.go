@@ -71,15 +71,16 @@ func CleanMysqlDatabaseContainer(target v1alpha1.Target, database string) *corev
 	}
 }
 
-func CleanPGDatabaseContainer(target v1alpha1.Target, database string) *corev1.Container {
+func CleanPGTableContainer(target v1alpha1.Target, table string) *corev1.Container {
 	args := []string{
 		"postgresql",
-		"drop",
-		database,
+		"drop-table",
+		table,
 		"--host", target.Host,
 		"--port", strconv.Itoa(target.Port),
 		"--user", target.User,
 		"--password", target.Password,
+		"--database", target.Database,
 	}
 
 	return &corev1.Container{

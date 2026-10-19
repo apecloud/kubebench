@@ -60,12 +60,8 @@ func NewYcsbCleanupJobs(cr *v1alpha1.Ycsb) []*batchv1.Job {
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
 	case constants.StarrocksDriver:
 		container = utils.CleanMysqlDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	case constants.PostgreSqlDriver:
-		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	case constants.KingbaseDriver:
-		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
-	case constants.VastbaseDriver:
-		container = utils.CleanPGDatabaseContainer(cr.Spec.Target, cr.Spec.Target.Database)
+	case constants.PostgreSqlDriver, constants.KingbaseDriver, constants.VastbaseDriver:
+		container = utils.CleanPGTableContainer(cr.Spec.Target, ycsbTable(cr.Spec.ExtraArgs))
 	case constants.MongoDbDriver:
 		// 'ycsb' is the default database name when running ycsb on mongodb
 		container = utils.CleanMongoDatabaseContainer(cr.Spec.Target, "ycsb")
@@ -259,6 +255,20 @@ func NewYcsbMinioParams(cr *v1alpha1.Ycsb) string {
 	secretKey := cr.Spec.Target.Password
 	endpoint := fmt.Sprintf("%s:%d", cr.Spec.Target.Host, cr.Spec.Target.Port)
 	return fmt.Sprintf("-p minio.access-key=%s -p minio.secret-key=%s -p minio.endpoint=%s -p table=%s", accessKey, secretKey, endpoint, cr.Spec.Target.Database)
+}
+
+func ycsbTable(extra []string) string {
+	for i := 0; i < len(extra); i++ {
+		arg := strings.TrimSpace(extra[i])
+		if arg == "-p" && i+1 < len(extra) {
+			arg = strings.TrimSpace(extra[i+1])
+		}
+		arg = strings.TrimSpace(strings.TrimPrefix(arg, "-p"))
+		if name, ok := strings.CutPrefix(arg, "table="); ok && name != "" {
+			return name
+		}
+	}
+	return "usertable"
 }
 
 func YcsbInitContainers(cr *v1alpha1.Ycsb) *corev1.Container {
